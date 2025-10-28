@@ -1,0 +1,143 @@
+// ----------- GENERATOR + DATASOURCE -------------
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------- ENUMS -------------
+enum Role {
+  EMPLOYEE
+  ADMIN
+}
+
+enum CampaignType {
+  PROMOTIONAL
+  TRANSACTIONAL
+  MARKETING
+  NOTIFICATION
+  REMINDER
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+  URGENT
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+  TEMPLATE
+}
+
+enum Source {
+  SOCIAL
+  REFERRAL
+  EVENT
+  MARKETING
+  OTHER
+}
+
+enum Tag {
+  HOT
+  WARM
+  COLD
+  QUALIFIED
+  DISQUALIFIED
+}
+
+enum Status {
+  REQUESTED
+  RUNNING
+  COMPLETE
+  CREATED
+  REJECTED
+}
+
+enum Provider {
+  TWILIO
+  DIALOG360
+  OTHER
+  WHATSAPPBUSINESSAPI
+}
+
+// ----------- MODELS -------------
+
+model User {
+  id                   String                 @id @default(cuid())
+  email                String?                @unique
+  name                 String
+  role                 Role                   @default(ADMIN)
+  password             String?
+  employee             Employee?
+  leads                Lead[]
+  whatsappIntegrations WhatsAppIntegration[]
+  campaigns            WhatsappCampaign[]
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+}
+
+model Employee {
+  id         String    @id @default(cuid())
+  name       String
+  employeeId String    @unique
+  password   String
+  role       Role      @default(EMPLOYEE)
+  userId     String    @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Lead {
+  id        String    @id @default(cuid())
+  name      String
+  email     String?   @unique
+  phone     String?   @db.VarChar(20)
+  company   String?
+  notes     String?
+  source    Source
+  tag       Tag       @default(DISQUALIFIED)
+  duration  Int
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model WhatsAppIntegration {
+  id        String    @id @default(cuid())
+  apiKey    String
+  apiSecret String?
+  provider  Provider
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model WhatsappCampaign {
+  id             String        @id @default(cuid())
+  campaignName   String
+  description    String?
+  campaignType   CampaignType
+  priority       Priority
+  messageType    MessageType
+  messageContent String
+  mediaURL       String?
+  templateID     String?
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
