@@ -21,6 +21,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import { auth } from "@/lib/auth"; // your NextAuth auth function
+import { redirect } from "next/navigation";
+
 interface LayoutProps {
   children: ReactNode;
 }
@@ -38,7 +41,7 @@ const navigation = [
 
 export default function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
-
+ 
   return (
     <div className="min-h-screen bg-background flex w-full">
       {/* Sidebar */}

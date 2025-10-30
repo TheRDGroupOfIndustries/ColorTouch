@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import AuthButton from "@/components/AuthButton";
 
 const stats = [
   {
@@ -92,6 +93,9 @@ export default function Dashboard() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
+        <div>
+          <AuthButton />
+        </div>
         <h1 className="text-3xl font-bold text-foreground mb-1">Dashboard</h1>
         <p className="text-muted-foreground">Welcome back, manage your leads and campaigns</p>
       </div>
