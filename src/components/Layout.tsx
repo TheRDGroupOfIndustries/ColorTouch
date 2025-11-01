@@ -20,6 +20,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useSession } from "next-auth/react";
+import AuthButton from "./AuthButton";
 
 interface LayoutProps {
   children: ReactNode;
@@ -38,6 +40,7 @@ const navigation = [
 
 export default function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
+ const { data: session } = useSession();
 
   return (
     <div className="min-h-screen bg-background flex w-full">
@@ -61,7 +64,7 @@ export default function Layout({ children }: LayoutProps) {
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    ? "bg-[#262626] text-sidebar-accent-foreground"
                     : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
                 }`}
               >
@@ -70,6 +73,7 @@ export default function Layout({ children }: LayoutProps) {
               </Link>
             );
           })}
+          <AuthButton />
         </nav>
 
         {/* Upgrade Section */}
@@ -100,22 +104,22 @@ export default function Layout({ children }: LayoutProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="relative p-2 hover:bg-card rounded-lg transition-colors">
+            {/* <button className="relative p-2 hover:bg-card rounded-lg transition-colors">
               <Bell className="w-5 h-5 text-foreground" />
               <span className="absolute top-1 right-1 w-5 h-5 bg-destructive text-white text-xs rounded-full flex items-center justify-center">
                 3
               </span>
-            </button>
+            </button> */}
 
             <div className="flex items-center gap-3">
-              <Avatar className="w-9 h-9 bg-primary">
+              <Avatar className="w-9 h-9 bg-[#262626]">
                 <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                  AP
+                  {(session?.user?.name?.[0] ?? "U").toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="text-sm">
-                <div className="font-semibold text-foreground">Ankit Pandey</div>
-                <div className="text-xs text-muted-foreground">Admin</div>
+                <div className="font-semibold text-foreground">{session?.user?.name || "User"}</div>
+                <div className="text-xs text-muted-foreground">{session?.user?.role || "Guest"}</div>
               </div>
             </div>
           </div>

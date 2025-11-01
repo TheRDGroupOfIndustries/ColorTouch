@@ -126,16 +126,11 @@ export default function WhatsAppPage() {
   return (
     <div>
       <div className="p-6 space-y-6">
-            {/* Header */}
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-1">WhatsApp Campaigns</h1>
-              <p className="text-muted-foreground">Welcome back, manage your leads and campaigns</p>
-            </div>
       
             {/* Page Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-foreground">WhatsApp Campaigns</h2>
+                <h2 className="text-3xl font-bold text-foreground">WhatsApp Campaigns</h2>
                 <p className="text-sm text-muted-foreground">
                   Create and manage WhatsApp marketing campaigns for your clients
                 </p>

@@ -1,0 +1,219 @@
+'use client';
+
+import { useState } from 'react';
+import { Upload, FileSpreadsheet, Info, CloudUpload } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
+
+export default function LeadsUploader() {
+  const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Handle file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    // Validate file type
+    if (!selectedFile.name.endsWith('.xlsx')) {
+      toast.error('❌ Invalid file type. Only .xlsx files allowed.');
+      e.target.value = ''; // reset input
+      return;
+    }
+
+    // Validate file size
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      toast.error('⚠️ File too large — max 5MB allowed.');
+      e.target.value = '';
+      return;
+    }
+
+    setFile(selectedFile);
+  };
+
+  // Upload file
+  const handleUpload = async () => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setIsUploading(true);
+    toast.loading('Uploading file...', { id: 'upload' });
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        toast.success('✅ File uploaded successfully!', { id: 'upload' });
+        setFile(null);
+        // reset input so same file can be re-uploaded
+        const input = document.getElementById('leadFile') as HTMLInputElement;
+        if (input) input.value = '';
+      } else {
+        toast.error(data.error || '❌ Upload failed. Please try again.', { id: 'upload' });
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('⚠️ Network or server error. Please try again.', { id: 'upload' });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <div className="container w-full h-screen ml-5">
+      <Toaster position="top-right" />
+
+      {/* Header */}
+      <div className="flex flex-row items-center justify-between p-6 pb-4">
+        <div className="h-full w-full">
+          <h2 className="text-2xl font-semibold text-foreground">Leads</h2>
+          <p className="text-base text-muted-foreground">Manage your leads</p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-6 rounded-xl w-full border border-border bg-transparent py-6 shadow-sm">
+        {/* Header with download */}
+        <header className="grid grid-cols-[1fr_auto] items-start gap-2 px-6">
+          <div>
+            <h2 className="flex items-center text-lg font-semibold leading-none text-foreground">
+              <FileSpreadsheet className="mr-2 h-5 w-5 text-primary" />
+              Upload Your Leads File
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Upload your <code>.xlsx</code> file containing leads data. Ensure your columns and enums follow the format below.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="h-9 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 active:scale-[0.98]"
+          >
+            Download Sample
+          </button>
+        </header>
+
+        <hr className="h-px w-full bg-border" />
+
+        {/* Content grid */}
+        <div className="grid grid-cols-1 gap-6 px-6 md:grid-cols-2">
+          {/* Left: instructions */}
+          <div className="space-y-4">
+            <h3 className="text-base font-semibold">Excel Upload Requirements</h3>
+            <div>
+              <h4 className="text-sm font-medium">Required Columns</h4>
+              <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+                <li><code>name</code> – Full name of the lead (required)</li>
+                <li><code>email</code> – Valid email address (optional)</li>
+                <li><code>phone</code> – Numeric only (optional)</li>
+                <li><code>company</code> – Company or organization (optional)</li>
+                <li><code>notes</code> – Any additional remarks (optional)</li>
+                <li><code>source</code> – Must match one of the accepted sources below</li>
+                <li><code>tag</code> – Must match one of the accepted tags below</li>
+                <li><code>duration</code> – Positive integer (days or duration)</li>
+              </ul>
+              <p className="text-xs text-muted-foreground">Column headers are <strong>case-sensitive</strong>.</p>
+            </div>
+
+            <hr className="h-px bg-border" />
+
+            <div>
+              <h4 className="text-sm font-medium">Accepted Source Values</h4>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {['SOCIAL', 'REFERRAL', 'EVENT', 'MARKETING', 'OTHER'].map((src) => (
+                  <span key={src} className="rounded-md bg-secondary px-2 py-0.5 text-sm font-semibold text-secondary-foreground">{src}</span>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Use these exact uppercase keys (or lowercase equivalents).</p>
+            </div>
+
+            <hr className="h-px bg-border" />
+
+            <div>
+              <h4 className="text-sm font-medium">Accepted Tag Values</h4>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {['HOT', 'WARM', 'COLD', 'QUALIFIED', 'DISQUALIFIED'].map((tag) => (
+                  <span key={tag} className="rounded-md bg-secondary px-2 py-0.5 text-sm font-semibold text-secondary-foreground">{tag}</span>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Invalid or missing tags default to <code>DISQUALIFIED</code>.</p>
+            </div>
+
+            <hr className="h-px bg-border" />
+
+            <div>
+              <h4 className="text-sm font-medium">Accepted Status Values</h4>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {['REQUESTED', 'RUNNING', 'COMPLETE', 'CREATED', 'REJECTED'].map((status) => (
+                  <span key={status} className="rounded-md border bg-card px-2 py-0.5 text-sm font-semibold text-foreground">{status}</span>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground"><code>status</code> is optional but must match one of these values.</p>
+            </div>
+          </div>
+
+          {/* Right: upload */}
+          <div className="space-y-3">
+            <label htmlFor="leadFile" className="flex items-center gap-2 text-sm font-medium leading-none">
+              <CloudUpload className="h-4 w-4" />
+              Excel File (.xlsx)
+              <Info className="h-3.5 w-3.5 text-muted-foreground" />
+            </label>
+
+            <div className="flex flex-col gap-4">
+              <label
+                htmlFor="leadFile"
+                role="button"
+                className="flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed border-input p-4 text-center transition hover:bg-muted/50 cursor-pointer"
+              >
+                <input
+                  id="leadFile"
+                  type="file"
+                  accept=".xlsx"
+                  className="sr-only"
+                  onChange={handleFileChange}
+                />
+                <div className="mb-2 flex size-11 items-center justify-center rounded-full border bg-background">
+                  {isUploading ? (
+                    <span className="text-xs text-muted-foreground">⏳</span>
+                  ) : (
+                    <Upload className="size-4 opacity-60" />
+                  )}
+                </div>
+                <p className="mb-1.5 text-sm font-medium">
+                  {isUploading ? 'Uploading...' : file ? file.name : 'Upload file'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Drag & drop or click to browse (max. 5MB)
+                </p>
+              </label>
+            </div>
+
+            {/* Upload Button */}
+            <button
+              onClick={handleUpload}
+              disabled={!file || isUploading}
+              className="w-full bg-[#cbc6c6] rounded-md px-4 py-2 text-sm font-medium text-black transition hover:bg-[#b3b0b0] disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed"
+            >
+              {isUploading ? 'Uploading...' : 'Upload File'}
+            </button>
+
+            <p className="text-sm text-muted-foreground">
+              Accepts <code>.xlsx</code> only. Max 5MB. Max 20 leads per upload.
+            </p>
+
+            <hr className="h-px bg-border" />
+
+            <div className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+              ✅ Tip: Always verify your Excel headers match exactly. It’ll save you from a soul-crushing “why isn’t this uploading?” moment.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
