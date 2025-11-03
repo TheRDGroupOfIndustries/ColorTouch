@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs"; // Install: npm install bcryptjs
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  secret: process.env.AUTH_SECRET,
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -128,7 +129,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           token.userId = dbUser.id;
           token.role = dbUser.role;
           token.name = dbUser.name; // ✅ Added
-          token.email = dbUser.email; // ✅ Added
+          token.email = dbUser.email || ""; // ✅ Added
         }
       }
       
