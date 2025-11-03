@@ -1,8 +1,11 @@
+"use client";
 import { TrendingUp, TrendingDown, DollarSign, UserPlus, Users as UsersIcon, TrendingUp as ChartIcon, Calendar, Plus, Eye, Edit, CheckCircle, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useEffect } from "react";
+import axios from "axios";
 
 const stats = [
   {
@@ -88,6 +91,19 @@ const notes = [
 ];
 
 export default function Dashboard() {
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const res = await axios.get("/api/leads");
+      console.log(res.data);
+      } catch (err) {
+        console.error("Error fetching banners:", err);
+      }
+    };
+    fetchBanners();
+  }, []);
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
