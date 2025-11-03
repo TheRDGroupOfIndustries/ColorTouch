@@ -89,12 +89,12 @@ export default function LeadsUploader() {
               Upload your <code>.xlsx</code> file containing leads data. Ensure your columns and enums follow the format below.
             </p>
           </div>
-          <button
+          {/* <button
             type="button"
             className="h-9 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 active:scale-[0.98]"
           >
             Download Sample
-          </button>
+          </button> */}
         </header>
 
         <hr className="h-px w-full bg-border" />
