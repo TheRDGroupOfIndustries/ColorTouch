@@ -20,7 +20,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import  LeadsModal from "@/components/ui/LeadsModal";
+import LeadsModal from "@/components/ui/LeadsModal";
 import {
   Select,
   SelectContent,
@@ -65,20 +65,42 @@ export default function LeadsPage() {
   const [search, setSearch] = useState("");
   const [selectedStage, setSelectedStage] = useState<string>("");
   const [selectedTag, setSelectedTag] = useState<string>("");
- const [popup, setPopup] = useState<null | "view" | "edit" | "delete">(null);
+  const [popup, setPopup] = useState<null | "add" | "view" | "edit" | "delete">(
+    null
+  );
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null); // State for the selected lead
   const closePopup = () => setPopup(null);
 
+  const handleAddLead = async (newLeadData: Omit<Lead, 'id' | 'created'>): Promise<void> => {
+     console.log("Simulating add new lead with data:", newLeadData);
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate network delay
 
-  const handleUpdateLead = async (leadId: string, data: Partial<Lead>): Promise<void> => {
+     const newLead: Lead = {
+      ...newLeadData,
+      id: Date.now().toString(),  
+      created: new Date().toLocaleDateString(),
+       stage: newLeadData.stage || "new",
+      tag: newLeadData.tag || "cold",
+      value: newLeadData.value || "$0.00",
+    };
+
+     setLeads((prevLeads) => [newLead, ...prevLeads]);
+
+     closePopup();
+    console.log("Lead added successfully:", newLead);
+  };
+  const handleUpdateLead = async (
+    leadId: string,
+    data: Partial<Lead>
+  ): Promise<void> => {
     // 1. Simulate API Call (Replace with real fetch if needed)
     console.log(`Simulating update for lead ${leadId} with data:`, data);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate network delay
 
     // 2. Update local state
-    setLeads(prevLeads =>
-      prevLeads.map(lead =>
-        lead.id === leadId ? { ...lead, ...data } as Lead : lead
+    setLeads((prevLeads) =>
+      prevLeads.map((lead) =>
+        lead.id === leadId ? ({ ...lead, ...data } as Lead) : lead
       )
     );
     // In a real app, you would show a success toast here
@@ -87,13 +109,16 @@ export default function LeadsPage() {
   const handleDeleteLead = async (leadId: string): Promise<void> => {
     // 1. Simulate API Call (Replace with real fetch if needed)
     console.log(`Simulating delete for lead ${leadId}`);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate network delay
 
     // 2. Update local state
-    setLeads(prevLeads => prevLeads.filter(lead => lead.id !== leadId));
+    setLeads((prevLeads) => prevLeads.filter((lead) => lead.id !== leadId));
     // In a real app, you would show a success toast here
   };
-  const openModal = (action: "view" | "edit" | "delete", lead: Lead) => {
+  const openModal = (
+    action: "add" | "view" | "edit" | "delete",
+    lead: Lead | null
+  ) => {
     setSelectedLead(lead);
     setPopup(action);
   };
@@ -218,6 +243,7 @@ export default function LeadsPage() {
           </Button>
 
           <Button
+            onClick={() => router.push("/leadform")}
             variant="outline"
             className="border-success text-success hover:bg-success/10"
           >
@@ -225,7 +251,7 @@ export default function LeadsPage() {
             Upload CSV
           </Button>
           <Button
-            onClick={() => router.push("/leadform")}
+            onClick={() => openModal("add", null)}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -469,7 +495,7 @@ export default function LeadsPage() {
                           variant="ghost"
                           size="sm"
                           className="h-8 cursor-pointer w-8 p-0 text-info hover:text-info hover:bg-info/10"
-                          onClick={() => openModal("view",lead)}
+                          onClick={() => openModal("view", lead)}
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -478,7 +504,7 @@ export default function LeadsPage() {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 cursor-pointer text-warning hover:text-warning hover:bg-warning/10"
-                          onClick={() => openModal("edit",lead)}
+                          onClick={() => openModal("edit", lead)}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -487,7 +513,7 @@ export default function LeadsPage() {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => openModal("delete",lead)}
+                          onClick={() => openModal("delete", lead)}
                         >
                           <Trash className="w-4 h-4 text-red-600" />
                         </Button>
@@ -499,13 +525,14 @@ export default function LeadsPage() {
             </table>
           </div>
         )}
-   <LeadsModal 
-        popup={popup}
-        lead={selectedLead}
-        closePopup={closePopup}
-        onUpdateLead={handleUpdateLead}
-        onDeleteLead={handleDeleteLead}
-      />
+        <LeadsModal
+          popup={popup}
+          lead={selectedLead}
+          closePopup={closePopup}
+          onUpdateLead={handleUpdateLead}
+          onAddLead={handleAddLead}
+          onDeleteLead={handleDeleteLead}
+        />
       </Card>
     </div>
   );

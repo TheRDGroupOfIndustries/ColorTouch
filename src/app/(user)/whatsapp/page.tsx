@@ -12,6 +12,7 @@ import {
   Edit,
   MoreVertical,
   TrendingUp,
+  PlayCircle ,
   Clock, // Added Clock for clarity
   Pause, // Added Pause
   Play, // Added Play
@@ -227,27 +228,38 @@ export default function WhatsAppPage() {
   // -------------------------------------------------------------
 
   const handleAction = (action: string, campaignName: string) => {
-    console.log(`${action} clicked for`, campaignName);
+  console.log(`${action} clicked for`, campaignName);
 
-    if (action === "pause") {
-      setCampaigns(
-        campaigns.map((c) =>
-          c.name === campaignName ? { ...c, status: "Paused" as "Paused" } : c
-        )
-      );
-    }
-    if (action === "delete") {
-      // Add a confirmation dialog here in a real application
-      setCampaigns(campaigns.filter((c) => c.name !== campaignName));
-    }
-    if (action === "restart") {
-      setCampaigns(
-        campaigns.map((c) =>
-          c.name === campaignName ? { ...c, status: "Active" as "Active" } : c
-        )
-      );
-    }
-  };
+  if (action === "pause") {
+    setCampaigns(
+      campaigns.map((c) =>
+        c.name === campaignName ? { ...c, status: "Paused" as "Paused" } : c
+      )
+    );
+  }
+
+  if (action === "start") {
+    setCampaigns(
+      campaigns.map((c) =>
+        c.name === campaignName ? { ...c, status: "Active" as "Active" } : c
+      )
+    );
+  }
+
+  if (action === "delete") {
+    // Add a confirmation dialog here in a real application
+    setCampaigns(campaigns.filter((c) => c.name !== campaignName));
+  }
+
+  if (action === "restart") {
+    setCampaigns(
+      campaigns.map((c) =>
+        c.name === campaignName ? { ...c, status: "Active" as "Active" } : c
+      )
+    );
+  }
+};
+
 
   return (
     <div>
@@ -448,8 +460,8 @@ export default function WhatsAppPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-black text-white border-border">
-                        <DropdownMenuItem onClick={() => router.push("/Campaigns")}>
-                          <Plus className="w-4 mr-2" /> Create New
+                        <DropdownMenuItem onClick={() => handleAction("start", campaign.name)}>
+                          <PlayCircle  className="w-4 mr-2" /> Start Campaign
                         </DropdownMenuItem>
 
                         {campaign.status === "Active" ? (
