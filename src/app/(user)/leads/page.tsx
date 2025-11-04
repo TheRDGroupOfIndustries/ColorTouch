@@ -20,6 +20,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import  LeadsModal from "@/components/ui/LeadsModal";
 import {
   Select,
   SelectContent,
@@ -64,7 +65,38 @@ export default function LeadsPage() {
   const [search, setSearch] = useState("");
   const [selectedStage, setSelectedStage] = useState<string>("");
   const [selectedTag, setSelectedTag] = useState<string>("");
+ const [popup, setPopup] = useState<null | "view" | "edit" | "delete">(null);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null); // State for the selected lead
+  const closePopup = () => setPopup(null);
 
+
+  const handleUpdateLead = async (leadId: string, data: Partial<Lead>): Promise<void> => {
+    // 1. Simulate API Call (Replace with real fetch if needed)
+    console.log(`Simulating update for lead ${leadId} with data:`, data);
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+
+    // 2. Update local state
+    setLeads(prevLeads =>
+      prevLeads.map(lead =>
+        lead.id === leadId ? { ...lead, ...data } as Lead : lead
+      )
+    );
+    // In a real app, you would show a success toast here
+  };
+
+  const handleDeleteLead = async (leadId: string): Promise<void> => {
+    // 1. Simulate API Call (Replace with real fetch if needed)
+    console.log(`Simulating delete for lead ${leadId}`);
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+
+    // 2. Update local state
+    setLeads(prevLeads => prevLeads.filter(lead => lead.id !== leadId));
+    // In a real app, you would show a success toast here
+  };
+  const openModal = (action: "view" | "edit" | "delete", lead: Lead) => {
+    setSelectedLead(lead);
+    setPopup(action);
+  };
   // Fetch leads from API
   useEffect(() => {
     setLoading(true);
@@ -95,7 +127,9 @@ export default function LeadsPage() {
       return createdDate >= oneWeekAgo && createdDate <= now;
     }).length;
 
-    const hotLeads = leads.filter((lead) => lead.tag.toLowerCase() === "hot").length;
+    const hotLeads = leads.filter(
+      (lead) => lead.tag.toLowerCase() === "hot"
+    ).length;
 
     return [
       {
@@ -137,8 +171,14 @@ export default function LeadsPage() {
         lead.email.toLowerCase().includes(search.toLowerCase()) ||
         lead.company.toLowerCase().includes(search.toLowerCase());
 
-      const matchesStage = selectedStage && selectedStage !== "all" ? lead.stage.toLowerCase() === selectedStage.toLowerCase() : true;
-      const matchesTag = selectedTag && selectedTag !== "all" ? lead.tag.toLowerCase() === selectedTag.toLowerCase() : true;
+      const matchesStage =
+        selectedStage && selectedStage !== "all"
+          ? lead.stage.toLowerCase() === selectedStage.toLowerCase()
+          : true;
+      const matchesTag =
+        selectedTag && selectedTag !== "all"
+          ? lead.tag.toLowerCase() === selectedTag.toLowerCase()
+          : true;
 
       return matchesSearch && matchesStage && matchesTag;
     });
@@ -178,14 +218,16 @@ export default function LeadsPage() {
           </Button>
 
           <Button
-            onClick={() => router.push("/leadform")}
             variant="outline"
             className="border-success text-success hover:bg-success/10"
           >
             <Upload className="w-4 h-4 mr-2" />
             Upload CSV
           </Button>
-          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button
+            onClick={() => router.push("/leadform")}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add Lead
           </Button>
@@ -426,23 +468,28 @@ export default function LeadsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-info hover:text-info hover:bg-info/10"
+                          className="h-8 cursor-pointer w-8 p-0 text-info hover:text-info hover:bg-info/10"
+                          onClick={() => openModal("view",lead)}
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
+
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-warning hover:text-warning hover:bg-warning/10"
+                          className="h-8 w-8 p-0 cursor-pointer text-warning hover:text-warning hover:bg-warning/10"
+                          onClick={() => openModal("edit",lead)}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
+
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          className="h-8 w-8 p-0 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => openModal("delete",lead)}
                         >
-                          <Trash className="w-4 h-4" />
+                          <Trash className="w-4 h-4 text-red-600" />
                         </Button>
                       </div>
                     </td>
@@ -452,6 +499,13 @@ export default function LeadsPage() {
             </table>
           </div>
         )}
+   <LeadsModal 
+        popup={popup}
+        lead={selectedLead}
+        closePopup={closePopup}
+        onUpdateLead={handleUpdateLead}
+        onDeleteLead={handleDeleteLead}
+      />
       </Card>
     </div>
   );

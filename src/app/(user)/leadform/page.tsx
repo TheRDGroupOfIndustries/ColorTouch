@@ -89,12 +89,12 @@ export default function LeadsUploader() {
               Upload your <code>.xlsx</code> file containing leads data. Ensure your columns and enums follow the format below.
             </p>
           </div>
-          {/* <button
+          <button
             type="button"
-            className="h-9 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 active:scale-[0.98]"
+            className="h-9 rounded-md bg-white text-black px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 active:scale-[0.98]"
           >
             Download Sample
-          </button> */}
+          </button>
         </header>
 
         <hr className="h-px w-full bg-border" />
@@ -106,7 +106,7 @@ export default function LeadsUploader() {
             <h3 className="text-base font-semibold">Excel Upload Requirements</h3>
             <div>
               <h4 className="text-sm font-medium">Required Columns</h4>
-              <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+              <ul className="list-inside list-disc space-y-1 text-gray-400 text-sm text-muted-foreground">
                 <li><code>name</code> – Full name of the lead (required)</li>
                 <li><code>email</code> – Valid email address (optional)</li>
                 <li><code>phone</code> – Numeric only (optional)</li>
@@ -116,7 +116,7 @@ export default function LeadsUploader() {
                 <li><code>tag</code> – Must match one of the accepted tags below</li>
                 <li><code>duration</code> – Positive integer (days or duration)</li>
               </ul>
-              <p className="text-xs text-muted-foreground">Column headers are <strong>case-sensitive</strong>.</p>
+              <p className="text-xs text-muted-foreground text-gray-400">Column headers are <strong>case-sensitive</strong>.</p>
             </div>
 
             <hr className="h-px bg-border" />

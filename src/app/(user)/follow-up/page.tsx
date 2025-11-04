@@ -1,4 +1,5 @@
-import React from 'react'
+"use client";
+import React, { useState } from "react";
 import { Search, Plus, Calendar as CalendarIcon, AlertCircle, Clock, CheckCircle, Eye, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,8 +21,9 @@ const stats = [
   { title: "Completed", value: "127", change: "+18%", icon: CheckCircle, color: "bg-success" },
 ];
 
-const activities = [
+const initialActivities = [
   {
+    id: 1,
     name: "Karan Malhotra",
     company: "Media House",
     type: "Call",
@@ -32,6 +34,7 @@ const activities = [
     avatar: "KM",
   },
   {
+    id: 2,
     name: "Pooja Bansal",
     company: "Travel Agency",
     type: "Follow-Up",
@@ -42,6 +45,7 @@ const activities = [
     avatar: "PB",
   },
   {
+    id: 3,
     name: "Sanjay Kapoor",
     company: "Automotive Parts",
     type: "Email",
@@ -52,6 +56,7 @@ const activities = [
     avatar: "SK",
   },
   {
+    id: 4,
     name: "Rajesh Kumar",
     company: "Tech Solutions Pvt Ltd",
     type: "Call",
@@ -62,6 +67,7 @@ const activities = [
     avatar: "RK",
   },
   {
+    id: 5,
     name: "Priya Sharma",
     company: "Digital Marketing Co",
     type: "Email",
@@ -72,6 +78,7 @@ const activities = [
     avatar: "PS",
   },
   {
+    id: 6,
     name: "Amit Patel",
     company: "Manufacturing Ltd",
     type: "Meeting",
@@ -90,224 +97,230 @@ const quickFilters = [
   { label: "Clear All", value: "clear", variant: "ghost" as const },
 ];
 
+const Page = () => {
+  const [activities, setActivities] = useState(initialActivities);
+ 
+  const handleCompleteActivity = (activityId: number) => {
+    setActivities((prev) => prev.filter((a) => a.id !== activityId));
+    console.log(`Activity ID: ${activityId} marked as completed and removed from list.`);
+  };
 
-const page = () => {
   return (
     <div>
-         <div className="p-6 space-y-6">
-              {/* Page Header */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-3xl font-bold text-foreground">Leads Follow-Up</h2>
-                  <p className="text-sm text-muted-foreground">Track and manage your lead follow-up activities</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="border-border">
-                    <CalendarIcon className="w-4 h-4 mr-2" />
-                    List View
-                  </Button>
-                  <Button variant="outline" className="border-border">
-                    <CalendarIcon className="w-4 h-4 mr-2" />
-                    Calendar View
-                  </Button>
-                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Schedule Follow-Up
-                  </Button>
-                </div>
-              </div>
-        
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {stats.map((stat) => (
-                  <Card key={stat.title} className="p-6 bg-card border-border">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
-                        {stat.subtitle && (
-                          <p className="text-xs text-muted-foreground">{stat.subtitle}</p>
-                        )}
-                        {stat.change && (
-                          <span className="text-sm font-medium text-success">{stat.change}</span>
-                        )}
-                      </div>
-                      <div className={`w-12 h-12 rounded-xl ${stat.color}/20 flex items-center justify-center`}>
-                        <stat.icon className={`w-6 h-6 ${
-                          stat.color === "bg-destructive" 
-                            ? "text-destructive" 
-                            : stat.color === "bg-warning" 
-                            ? "text-warning" 
-                            : stat.color === "bg-info" 
-                            ? "text-info" 
-                            : "text-success"
-                        }`} />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-bold text-foreground">{stat.value}</div>
-                  </Card>
-                ))}
-              </div>
-        
-              {/* Filters */}
-              <div className="flex items-center gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <Input placeholder="Search leads or companies..." className="pl-10 bg-card border-border" />
-                </div>
-                <Select defaultValue="all">
-                  <SelectTrigger className="w-48 bg-card border-border">
-                    <SelectValue placeholder="All Priorities" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-border">
-                    <SelectItem value="all">All Priorities</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select defaultValue="all">
-                  <SelectTrigger className="w-48 bg-card border-border">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-border">
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="call">Call</SelectItem>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="meeting">Meeting</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select defaultValue="all">
-                  <SelectTrigger className="w-48 bg-card border-border">
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-border">
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="overdue">Overdue</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-        
-              {/* Quick Filters */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">Quick filters:</span>
-                {quickFilters.map((filter) => (
-                  <Button
-                    key={filter.value}
-                    variant={filter.variant}
-                    size="sm"
-                    className={
-                      filter.variant === "destructive"
-                        ? "bg-destructive/20 text-destructive hover:bg-destructive/30"
-                        : filter.variant === "ghost"
-                        ? ""
-                        : "bg-warning/20 text-warning hover:bg-warning/30"
-                    }
-                  >
-                    {filter.label}
-                  </Button>
-                ))}
-              </div>
-        
-              {/* Activities Table */}
-              <Card className="bg-card border-border">
-                <div className="p-6 border-b border-border flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-foreground">Follow-Up Activities</h3>
-                  <span className="text-sm text-muted-foreground">15 activities</span>
-                </div>
-        
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="border-b border-border">
-                      <tr>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">LEAD</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">TYPE</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">PRIORITY</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">SCHEDULED DATE</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">STATUS</th>
-                        <th className="text-left p-4 text-sm font-medium text-muted-foreground">ACTIONS</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {activities.map((activity, idx) => (
-                        <tr key={idx} className="border-b border-border hover:bg-secondary/50">
-                          <td className="p-4">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="w-10 h-10 bg-info">
-                                <AvatarFallback className="bg-info text-white font-semibold">
-                                  {activity.avatar}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-medium text-foreground">{activity.name}</div>
-                                <div className="text-sm text-muted-foreground">{activity.company}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              {activity.type === "Call" && <CalendarIcon className="w-4 h-4 text-muted-foreground" />}
-                              {activity.type === "Email" && <CalendarIcon className="w-4 h-4 text-muted-foreground" />}
-                              {activity.type === "Meeting" && <CalendarIcon className="w-4 h-4 text-muted-foreground" />}
-                              {activity.type === "Follow-Up" && <CalendarIcon className="w-4 h-4 text-muted-foreground" />}
-                              <span className="text-sm text-foreground">{activity.type}</span>
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <Badge
-                              variant="secondary"
-                              className={
-                                activity.priority === "High"
-                                  ? "bg-destructive/20 text-destructive"
-                                  : activity.priority === "Medium"
-                                  ? "bg-warning/20 text-warning"
-                                  : "bg-success/20 text-success"
-                              }
-                            >
-                              {activity.priority}
-                            </Badge>
-                          </td>
-                          <td className="p-4">
-                            <div className="text-sm text-foreground">{activity.scheduled}</div>
-                            <div className="text-sm text-muted-foreground">{activity.time}</div>
-                          </td>
-                          <td className="p-4">
-                            <Badge
-                              variant="secondary"
-                              className={
-                                activity.status === "Overdue"
-                                  ? "bg-destructive/20 text-destructive"
-                                  : activity.status === "Pending"
-                                  ? "bg-warning/20 text-warning"
-                                  : "bg-success/20 text-success"
-                              }
-                            >
-                              {activity.status}
-                            </Badge>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex gap-1">
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-info hover:text-info hover:bg-info/10">
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-success hover:text-success hover:bg-success/10">
-                                <CheckCircle className="w-4 h-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-warning hover:text-warning hover:bg-warning/10">
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            </div>
-    </div>
-  )
-}
+      <div className="p-6 space-y-6">
+        {/* Page Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground">Leads Follow-Up</h2>
+            <p className="text-sm text-muted-foreground">Track and manage your lead follow-up activities</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" className="border-border">
+              <CalendarIcon className="w-4 h-4 mr-2" />
+              List View
+            </Button>
+            <Button variant="outline" className="border-border">
+              <CalendarIcon className="w-4 h-4 mr-2" />
+              Calendar View
+            </Button>
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Plus className="w-4 h-4 mr-2" />
+              Schedule Follow-Up
+            </Button>
+          </div>
+        </div>
 
-export default page
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map((stat) => (
+            <Card key={stat.title} className="p-6 bg-card border-border">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
+                  {stat.subtitle && <p className="text-xs text-muted-foreground">{stat.subtitle}</p>}
+                  {stat.change && <span className="text-sm font-medium text-success">{stat.change}</span>}
+                </div>
+                <div className={`w-12 h-12 rounded-xl ${stat.color}/20 flex items-center justify-center`}>
+                  <stat.icon
+                    className={`w-6 h-6 ${
+                      stat.color === "bg-destructive"
+                        ? "text-destructive"
+                        : stat.color === "bg-warning"
+                        ? "text-warning"
+                        : stat.color === "bg-info"
+                        ? "text-info"
+                        : "text-success"
+                    }`}
+                  />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-foreground">{stat.value}</div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Filters */}
+        <div className="flex items-center gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input placeholder="Search leads or companies..." className="pl-10 bg-card border-border" />
+          </div>
+
+          <Select defaultValue="all">
+            <SelectTrigger className="w-48 bg-card border-border">
+              <SelectValue placeholder="All Priorities" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border">
+              <SelectItem value="all">All Priorities</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select defaultValue="all">
+            <SelectTrigger className="w-48 bg-card border-border">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border">
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="call">Call</SelectItem>
+              <SelectItem value="email">Email</SelectItem>
+              <SelectItem value="meeting">Meeting</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select defaultValue="all">
+            <SelectTrigger className="w-48 bg-card border-border">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border-border">
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="overdue">Overdue</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Quick Filters */}
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">Quick filters:</span>
+          {quickFilters.map((filter) => (
+            <Button
+              key={filter.value}
+              variant={filter.variant}
+              size="sm"
+              className={
+                filter.variant === "destructive"
+                  ? "bg-destructive/20 text-destructive hover:bg-destructive/30"
+                  : filter.variant === "ghost"
+                  ? ""
+                  : "bg-warning/20 text-warning hover:bg-warning/30"
+              }
+            >
+              {filter.label}
+            </Button>
+          ))}
+        </div>
+
+        {/* Activities Table */}
+        <Card className="bg-card border-border">
+          <div className="p-6 border-b border-border flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-foreground">Follow-Up Activities</h3>
+            <span className="text-sm text-muted-foreground">{activities.length} activities</span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b border-border">
+                <tr>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">LEAD</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">TYPE</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">PRIORITY</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">SCHEDULED DATE</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">STATUS</th>
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activities.map((activity) => (
+                  <tr key={activity.id} className="border-b border-border hover:bg-secondary/50">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10 bg-info">
+                          <AvatarFallback className="text-white font-semibold">{activity.avatar}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium text-foreground">{activity.name}</div>
+                          <div className="text-sm text-muted-foreground">{activity.company}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4">{activity.type}</td>
+                    <td className="p-4">
+                      <Badge
+                        variant="secondary"
+                        className={
+                          activity.priority === "High"
+                            ? "bg-destructive/20 text-destructive"
+                            : activity.priority === "Medium"
+                            ? "bg-warning/20 text-warning"
+                            : "bg-success/20 text-success"
+                        }
+                      >
+                        {activity.priority}
+                      </Badge>
+                    </td>
+                    <td className="p-4">
+                      <div className="text-sm text-foreground">{activity.scheduled}</div>
+                      <div className="text-sm text-muted-foreground">{activity.time}</div>
+                    </td>
+                    <td className="p-4">
+                      <Badge
+                        variant="secondary"
+                        className={
+                          activity.status === "Overdue"
+                            ? "bg-destructive/20 text-destructive"
+                            : activity.status === "Pending"
+                            ? "bg-warning/20 text-warning"
+                            : "bg-success/20 text-success"
+                        }
+                      >
+                        {activity.status}
+                      </Badge>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-green-500 hover:text-green-400 hover:bg-green-900/20"
+                          onClick={() => handleCompleteActivity(activity.id)}
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/20"
+                                                  >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default Page;
