@@ -1,6 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Eye, Key } from "lucide-react";
+import toast, { Toaster } from 'react-hot-toast';
+import axios from "axios";
 
 export default function Integrations() {
   const [apiKey, setApiKey] = useState("");
@@ -8,12 +10,51 @@ export default function Integrations() {
   const [showSecret, setShowSecret] = useState(false);
   const [provider, setProvider] = useState("whatsapp-business-api");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log({ apiKey, apiSecret, provider });
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  try {
+    const res = await fetch("/api/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token: apiKey }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error("Error saving API key:", data.error);
+      toast.error(data.error || "Failed to save API key.");
+      return;
+    }
+
+    toast.success("API key saved successfully!");
+    console.log("Saved key response:", data);
+    setApiKey("");
+    setApiSecret("");
+  } catch (error) {
+    console.error("Error submitting API key:", error);
+    toast.error("Something went wrong while saving the API key.");
+  }
+};
+
+useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const res = await axios.get("/api/token");
+      console.log(res.data);
+      } catch (err) {
+        console.error("Error fetching banners:", err);
+      }
+    };
+    fetchBanners();
+  }, []);
+
   return (
     <div>
+      <Toaster position="top-right" reverseOrder={false} />
       <div className="flex flex-row items-center justify-between p-6 pb-0">
         <div className="h-full w-full">
           <div className="font-semibold text-2xl">Integration</div>
