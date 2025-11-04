@@ -21,6 +21,12 @@ export default auth(async (req: NextRequest) => {
     nextUrl.pathname.startsWith(path)
   );
 
+  // ✅ If user is already authenticated and tries to visit /login, block it
+  if (req.auth && nextUrl.pathname === "/login") {
+    const redirectUrl = new URL("/", req.url); // 👈 redirect to home (or change to "/dashboard" if you prefer)
+    return NextResponse.redirect(redirectUrl);
+  }
+
   // If route is public, allow access
   if (isPublic) return NextResponse.next();
 
