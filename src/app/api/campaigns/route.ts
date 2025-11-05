@@ -29,7 +29,11 @@ export async function POST(req: Request) {
     const userId = token.userId as string;
 
     const created = await prisma.whatsappCampaign.create({
-      data: { ...body, userId: userId },
+       data: {
+        ...body,
+        userId: userId,
+        status: "PAUSED", // ✅ ensure default
+      },
     });
 
     return NextResponse.json(created);
