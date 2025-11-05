@@ -9,19 +9,19 @@ import {
   MoreVertical,
   TrendingUp,
   PlayCircle,
-  Clock, // Added Clock for clarity
-  Pause, // Added Pause
-  Play, // Added Play
-  Trash2, // Added Trash2
-  X, // Added X for modal close
-  Search, // Added Search for the filter input
-  Send, // Added Send for the stats card
+  Clock,
+  Pause,
+  Play,
+  Trash2,
+  X,
+  Search,
+  Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input"; // Added Input for the search filter
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -38,33 +38,29 @@ import {
 
 import toast, { Toaster } from "react-hot-toast";
 
-// --- TEMPORARY INTERFACE (using the expanded one from HEAD for the local modal) ---
 interface Campaign {
-  id: string; // Key field from the API/DB version
-  campaignName: string; // Key field from the API/DB version
+  id: string;
+  campaignName: string;
   status: "Active" | "Completed" | "Paused";
-  client: string; // Keeping for modal display
-  scheduled: string; // Keeping for modal display
+  client: string;
+  scheduled: string;
   sent: string;
   responses: number;
   responseRate: string;
   icon: typeof MessageCircle | typeof Clock;
   iconColor: string;
   details?: string;
-  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; // From API version
-  campaignType: string; // From API version
-  messageType: string; // From API version
-  createdAt: string; // From API version
+  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  campaignType: string;
+  messageType: string;
+  createdAt: string;
 }
 
-// --- Simple Modal Component (Adapted from HEAD, simplified to use the merged interface) ---
-// NOTE: In a real app, you would likely use a dedicated, complex external modal here.
 interface CampaignActionModalProps {
   popup: "view" | "edit" | null;
   campaign: Campaign | null;
   closePopup: () => void;
-  // Included to match the API version's modal usage, though unused in this simple local modal
-  refreshData: () => void; 
+  refreshData: () => void;
 }
 
 const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
@@ -76,11 +72,10 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
 
   const modalTitle = popup === "view" ? "Campaign Details" : "Edit Campaign";
 
-  // Dummy status change logic for the edit modal
   const handleSave = () => {
     toast.success("Changes saved (placeholder)");
     closePopup();
-  }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-black/60 p-4">
@@ -115,7 +110,8 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
                 </Badge>
               </p>
               <p>
-                <strong>Created On:</strong> {new Date(campaign.createdAt).toLocaleDateString()}
+                <strong>Created On:</strong>{" "}
+                {new Date(campaign.createdAt).toLocaleDateString()}
               </p>
               <p>
                 <strong>Priority:</strong> {campaign.priority}
@@ -131,8 +127,14 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              <Input defaultValue={campaign.campaignName} placeholder="Campaign Name" />
-              <Input defaultValue={campaign.client || "N/A"} placeholder="Client Name" />
+              <Input
+                defaultValue={campaign.campaignName}
+                placeholder="Campaign Name"
+              />
+              <Input
+                defaultValue={campaign.client || "N/A"}
+                placeholder="Client Name"
+              />
               <Select defaultValue={campaign.status}>
                 <SelectTrigger>
                   <SelectValue placeholder="Status" />
@@ -143,7 +145,10 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
                   <SelectItem value="Completed">Completed</SelectItem>
                 </SelectContent>
               </Select>
-              <Button className="w-full bg-primary hover:bg-primary/90" onClick={handleSave}>
+              <Button
+                className="w-full bg-primary hover:bg-primary/90"
+                onClick={handleSave}
+              >
                 Save Changes
               </Button>
             </div>
@@ -153,8 +158,6 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
     </div>
   );
 };
-// ---------------------------------------------------------------------
-
 
 export default function WhatsAppPage() {
   const router = useRouter();
@@ -165,13 +168,9 @@ export default function WhatsAppPage() {
     null
   );
 
-  // --- Mock/Simulated Campaign Data Fetch (API version logic structure) ---
   const fetchCampaigns = async () => {
     setLoading(true);
     try {
-      // **Simulating a fetch from an API**
-      // The data structure used here is a blend of the two versions to make the UI work
-      // and resemble the expected API response.
       const mockData = [
         {
           id: "c-001",
@@ -222,6 +221,8 @@ export default function WhatsAppPage() {
 
       const formatted: Campaign[] = mockData.map((c) => ({
         ...c,
+        status: c.status as "Active" | "Completed" | "Paused",
+        priority: c.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT",
         icon: c.status === "Active" ? MessageCircle : Clock,
         iconColor: c.status === "Active" ? "bg-success" : "bg-warning",
       }));
@@ -249,10 +250,7 @@ export default function WhatsAppPage() {
     setPopup(action);
   };
 
-  // --- Handle UI + backend actions (API version logic) ---
   const handleAction = async (action: string, campaignId: string) => {
-    // **Simulate API calls and status update**
-
     if (action === "pause") {
       setCampaigns((prev) =>
         prev.map((c) =>
@@ -268,9 +266,9 @@ export default function WhatsAppPage() {
           c.id === campaignId ? { ...c, status: "Active" as "Active" } : c
         )
       );
-      
+
       toast.loading("🚀 Starting campaign... (Simulated)");
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulating network delay
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       toast.dismiss();
       toast.success("✅ Messages are being sent! (Simulated)");
     }
@@ -281,7 +279,6 @@ export default function WhatsAppPage() {
     }
   };
 
-  // --- Stats (Merged and adapted) ---
   const stats = [
     {
       title: "Total Campaigns",
@@ -299,7 +296,7 @@ export default function WhatsAppPage() {
     },
     {
       title: "Total Messages Sent",
-      value: "8,547", // Hardcoded as the mock data doesn't update this
+      value: "8,547",
       change: "+1,234 today",
       icon: Send,
       color: "bg-primary",
@@ -381,8 +378,8 @@ export default function WhatsAppPage() {
           </Card>
         ))}
       </div>
-      
-      {/* Filters (from HEAD) */}
+
+      {/* Filters */}
       <div className="flex items-center gap-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -420,7 +417,7 @@ export default function WhatsAppPage() {
           Reset
         </Button>
       </div>
-      
+
       {/* Campaigns List */}
       <div className="space-y-4">
         {campaigns.length === 0 ? (
@@ -525,7 +522,6 @@ export default function WhatsAppPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="end"
-                        // Tailwind classes adjusted to assume a light/dark mode context
                         className="bg-popover text-foreground border-border"
                       >
                         {campaign.status === "Active" ? (
@@ -543,7 +539,7 @@ export default function WhatsAppPage() {
                             <Play className="w-4 mr-2" /> Start Campaign
                           </DropdownMenuItem>
                         )}
-                        
+
                         <DropdownMenuItem
                           className="text-red-600 focus:bg-red-600/10 focus:text-red-600"
                           onClick={() => handleAction("delete", campaign.id)}
@@ -556,16 +552,15 @@ export default function WhatsAppPage() {
                 </div>
               </div>
             </Card>
-          )
+          ))
         )}
       </div>
 
-      {/* Modal Integration (using the local placeholder implementation) */}
       <CampaignActionModal
         popup={popup}
         campaign={selectedCampaign}
         closePopup={closePopup}
-        refreshData={fetchCampaigns} // Passes the fetch function down
+        refreshData={fetchCampaigns}
       />
     </div>
   );
