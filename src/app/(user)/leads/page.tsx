@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import  toast , { Toaster } from "react-hot-toast";
 
 interface Lead {
   id: string;
@@ -106,15 +107,44 @@ export default function LeadsPage() {
     // In a real app, you would show a success toast here
   };
 
-  const handleDeleteLead = async (leadId: string): Promise<void> => {
-    // 1. Simulate API Call (Replace with real fetch if needed)
-    console.log(`Simulating delete for lead ${leadId}`);
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate network delay
+  // const handleDeleteLead = async (leadId: string): Promise<void> => {
+  //   // 1. Simulate API Call (Replace with real fetch if needed)
+  //   console.log(`Simulating delete for lead ${leadId}`);
+  //   await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate network delay
 
-    // 2. Update local state
+  //   // 2. Update local state
+  //   setLeads((prevLeads) => prevLeads.filter((lead) => lead.id !== leadId));
+  //   // In a real app, you would show a success toast here
+  // };
+
+  const handleDeleteLead = async (leadId: string): Promise<void> => {
+  try {
+    toast.loading("Deleting lead...");
+
+    const res = await fetch(`/api/leads/${leadId}`, {
+      method: "DELETE",
+    });
+
+    const data = await res.json();
+    toast.dismiss();
+
+    if (!res.ok) {
+      toast.error(`❌ Failed to delete: ${data.error || "Unknown error"}`);
+      return;
+    }
+
+    // ✅ Update local state
     setLeads((prevLeads) => prevLeads.filter((lead) => lead.id !== leadId));
-    // In a real app, you would show a success toast here
-  };
+
+    toast.success("🗑️ Lead deleted successfully!");
+  } catch (error) {
+    console.error("Error deleting lead:", error);
+    toast.dismiss();
+    toast.error("Something went wrong while deleting the lead");
+  }
+};
+
+
   const openModal = (
     action: "add" | "view" | "edit" | "delete",
     lead: Lead | null
@@ -211,6 +241,7 @@ export default function LeadsPage() {
 
   return (
     <div className="p-6 space-y-6">
+      <Toaster />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
