@@ -18,6 +18,7 @@ import {
   SquarePen,
 } from "lucide-react";
 import Image from "next/image";
+import EditEmployee from "@/components/EmployeeEdit";
 
 /** Backend user structure */
 interface BackendUser {
@@ -152,8 +153,18 @@ export default function Employees() {
   /** Navigation actions */
   const handleView = (id: string) =>
     router.push(`/console/admin/users/view/${id}`);
-  const handleEdit = (id: string) =>
-    router.push(`/console/admin/users/manage/${id}`);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+const [showEditModal, setShowEditModal] = useState(false);
+
+const handleEdit = (id: string) => {
+  setSelectedId(id);
+  setShowEditModal(true);
+};
+
+const handleCloseModal = () => {
+  setShowEditModal(false);
+  setSelectedId(null);
+};
 
   /** Avatar helper */
   const avatarFor = (u: BackendUser) =>
@@ -169,6 +180,27 @@ export default function Employees() {
   const hashCode = (s: string) =>
     s.split("").reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
 
+  function fetchLeads(): void {
+    setLoading(true);
+    setError(null);
+
+    fetch("/api/auth/user", { method: "GET", credentials: "same-origin" })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(await res.text());
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) setUsers(data);
+        else if (data?.users) setUsers(data.users);
+        else setUsers([]);
+      })
+      .catch((err: any) => {
+        setError(err?.message ?? "Failed to load users");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }
   return (
     <div className="px-3">
       {/* Header */}
@@ -367,6 +399,14 @@ export default function Employees() {
           <ChevronsRight className="size-4" />
         </button>
       </div>
+
+      {showEditModal && selectedId && (
+  <EditEmployee
+    leadId={selectedId}
+    onClose={handleCloseModal}
+    onLeadUpdated={fetchLeads} // or refreshUsers if you're editing users
+  />
+)}
     </div>
   );
 }

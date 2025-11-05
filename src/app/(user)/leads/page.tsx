@@ -31,6 +31,9 @@ import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 import LeadsAddModal from "@/components/LeadsAddModal";
+import LeadViewModal from "@/components/LeadViewModal";
+import LeadEditModal from "@/components/LeadEditModal";
+import LeadsEditModal from "@/components/LeadEditModal";
 
 interface Lead {
   id: string;
@@ -434,6 +437,17 @@ export default function LeadsPage() {
           onLeadAdded={fetchLeads}
         />
       )}
+
+      {popup === "view" && selectedLead && (
+  <LeadViewModal lead={selectedLead} closePopup={closePopup} />
+)}
+      {popup === "edit" && selectedLead && (
+  <LeadsEditModal
+    leadId={selectedLead.id}
+    onClose={closePopup}
+    onLeadUpdated={fetchLeads}
+  />
+)}
     </div>
   );
 }

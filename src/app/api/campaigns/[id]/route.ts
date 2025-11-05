@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    const leads = await prisma.whatsappCampaign.findMany({
+    const leads = await prisma.whatsappCampaign.findUnique({
       where: { id: id },
     });
 
@@ -72,23 +72,41 @@ export async function DELETE(
   try {
     const { id } = await context.params;
 
-    const campaign = await prisma.whatsappCampaign.findMany({
-      where: { id: id },
+    // 🟢 Validate
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "Campaign ID is required" },
+        { status: 400 }
+      );
+    }
+
+    // 🟢 Check if campaign exists
+    const existing = await prisma.whatsappCampaign.findUnique({
+      where: { id },
     });
 
-    if (!campaign) {
+    if (!existing) {
       return NextResponse.json(
-        { success: false, error: "Lead not found" },
+        { success: false, error: "Campaign not found" },
         { status: 404 }
       );
     }
 
-    const deleted = await prisma.lead.delete({
+    // 🟢 Delete campaign
+    const deleted = await prisma.whatsappCampaign.delete({
       where: { id },
     });
 
-    return NextResponse.json(deleted);
+    return NextResponse.json({
+      success: true,
+      message: "Campaign deleted successfully",
+      deleted,
+    });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("❌ Error deleting campaign:", error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Internal server error" },
+      { status: 500 }
+    );
   }
 }

@@ -12,22 +12,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import toast, { Toaster } from "react-hot-toast";
+import { CampaignType, MessageType, Priority } from "@prisma/client";
 
 export interface Campaign {
   id: string;
   campaignName: string;
   description?: string;
-  campaignType: string;
-  priority: string;
-  messageType: string;
+  campaignType: CampaignType;
+  priority: Priority;
+  messageType: MessageType;
   messageContent: string;
   mediaURL?: string;
   templateID?: string;
   userId: string;
   createdAt: string;
   updatedAt: string;
-  status?: "Active" | "Completed" | "Paused";
+  status: "ACTIVE" | "PAUSED";
 }
 
 export interface CampaignActionModalProps {
@@ -43,11 +45,22 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
   closePopup,
   refreshData,
 }) => {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<Campaign>({
+    id: "",
     campaignName: "",
     description: "",
+    campaignType: "MARKETING",
     priority: "NORMAL",
+    messageType: "TEXT",
+    messageContent: "",
+    mediaURL: "",
+    templateID: "",
+    userId: "",
+    createdAt: "",
+    updatedAt: "",
+    status: "PAUSED",
   });
+
   const [loading, setLoading] = useState(false);
   const [prefilling, setPrefilling] = useState(false);
 
@@ -65,12 +78,21 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
 
         if (!res.ok) throw new Error("Failed to fetch campaign data");
         const data = await res.json();
-        console.log("Fetched campaign data:", data);
 
         setForm({
+          id: data.id,
           campaignName: data.campaignName || "",
           description: data.description || "",
+          campaignType: data.campaignType || "MARKETING",
           priority: data.priority || "NORMAL",
+          messageType: data.messageType || "TEXT",
+          messageContent: data.messageContent || "",
+          mediaURL: data.mediaURL || "",
+          templateID: data.templateID || "",
+          userId: data.userId || "",
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
+          status: data.status?.toUpperCase?.() || "PAUSED",
         });
       } catch (err) {
         console.error("❌ Error fetching campaign:", err);
@@ -80,8 +102,7 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
       }
     };
 
-    // 🕐 Small delay helps ensure modal transition finishes before fetching
-    const timer = setTimeout(fetchCampaign, 100);
+    const timer = setTimeout(fetchCampaign, 150);
     return () => clearTimeout(timer);
   }, [popup, campaign?.id]);
 
@@ -89,7 +110,7 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
 
   const modalTitle = popup === "view" ? "Campaign Details" : "Edit Campaign";
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: keyof Campaign, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -102,7 +123,13 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
         body: JSON.stringify({
           campaignName: form.campaignName,
           description: form.description,
+          campaignType: form.campaignType,
           priority: form.priority.toUpperCase(),
+          messageType: form.messageType,
+          messageContent: form.messageContent,
+          mediaURL: form.mediaURL,
+          templateID: form.templateID,
+          status: form.status.toUpperCase(),
         }),
       });
 
@@ -126,9 +153,9 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-black/60 p-4">
       <Toaster position="top-right" />
-      <div className="bg-card text-foreground rounded-xl shadow-2xl w-full max-w-lg animate-in fade-in duration-300 relative border border-border">
+      <div className="bg-card text-foreground rounded-xl shadow-2xl w-full max-w-2xl animate-in fade-in duration-300 relative border border-border overflow-y-auto max-h-[90vh]">
         {/* Header */}
-        <div className="p-5 border-b border-border flex items-center justify-between">
+        <div className="p-5 border-b border-border flex items-center justify-between sticky top-0 bg-card">
           <h2 className="text-xl font-bold">
             {modalTitle}: {campaign.campaignName}
           </h2>
@@ -146,10 +173,23 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
                 <strong>Campaign Type:</strong> {campaign.campaignType}
               </p>
               <p>
+                <strong>Status:</strong>{" "}
+                <Badge
+                  className={
+                    campaign.status?.toUpperCase() === "ACTIVE"
+                      ? "bg-green-500/20 text-green-600"
+                      : "bg-yellow-500/20 text-yellow-600"
+                  }
+                >
+                  {campaign.status}
+                </Badge>
+              </p>
+              <p>
                 <strong>Priority:</strong>{" "}
                 <Badge
                   className={
-                    campaign.priority === "HIGH" || campaign.priority === "URGENT"
+                    campaign.priority === "HIGH" ||
+                    campaign.priority === "URGENT"
                       ? "bg-red-500/20 text-red-500"
                       : campaign.priority === "MEDIUM"
                       ? "bg-yellow-500/20 text-yellow-500"
@@ -206,21 +246,47 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
                 </p>
               ) : (
                 <>
+                  {/* Campaign Name */}
                   <Input
                     value={form.campaignName}
-                    onChange={(e) => handleChange("campaignName", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("campaignName", e.target.value)
+                    }
                     placeholder="Campaign Name"
                   />
 
-                  <Input
-                    value={form.description}
-                    onChange={(e) => handleChange("description", e.target.value)}
+                  {/* Description */}
+                  <Textarea
+                    value={form.description || ""}
+                    onChange={(e) =>
+                      handleChange("description", e.target.value)
+                    }
                     placeholder="Description"
                   />
 
+                  {/* Campaign Type */}
+                  <Select
+                    value={form.campaignType}
+                    onValueChange={(val) =>
+                      handleChange("campaignType", val as CampaignType)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Campaign Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MARKETING">Marketing</SelectItem>
+                      <SelectItem value="TRANSACTIONAL">Transactional</SelectItem>
+                      <SelectItem value="NOTIFICATION">Notification</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Priority */}
                   <Select
                     value={form.priority}
-                    onValueChange={(val) => handleChange("priority", val)}
+                    onValueChange={(val) =>
+                      handleChange("priority", val as Priority)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select Priority" />
@@ -230,6 +296,62 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
                       <SelectItem value="MEDIUM">Medium</SelectItem>
                       <SelectItem value="LOW">Low</SelectItem>
                       <SelectItem value="URGENT">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Message Type */}
+                  <Select
+                    value={form.messageType}
+                    onValueChange={(val) =>
+                      handleChange("messageType", val as MessageType)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Message Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TEXT">Text</SelectItem>
+                      <SelectItem value="MEDIA">Media</SelectItem>
+                      <SelectItem value="TEMPLATE">Template</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Message Content */}
+                  <Textarea
+                    value={form.messageContent}
+                    onChange={(e) =>
+                      handleChange("messageContent", e.target.value)
+                    }
+                    placeholder="Message Content"
+                  />
+
+                  {/* Media URL */}
+                  <Input
+                    value={form.mediaURL || ""}
+                    onChange={(e) => handleChange("mediaURL", e.target.value)}
+                    placeholder="Media URL (optional)"
+                  />
+
+                  {/* Template ID */}
+                  <Input
+                    value={form.templateID || ""}
+                    onChange={(e) => handleChange("templateID", e.target.value)}
+                    placeholder="Template ID (optional)"
+                  />
+
+                  {/* Status */}
+                  <Select
+                    value={form.status}
+                    onValueChange={(val) =>
+                      handleChange("status", val as "ACTIVE" | "PAUSED")
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ACTIVE">Active</SelectItem>
+                      <SelectItem value="PAUSED">Paused</SelectItem>
                     </SelectContent>
                   </Select>
 

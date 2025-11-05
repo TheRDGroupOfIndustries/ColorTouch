@@ -60,7 +60,7 @@ model WhatsappCampaign {
   mediaURL       String?
   templateID     String?
   userId         String
-  status         String   @default("PAUSED") // ✅ add this
+  status         CampaignStatus @default(PAUSED) // ✅ add this
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -141,4 +141,9 @@ enum Provider {
   DIALOG360
   OTHER
   WHATSAPPBUSINESSAPI
+}
+
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
 }
