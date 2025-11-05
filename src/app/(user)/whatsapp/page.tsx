@@ -9,56 +9,228 @@ import {
   MoreVertical,
   TrendingUp,
   PlayCircle,
+  Clock,
   Pause,
   Play,
   Trash2,
+  X,
+  Search,
+  Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import toast, { Toaster } from "react-hot-toast";
-import CampaignActionModal, {
-  Campaign as BaseCampaign,
-} from "@/components/CampaignActionModal";
 
-interface UICampaign extends BaseCampaign {
-  icon?: any;
-  iconColor?: string;
+import toast, { Toaster } from "react-hot-toast";
+
+interface Campaign {
+  id: string;
+  campaignName: string;
+  status: "Active" | "Completed" | "Paused";
+  client: string;
+  scheduled: string;
+  sent: string;
+  responses: number;
+  responseRate: string;
+  icon: typeof MessageCircle | typeof Clock;
+  iconColor: string;
+  details?: string;
+  priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  campaignType: string;
+  messageType: string;
+  createdAt: string;
 }
+
+interface CampaignActionModalProps {
+  popup: "view" | "edit" | null;
+  campaign: Campaign | null;
+  closePopup: () => void;
+  refreshData: () => void;
+}
+
+const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
+  popup,
+  campaign,
+  closePopup,
+}) => {
+  if (!popup || !campaign) return null;
+
+  const modalTitle = popup === "view" ? "Campaign Details" : "Edit Campaign";
+
+  const handleSave = () => {
+    toast.success("Changes saved (placeholder)");
+    closePopup();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-black/60 p-4">
+      <div className="bg-card text-foreground rounded-xl shadow-2xl w-full max-w-lg animate-in fade-in duration-300 relative border border-border">
+        <div className="p-5 border-b border-border flex items-center justify-between">
+          <h2 className="text-xl font-bold">
+            {modalTitle}: {campaign.campaignName}
+          </h2>
+          <Button variant="ghost" size="icon" onClick={closePopup}>
+            <X className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+          </Button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {popup === "view" ? (
+            <div className="text-sm space-y-3">
+              <p>
+                <strong>Client:</strong> {campaign.client || "N/A"}
+              </p>
+              <p>
+                <strong>Status:</strong>{" "}
+                <Badge
+                  className={
+                    campaign.status === "Active"
+                      ? "bg-success/20 text-success"
+                      : campaign.status === "Paused"
+                      ? "bg-warning/20 text-warning"
+                      : "bg-info/20 text-info"
+                  }
+                >
+                  {campaign.status}
+                </Badge>
+              </p>
+              <p>
+                <strong>Created On:</strong>{" "}
+                {new Date(campaign.createdAt).toLocaleDateString()}
+              </p>
+              <p>
+                <strong>Priority:</strong> {campaign.priority}
+              </p>
+              <div className="pt-2">
+                <p className="font-semibold text-muted-foreground mb-1">
+                  Description:
+                </p>
+                <p className="bg-secondary p-3 rounded-md text-foreground/80">
+                  {campaign.details || "No detailed description available."}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Input
+                defaultValue={campaign.campaignName}
+                placeholder="Campaign Name"
+              />
+              <Input
+                defaultValue={campaign.client || "N/A"}
+                placeholder="Client Name"
+              />
+              <Select defaultValue={campaign.status}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Paused">Paused</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                className="w-full bg-primary hover:bg-primary/90"
+                onClick={handleSave}
+              >
+                Save Changes
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function WhatsAppPage() {
   const router = useRouter();
-  const [campaigns, setCampaigns] = useState<UICampaign[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [popup, setPopup] = useState<"view" | "edit" | null>(null);
-  const [selectedCampaign, setSelectedCampaign] = useState<UICampaign | null>(
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
     null
   );
 
-  // --- Fetch all campaigns from DB ---
   const fetchCampaigns = async () => {
+    setLoading(true);
     try {
-      const res = await fetch("/api/campaigns", { cache: "no-store" });
-      if (!res.ok) throw new Error("Failed to fetch campaigns");
-      const data = await res.json();
+      const mockData = [
+        {
+          id: "c-001",
+          campaignName: "Summer Sale 2024",
+          status: "Active",
+          client: "Fashion Hub",
+          scheduled: "1/20/2024",
+          sent: "1,250 sent",
+          responses: 340,
+          responseRate: "27.2%",
+          details: "High-priority flash sale targeting repeat customers.",
+          priority: "HIGH",
+          campaignType: "MARKETING",
+          messageType: "TEMPLATE",
+          createdAt: "2024-01-15T10:00:00Z",
+        },
+        {
+          id: "c-002",
+          campaignName: "Product Launch Announcement",
+          status: "Paused",
+          client: "Tech Solutions Ltd",
+          scheduled: "1/18/2024",
+          sent: "890 sent",
+          responses: 267,
+          responseRate: "30.0%",
+          details: "Introducing new B2B software features.",
+          priority: "MEDIUM",
+          campaignType: "UTILITY",
+          messageType: "SESSION",
+          createdAt: "2024-01-14T10:00:00Z",
+        },
+        {
+          id: "c-003",
+          campaignName: "Customer Feedback Survey",
+          status: "Completed",
+          client: "Food Express",
+          scheduled: "1/12/2024",
+          sent: "2,100 sent",
+          responses: 1470,
+          responseRate: "70.0%",
+          details: "Post-purchase satisfaction survey.",
+          priority: "LOW",
+          campaignType: "UTILITY",
+          messageType: "TEMPLATE",
+          createdAt: "2024-01-10T10:00:00Z",
+        },
+      ];
 
-      const formatted: UICampaign[] = data.map((c: any) => ({
+      const formatted: Campaign[] = mockData.map((c) => ({
         ...c,
-        icon: MessageCircle,
+        status: c.status as "Active" | "Completed" | "Paused",
+        priority: c.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT",
+        icon: c.status === "Active" ? MessageCircle : Clock,
         iconColor: c.status === "Active" ? "bg-success" : "bg-warning",
       }));
 
       setCampaigns(formatted);
     } catch (error) {
       console.error("Error loading campaigns:", error);
-      toast.error("❌ Failed to load campaigns");
+      toast.error("❌ Failed to load campaigns (Simulated Error)");
     } finally {
       setLoading(false);
     }
@@ -73,78 +245,40 @@ export default function WhatsAppPage() {
     setSelectedCampaign(null);
   };
 
-  const openModal = (action: "view" | "edit", campaign: UICampaign) => {
+  const openModal = (action: "view" | "edit", campaign: Campaign) => {
     setSelectedCampaign(campaign);
     setPopup(action);
   };
 
-  // --- Update campaign status in DB ---
-  const updateStatus = async (campaignId: string, status: string) => {
-    await fetch("/api/campaigns/status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ campaignId, status }),
-    });
-  };
-
-  // --- Handle UI + backend actions ---
   const handleAction = async (action: string, campaignId: string) => {
     if (action === "pause") {
       setCampaigns((prev) =>
         prev.map((c) =>
-          c.id === campaignId ? { ...c, status: "Paused" } : c
+          c.id === campaignId ? { ...c, status: "Paused" as "Paused" } : c
         )
       );
-      await updateStatus(campaignId, "Paused");
-      toast("⏸️ Campaign paused");
+      toast("⏸️ Campaign paused (Simulated)");
     }
 
     if (action === "start" || action === "restart") {
-      // 1️⃣ Update UI
       setCampaigns((prev) =>
         prev.map((c) =>
-          c.id === campaignId ? { ...c, status: "Active" } : c
+          c.id === campaignId ? { ...c, status: "Active" as "Active" } : c
         )
       );
 
-      // 2️⃣ Update DB and trigger backend sending
-      await updateStatus(campaignId, "Active");
-      toast.loading("🚀 Starting campaign...");
-
-      try {
-        const res = await fetch("/api/send-message", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ campaignId }),
-        });
-        const data = await res.json();
-        toast.dismiss();
-
-        if (!res.ok) {
-          console.error("❌ Message sending failed:", data.error);
-          toast.error(`Failed: ${data.error}`);
-        } else {
-          toast.success("✅ Messages are being sent!");
-        }
-      } catch (error) {
-        console.error("❌ Error triggering message sending:", error);
-        toast.dismiss();
-        toast.error("Error starting message sending");
-      }
+      toast.loading("🚀 Starting campaign... (Simulated)");
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      toast.dismiss();
+      toast.success("✅ Messages are being sent! (Simulated)");
     }
 
     if (action === "delete") {
-      try {
-        setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
-        toast.success("🗑️ Campaign deleted (local only)");
-      } catch (error) {
-        console.error("Error deleting campaign:", error);
-        toast.error("Failed to delete campaign");
-      }
+      setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
+      toast.success("🗑️ Campaign deleted (Simulated)");
     }
   };
 
-  // --- Stats ---
   const stats = [
     {
       title: "Total Campaigns",
@@ -161,12 +295,10 @@ export default function WhatsAppPage() {
       color: "bg-info",
     },
     {
-      title: "Marketing Campaigns",
-      value: campaigns
-        .filter((c) => c.campaignType === "MARKETING")
-        .length.toString(),
-      change: "marketing type",
-      icon: TrendingUp,
+      title: "Total Messages Sent",
+      value: "8,547",
+      change: "+1,234 today",
+      icon: Send,
       color: "bg-primary",
     },
     {
@@ -175,7 +307,7 @@ export default function WhatsAppPage() {
         .filter((c) => c.priority === "HIGH" || c.priority === "URGENT")
         .length.toString(),
       change: "urgent campaigns",
-      icon: MessageCircle,
+      icon: TrendingUp,
       color: "bg-warning",
     },
   ];
@@ -247,6 +379,45 @@ export default function WhatsAppPage() {
         ))}
       </div>
 
+      {/* Filters */}
+      <div className="flex items-center gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input
+            placeholder="Search campaigns..."
+            className="pl-10 bg-card border-border"
+          />
+        </div>
+        <Select defaultValue="all">
+          <SelectTrigger className="w-48 bg-card border-border">
+            <SelectValue placeholder="All Status" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover border-border">
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="paused">Paused</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select defaultValue="all">
+          <SelectTrigger className="w-48 bg-card border-border">
+            <SelectValue placeholder="All Clients" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover border-border">
+            <SelectItem value="all">All Clients</SelectItem>
+            <SelectItem value="fashion">Fashion Hub</SelectItem>
+            <SelectItem value="tech">Tech Solutions Ltd</SelectItem>
+            <SelectItem value="food">Food Express</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+          Apply Filters
+        </Button>
+        <Button variant="outline" className="border-border">
+          Reset
+        </Button>
+      </div>
+
       {/* Campaigns List */}
       <div className="space-y-4">
         {campaigns.length === 0 ? (
@@ -295,7 +466,9 @@ export default function WhatsAppPage() {
                         className={
                           campaign.status === "Active"
                             ? "bg-success/20 text-success"
-                            : "bg-warning/20 text-warning"
+                            : campaign.status === "Paused"
+                            ? "bg-warning/20 text-warning"
+                            : "bg-info/20 text-info"
                         }
                       >
                         {campaign.status}
@@ -333,7 +506,6 @@ export default function WhatsAppPage() {
                     >
                       <Eye className="w-5 text-info hover:text-info/80" />
                     </Button>
-
                     <Button
                       size="sm"
                       variant="ghost"
@@ -350,24 +522,26 @@ export default function WhatsAppPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="end"
-                        className="bg-black text-white border-border"
+                        className="bg-popover text-foreground border-border"
                       >
-                        {campaign.status === "Paused" ? (
+                        {campaign.status === "Active" ? (
                           <DropdownMenuItem
-                            onClick={() => handleAction("start", campaign.id)}
+                            onClick={() => handleAction("pause", campaign.id)}
+                            className="focus:bg-secondary"
                           >
-                            <Play className="w-4 mr-2" /> Start Campaign
+                            <Pause className="w-4 mr-2" /> Pause Campaign
                           </DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem
-                            onClick={() => handleAction("pause", campaign.id)}
+                            onClick={() => handleAction("start", campaign.id)}
+                            className="focus:bg-secondary"
                           >
-                            <Pause className="w-4 mr-2" /> Pause Campaign
+                            <Play className="w-4 mr-2" /> Start Campaign
                           </DropdownMenuItem>
                         )}
 
                         <DropdownMenuItem
-                          className="text-red-600 focus:bg-destructive/10"
+                          className="text-red-600 focus:bg-red-600/10 focus:text-red-600"
                           onClick={() => handleAction("delete", campaign.id)}
                         >
                           <Trash2 className="w-4 mr-2 text-red-600" /> Delete
@@ -382,7 +556,6 @@ export default function WhatsAppPage() {
         )}
       </div>
 
-      {/* Modal */}
       <CampaignActionModal
         popup={popup}
         campaign={selectedCampaign}
