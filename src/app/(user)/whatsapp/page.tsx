@@ -12,7 +12,7 @@ import {
   Edit,
   MoreVertical,
   TrendingUp,
-  PlayCircle ,
+  PlayCircle,
   Clock, // Added Clock for clarity
   Pause, // Added Pause
   Play, // Added Play
@@ -33,25 +33,25 @@ import {
 } from "@/components/ui/select";
 // --- Added Missing Dropdown Imports ---
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"; 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 // ------------------------------------
 
 // Interface for Campaign data
 interface Campaign {
-    name: string;
-    status: "Active" | "Completed" | "Paused";
-    client: string;
-    scheduled: string;
-    sent: string;
-    responses: number;
-    responseRate: string;
-    icon: typeof MessageCircle | typeof Clock;
-    iconColor: string;
-    details?: string; // Added details for modal
+  name: string;
+  status: "Active" | "Completed" | "Paused";
+  client: string;
+  scheduled: string;
+  sent: string;
+  responses: number;
+  responseRate: string;
+  icon: typeof MessageCircle | typeof Clock;
+  iconColor: string;
+  details?: string; // Added details for modal
 }
 
 // --- INITIAL DATA (Renamed from 'campaigns' to 'initialCampaignsData' to avoid conflict) ---
@@ -119,93 +119,124 @@ const initialCampaignsData: Campaign[] = [
 ];
 
 const stats = [
-    // ... stats array from original code (omitted for brevity)
-    {
-      title: "Active Campaigns",
-      value: "12",
-      change: "+3 this week",
-      icon: MessageCircle,
-      color: "bg-success",
-    },
-    {
-      title: "Total Messages Sent",
-      value: "8,547",
-      change: "+1,234 today",
-      icon: Send,
-      color: "bg-info",
-    },
-    {
-      title: "Response Rate",
-      value: "68%",
-      change: "+5% vs last month",
-      icon: MessageCircle,
-      color: "bg-primary",
-    },
-    {
-      title: "Conversion Rate",
-      value: "24%",
-      change: "+2% vs last month",
-      icon: TrendingUp,
-      color: "bg-warning",
-    },
+  // ... stats array from original code (omitted for brevity)
+  {
+    title: "Active Campaigns",
+    value: "12",
+    change: "+3 this week",
+    icon: MessageCircle,
+    color: "bg-success",
+  },
+  {
+    title: "Total Messages Sent",
+    value: "8,547",
+    change: "+1,234 today",
+    icon: Send,
+    color: "bg-info",
+  },
+  {
+    title: "Response Rate",
+    value: "68%",
+    change: "+5% vs last month",
+    icon: MessageCircle,
+    color: "bg-primary",
+  },
+  {
+    title: "Conversion Rate",
+    value: "24%",
+    change: "+2% vs last month",
+    icon: TrendingUp,
+    color: "bg-warning",
+  },
 ];
 
 // --- Simple Modal Component (Handles View and Edit Placeholder) ---
 interface CampaignActionModalProps {
-    popup: "view" | "edit" | null;
-    campaign: Campaign | null;
-    closePopup: () => void;
+  popup: "view" | "edit" | null;
+  campaign: Campaign | null;
+  closePopup: () => void;
 }
 
-const CampaignActionModal: React.FC<CampaignActionModalProps> = ({ popup, campaign, closePopup }) => {
-    if (!popup || !campaign) return null;
+const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
+  popup,
+  campaign,
+  closePopup,
+}) => {
+  if (!popup || !campaign) return null;
 
-    const modalTitle = popup === "view" ? "Campaign Details" : "Edit Campaign";
+  const modalTitle = popup === "view" ? "Campaign Details" : "Edit Campaign";
 
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-black/60 p-4">
-            <div className="bg-card text-foreground rounded-xl shadow-2xl w-full max-w-lg animate-in fade-in duration-300 relative border border-border">
-                
-                <div className="p-5 border-b border-border flex items-center justify-between">
-                    <h2 className="text-xl font-bold">{modalTitle}: {campaign.name}</h2>
-                    <Button variant="ghost" size="icon" onClick={closePopup}>
-                        <X className="w-5 h-5 text-muted-foreground hover:text-foreground" />
-                    </Button>
-                </div>
-
-                <div className="p-5 space-y-4">
-                    {popup === "view" ? (
-                        <div className="text-sm space-y-3">
-                            <p><strong>Client:</strong> {campaign.client}</p>
-                            <p><strong>Status:</strong> <Badge 
-                                className={campaign.status === "Active" ? "bg-success/20 text-success" : campaign.status === "Paused" ? "bg-warning/20 text-warning" : "bg-info/20 text-info"}
-                            >{campaign.status}</Badge></p>
-                            <p><strong>Scheduled:</strong> {campaign.scheduled}</p>
-                            <p><strong>Sent/Responses:</strong> {campaign.sent} / {campaign.responses} ({campaign.responseRate})</p>
-                            <div className="pt-2">
-                                <p className="font-semibold text-muted-foreground mb-1">Description:</p>
-                                <p className="bg-secondary p-3 rounded-md text-foreground/80">{campaign.details || 'No detailed description available.'}</p>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <Input defaultValue={campaign.name} placeholder="Campaign Name" />
-                            <Input defaultValue={campaign.client} placeholder="Client Name" />
-                            <Select defaultValue={campaign.status}>
-                                <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Active">Active</SelectItem>
-                                    <SelectItem value="Paused">Paused</SelectItem>
-                                    <SelectItem value="Completed">Completed</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Button className="w-full bg-primary hover:bg-primary/90">Save Changes</Button>
-                        </div>
-                    )}
-                </div>
-            </div>
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-black/60 p-4">
+      <div className="bg-card text-foreground rounded-xl shadow-2xl w-full max-w-lg animate-in fade-in duration-300 relative border border-border">
+        <div className="p-5 border-b border-border flex items-center justify-between">
+          <h2 className="text-xl font-bold">
+            {modalTitle}: {campaign.name}
+          </h2>
+          <Button variant="ghost" size="icon" onClick={closePopup}>
+            <X className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+          </Button>
         </div>
-    );
+
+        <div className="p-5 space-y-4">
+          {popup === "view" ? (
+            <div className="text-sm space-y-3">
+              <p>
+                <strong>Client:</strong> {campaign.client}
+              </p>
+              <p>
+                <strong>Status:</strong>{" "}
+                <Badge
+                  className={
+                    campaign.status === "Active"
+                      ? "bg-success/20 text-success"
+                      : campaign.status === "Paused"
+                      ? "bg-warning/20 text-warning"
+                      : "bg-info/20 text-info"
+                  }
+                >
+                  {campaign.status}
+                </Badge>
+              </p>
+              <p>
+                <strong>Scheduled:</strong> {campaign.scheduled}
+              </p>
+              <p>
+                <strong>Sent/Responses:</strong> {campaign.sent} /{" "}
+                {campaign.responses} ({campaign.responseRate})
+              </p>
+              <div className="pt-2">
+                <p className="font-semibold text-muted-foreground mb-1">
+                  Description:
+                </p>
+                <p className="bg-secondary p-3 rounded-md text-foreground/80">
+                  {campaign.details || "No detailed description available."}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Input defaultValue={campaign.name} placeholder="Campaign Name" />
+              <Input defaultValue={campaign.client} placeholder="Client Name" />
+              <Select defaultValue={campaign.status}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Paused">Paused</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button className="w-full bg-primary hover:bg-primary/90">
+                Save Changes
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 // ---------------------------------------------------------------------
 
@@ -214,52 +245,53 @@ export default function WhatsAppPage() {
   // --- FIX 1: Initializing state with the correct data variable ---
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaignsData);
   const [popup, setPopup] = useState<"view" | "edit" | null>(null);
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(
+    null
+  );
 
   const closePopup = () => {
     setPopup(null);
     setSelectedCampaign(null);
   };
-  
+
   const openModal = (action: "view" | "edit", campaign: Campaign) => {
     setSelectedCampaign(campaign);
     setPopup(action);
-  }
+  };
   // -------------------------------------------------------------
 
   const handleAction = (action: string, campaignName: string) => {
-  console.log(`${action} clicked for`, campaignName);
+    console.log(`${action} clicked for`, campaignName);
 
-  if (action === "pause") {
-    setCampaigns(
-      campaigns.map((c) =>
-        c.name === campaignName ? { ...c, status: "Paused" as "Paused" } : c
-      )
-    );
-  }
+    if (action === "pause") {
+      setCampaigns(
+        campaigns.map((c) =>
+          c.name === campaignName ? { ...c, status: "Paused" as "Paused" } : c
+        )
+      );
+    }
 
-  if (action === "start") {
-    setCampaigns(
-      campaigns.map((c) =>
-        c.name === campaignName ? { ...c, status: "Active" as "Active" } : c
-      )
-    );
-  }
+    if (action === "start") {
+      setCampaigns(
+        campaigns.map((c) =>
+          c.name === campaignName ? { ...c, status: "Active" as "Active" } : c
+        )
+      );
+    }
 
-  if (action === "delete") {
-    // Add a confirmation dialog here in a real application
-    setCampaigns(campaigns.filter((c) => c.name !== campaignName));
-  }
+    if (action === "delete") {
+      // Add a confirmation dialog here in a real application
+      setCampaigns(campaigns.filter((c) => c.name !== campaignName));
+    }
 
-  if (action === "restart") {
-    setCampaigns(
-      campaigns.map((c) =>
-        c.name === campaignName ? { ...c, status: "Active" as "Active" } : c
-      )
-    );
-  }
-};
-
+    if (action === "restart") {
+      setCampaigns(
+        campaigns.map((c) =>
+          c.name === campaignName ? { ...c, status: "Active" as "Active" } : c
+        )
+      );
+    }
+  };
 
   return (
     <div>
@@ -289,12 +321,14 @@ export default function WhatsAppPage() {
             <Card key={stat.title} className="p-6 bg-card border-border">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    {stat.title}
-                  </p>
-                  <span className="text-sm font-medium text-success">
-                    {stat.change}
-                  </span>
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {stat.title}
+                    </p>
+                    <span className="text-sm font-medium text-success">
+                      {stat.change}
+                    </span>
+                  </div>
                 </div>
                 <div
                   className={`w-12 h-12 rounded-xl ${stat.color}/20 flex items-center justify-center`}
@@ -436,18 +470,18 @@ export default function WhatsAppPage() {
 
                   <div className="flex gap-2">
                     {/* --- BUTTON FIX: Open View Modal --- */}
-                    <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={() => openModal("view", campaign)}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openModal("view", campaign)}
                     >
                       <Eye className="w-5 text-info hover:text-info/80" />
                     </Button>
                     {/* --- BUTTON FIX: Open Edit Modal --- */}
-                    <Button 
-                        size="sm" 
-                        variant="ghost"
-                        onClick={() => openModal("edit", campaign)}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openModal("edit", campaign)}
                     >
                       <Edit className="w-5 text-warning hover:text-warning/80" />
                     </Button>
@@ -459,27 +493,40 @@ export default function WhatsAppPage() {
                           <MoreVertical className="w-5" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-black text-white border-border">
-                        <DropdownMenuItem onClick={() => handleAction("start", campaign.name)}>
-                          <PlayCircle  className="w-4 mr-2" /> Start Campaign
+                      <DropdownMenuContent
+                        align="end"
+                        className="bg-black text-white border-border"
+                      >
+                        <DropdownMenuItem
+                          onClick={() => handleAction("start", campaign.name)}
+                        >
+                          <PlayCircle className="w-4 mr-2" /> Start Campaign
                         </DropdownMenuItem>
 
                         {campaign.status === "Active" ? (
-                          <DropdownMenuItem onClick={() => handleAction("pause", campaign.name)}>
+                          <DropdownMenuItem
+                            onClick={() => handleAction("pause", campaign.name)}
+                          >
                             <Pause className="w-4 mr-2" /> Pause Campaign
                           </DropdownMenuItem>
                         ) : (
-                          <DropdownMenuItem onClick={() => handleAction("restart", campaign.name)}>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleAction("restart", campaign.name)
+                            }
+                          >
                             <Play className="w-4 mr-2" /> Restart
                           </DropdownMenuItem>
                         )}
 
-                        <DropdownMenuItem className="text-destructive text-red-600 focus:bg-destructive/10" onClick={() => handleAction("delete", campaign.name)}>
+                        <DropdownMenuItem
+                          className="text-destructive text-red-600 focus:bg-destructive/10"
+                          onClick={() => handleAction("delete", campaign.name)}
+                        >
                           <Trash2 className="w-4 mr-2 text-red-600" /> Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-
                   </div>
                 </div>
               </div>
@@ -487,9 +534,9 @@ export default function WhatsAppPage() {
           ))}
         </div>
       </div>
-      
+
       {/* --- MODAL INTEGRATION --- */}
-      <CampaignActionModal 
+      <CampaignActionModal
         popup={popup}
         campaign={selectedCampaign}
         closePopup={closePopup}

@@ -80,8 +80,7 @@ export default function LeadsModal({
     }
   }, [popup, lead]);
 
-  // If popup is open but it's 'view', 'edit', or 'delete' and lead is null, we shouldn't render
-  // For 'add', lead is null, which is fine, but we'll handle the null check within the return if it's not 'add'
+ 
   if (!popup) return null;
 
 
@@ -302,9 +301,7 @@ export default function LeadsModal({
           {/* EDIT MODE */}
           {popup === "edit" && lead && (
             <>
-              {/* Note: You might want to allow editing of name, email, etc., here too, 
-                  but following the original structure, we only allow Role and Toggles. 
-                  We've populated the form state with all lead data in useEffect anyway. */}
+             
               <label className="pl-1">Role</label>
               <Input
                 name="Role"
