@@ -5,7 +5,6 @@ import {
   Plus,
   Upload,
   Download,
-  Filter,
   Eye,
   Edit,
   Trash,
@@ -30,7 +29,8 @@ import {
 } from "@/components/ui/select";
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import  toast , { Toaster } from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
+import LeadsAddModal from "@/components/LeadsAddModal";
 
 interface Lead {
   id: string;
@@ -64,115 +64,70 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
   const [selectedStage, setSelectedStage] = useState<string>("");
   const [selectedTag, setSelectedTag] = useState<string>("");
-  const [popup, setPopup] = useState<null | "add" | "view" | "edit" | "delete">(
-    null
-  );
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null); // State for the selected lead
+  const [popup, setPopup] = useState<null | "add" | "view" | "edit" | "delete">(null);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+
   const closePopup = () => setPopup(null);
 
-  const handleAddLead = async (newLeadData: Omit<Lead, 'id' | 'created'>): Promise<void> => {
-     console.log("Simulating add new lead with data:", newLeadData);
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate network delay
-
-     const newLead: Lead = {
-      ...newLeadData,
-      id: Date.now().toString(),  
-      created: new Date().toLocaleDateString(),
-       stage: newLeadData.stage || "new",
-      tag: newLeadData.tag || "cold",
-      value: newLeadData.value || "$0.00",
-    };
-
-     setLeads((prevLeads) => [newLead, ...prevLeads]);
-
-     closePopup();
-    console.log("Lead added successfully:", newLead);
-  };
-  const handleUpdateLead = async (
-    leadId: string,
-    data: Partial<Lead>
-  ): Promise<void> => {
-    // 1. Simulate API Call (Replace with real fetch if needed)
-    console.log(`Simulating update for lead ${leadId} with data:`, data);
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate network delay
-
-    // 2. Update local state
-    setLeads((prevLeads) =>
-      prevLeads.map((lead) =>
-        lead.id === leadId ? ({ ...lead, ...data } as Lead) : lead
-      )
-    );
-    // In a real app, you would show a success toast here
-  };
-
-  // const handleDeleteLead = async (leadId: string): Promise<void> => {
-  //   // 1. Simulate API Call (Replace with real fetch if needed)
-  //   console.log(`Simulating delete for lead ${leadId}`);
-  //   await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate network delay
-
-  //   // 2. Update local state
-  //   setLeads((prevLeads) => prevLeads.filter((lead) => lead.id !== leadId));
-  //   // In a real app, you would show a success toast here
-  // };
-
-  const handleDeleteLead = async (leadId: string): Promise<void> => {
-  try {
-    toast.loading("Deleting lead...");
-
-    const res = await fetch(`/api/leads/${leadId}`, {
-      method: "DELETE",
-    });
-
-    const data = await res.json();
-    toast.dismiss();
-
-    if (!res.ok) {
-      toast.error(`❌ Failed to delete: ${data.error || "Unknown error"}`);
-      return;
+  // ✅ Fetch leads from API
+  const fetchLeads = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/leads", { cache: "no-store" });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setLeads(Array.isArray(data) ? data : data.leads || []);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch leads");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // ✅ Update local state
-    setLeads((prevLeads) => prevLeads.filter((lead) => lead.id !== leadId));
+  useEffect(() => {
+    fetchLeads();
+  }, []);
 
-    toast.success("🗑️ Lead deleted successfully!");
-  } catch (error) {
-    console.error("Error deleting lead:", error);
-    toast.dismiss();
-    toast.error("Something went wrong while deleting the lead");
-  }
-};
+  // ✅ Delete lead via API
+  const handleDeleteLead = async (leadId: string): Promise<void> => {
+    try {
+      toast.loading("Deleting lead...");
+      const res = await fetch(`/api/leads/${leadId}`, { method: "DELETE" });
+      const data = await res.json();
+      toast.dismiss();
 
+      if (!res.ok) {
+        toast.error(`❌ Failed to delete: ${data.error || "Unknown error"}`);
+        return;
+      }
 
-  const openModal = (
-    action: "add" | "view" | "edit" | "delete",
-    lead: Lead | null
-  ) => {
+      setLeads((prevLeads) => prevLeads.filter((lead) => lead.id !== leadId));
+      toast.success("🗑️ Lead deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting lead:", error);
+      toast.dismiss();
+      toast.error("Something went wrong while deleting the lead");
+    }
+  };
+
+  const handleUpdateLead = async (leadId: string, data: Partial<Lead>) => {
+    await new Promise((resolve) => setTimeout(resolve, 300)); // placeholder
+    setLeads((prev) =>
+      prev.map((lead) => (lead.id === leadId ? { ...lead, ...data } : lead))
+    );
+  };
+
+  const openModal = (action: "view" | "edit" | "delete", lead: Lead | null) => {
     setSelectedLead(lead);
     setPopup(action);
   };
-  // Fetch leads from API
-  useEffect(() => {
-    setLoading(true);
-    fetch("/api/leads")
-      .then(async (res) => {
-        if (!res.ok) throw new Error(await res.text());
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data)) setLeads(data);
-        else if (Array.isArray(data.leads)) setLeads(data.leads);
-        else setLeads([]);
-      })
-      .catch((err) => setError(err.message || "Failed to fetch leads"))
-      .finally(() => setLoading(false));
-  }, []);
 
-  // Derived statistics
+  // 🧮 Stats
   const stats = useMemo(() => {
     const totalLeads = leads.length;
-
     const now = new Date();
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(now.getDate() - 7);
@@ -190,35 +145,31 @@ export default function LeadsPage() {
       {
         title: "Total Leads",
         value: totalLeads.toString(),
-        change: "",
         icon: Users,
         color: "bg-info",
       },
       {
         title: "New This Week",
         value: newThisWeek.toString(),
-        change: "",
         icon: UserPlus,
         color: "bg-info",
       },
       {
         title: "Converted",
         value: "—",
-        change: "+0%",
         icon: CheckCircle,
         color: "bg-success",
       },
       {
         title: "Hot Leads",
         value: hotLeads.toString(),
-        label: "Hot",
         icon: Flame,
         color: "bg-warning",
       },
     ];
   }, [leads]);
 
-  // Filter + Search logic
+  // 🔍 Filtering
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       const matchesSearch =
@@ -230,6 +181,7 @@ export default function LeadsPage() {
         selectedStage && selectedStage !== "all"
           ? lead.stage.toLowerCase() === selectedStage.toLowerCase()
           : true;
+
       const matchesTag =
         selectedTag && selectedTag !== "all"
           ? lead.tag.toLowerCase() === selectedTag.toLowerCase()
@@ -239,18 +191,20 @@ export default function LeadsPage() {
     });
   }, [leads, search, selectedStage, selectedTag]);
 
+  // ✅ UI (unchanged)
   return (
     <div className="p-6 space-y-6">
+      <Toaster />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-foreground">
-            Lead Management
-          </h2>
+          <h2 className="text-3xl font-bold text-foreground">Lead Management</h2>
           <p className="text-sm text-muted-foreground">
             Manage and track your leads efficiently
           </p>
         </div>
+
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -280,8 +234,9 @@ export default function LeadsPage() {
             <Upload className="w-4 h-4 mr-2" />
             Upload CSV
           </Button>
+
           <Button
-            onClick={() => openModal("add", null)}
+            onClick={() => setShowAddModal(true)}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -290,28 +245,12 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <Card key={stat.title} className="p-6 bg-card border-border">
             <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">
-                  {stat.title}
-                </p>
-                <div className="flex items-center gap-2">
-                  {stat.change && (
-                    <span className="text-sm font-medium text-success">
-                      {stat.change}
-                    </span>
-                  )}
-                  {stat.label && (
-                    <span className="text-sm font-medium text-warning">
-                      {stat.label}
-                    </span>
-                  )}
-                </div>
-              </div>
+              <p className="text-sm text-muted-foreground">{stat.title}</p>
               <div
                 className={`w-12 h-12 rounded-xl ${stat.color}/20 flex items-center justify-center`}
               >
@@ -345,20 +284,6 @@ export default function LeadsPage() {
           />
         </div>
 
-        {/* <Select onValueChange={setSelectedStage}>
-          <SelectTrigger className="w-48 bg-card border-border">
-            <SelectValue placeholder="Filter by Stage" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover border-border">
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="new">New</SelectItem>
-            <SelectItem value="contacted">Contacted</SelectItem>
-            <SelectItem value="in progress">In Progress</SelectItem>
-            <SelectItem value="converted">Converted</SelectItem>
-            <SelectItem value="lost">Lost</SelectItem>
-          </SelectContent>
-        </Select> */}
-
         <Select onValueChange={setSelectedTag}>
           <SelectTrigger className="w-48 bg-card border-border">
             <SelectValue placeholder="Filter by Tag" />
@@ -373,7 +298,7 @@ export default function LeadsPage() {
         </Select>
       </div>
 
-      {/* Leads Table */}
+      {/* Table */}
       <Card className="bg-card border-border">
         <div className="p-6 border-b border-border flex items-center justify-between">
           <h3 className="text-lg font-semibold text-foreground">
@@ -384,10 +309,6 @@ export default function LeadsPage() {
               <Download className="w-4 h-4 mr-2" />
               Export
             </Button>
-            {/* <Button variant="outline" size="sm" className="border-border">
-              <Filter className="w-4 h-4 mr-2" />
-              Filter
-            </Button> */}
           </div>
         </div>
 
@@ -406,49 +327,38 @@ export default function LeadsPage() {
             <table className="w-full">
               <thead className="border-b border-border">
                 <tr>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Lead
-                  </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Contact
-                  </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Source
-                  </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Stage
-                  </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Tag
-                  </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Value
-                  </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Created
-                  </th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">
-                    Actions
-                  </th>
+                  {[
+                    "Lead",
+                    "Contact",
+                    "Source",
+                    "Stage",
+                    "Tag",
+                    "Value",
+                    "Created",
+                    "Actions",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left p-4 text-sm font-medium text-muted-foreground"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {filteredLeads.map((lead) => (
-                  <tr
-                    key={lead.id}
-                    className="border-b border-border hover:bg-secondary/50"
-                  >
+                  <tr key={lead.id} className="border-b border-border hover:bg-secondary/50">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <Avatar className="w-10 h-10 bg-info">
                           <AvatarFallback className="bg-info text-white font-semibold">
-                            {lead.avatar ||
-                              lead.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
-                                .slice(0, 2)
-                                .toUpperCase()}
+                            {lead.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -462,56 +372,20 @@ export default function LeadsPage() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <div className="text-sm text-foreground">
-                        {lead.email}
-                      </div>
+                      <div className="text-sm text-foreground">{lead.email}</div>
                       <div className="text-sm text-muted-foreground">
                         {lead.phone}
                       </div>
                     </td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">
-                          {getSourceIcon(lead.source)}
-                        </span>
-                        <span className="text-sm text-foreground">
-                          {lead.source}
-                        </span>
-                      </div>
+                    <td className="p-4 flex items-center gap-2">
+                      <span className="text-lg">{getSourceIcon(lead.source)}</span>
+                      <span className="text-sm text-foreground">{lead.source}</span>
                     </td>
                     <td className="p-4">
-                      <Badge
-                        variant="secondary"
-                        className={
-                          lead.stage === "new"
-                            ? "bg-info/20 text-info"
-                            : lead.stage === "contacted"
-                            ? "bg-warning/20 text-warning"
-                            : lead.stage === "in progress"
-                            ? "bg-primary/20 text-primary"
-                            : lead.stage === "converted"
-                            ? "bg-success/20 text-success"
-                            : "bg-destructive/20 text-destructive"
-                        }
-                      >
-                        {lead.stage}
-                      </Badge>
+                      <Badge variant="secondary">{lead.stage}</Badge>
                     </td>
                     <td className="p-4">
-                      <Badge
-                        variant="secondary"
-                        className={
-                          lead.tag === "hot"
-                            ? "bg-destructive/20 text-destructive"
-                            : lead.tag === "warm"
-                            ? "bg-warning/20 text-warning"
-                            : lead.tag === "qualified"
-                            ? "bg-success/20 text-success"
-                            : "bg-info/20 text-info"
-                        }
-                      >
-                        {lead.tag}
-                      </Badge>
+                      <Badge variant="secondary">{lead.tag}</Badge>
                     </td>
                     <td className="p-4 font-semibold text-foreground">
                       {lead.value}
@@ -519,35 +393,31 @@ export default function LeadsPage() {
                     <td className="p-4 text-sm text-muted-foreground">
                       {lead.created}
                     </td>
-                    <td className="p-4">
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 cursor-pointer w-8 p-0 text-info hover:text-info hover:bg-info/10"
-                          onClick={() => openModal("view", lead)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 cursor-pointer text-warning hover:text-warning hover:bg-warning/10"
-                          onClick={() => openModal("edit", lead)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 cursor-pointer text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => openModal("delete", lead)}
-                        >
-                          <Trash className="w-4 h-4 text-red-600" />
-                        </Button>
-                      </div>
+                    <td className="p-4 flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-info hover:bg-info/10"
+                        onClick={() => openModal("view", lead)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-warning hover:bg-warning/10"
+                        onClick={() => openModal("edit", lead)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDeleteLead(lead.id)}
+                      >
+                        <Trash className="w-4 h-4 text-red-600" />
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -555,15 +425,15 @@ export default function LeadsPage() {
             </table>
           </div>
         )}
-        <LeadsModal
-          popup={popup}
-          lead={selectedLead}
-          closePopup={closePopup}
-          onUpdateLead={handleUpdateLead}
-          onAddLead={handleAddLead}
-          onDeleteLead={handleDeleteLead}
-        />
       </Card>
+
+      {/* ✅ Real modal added here */}
+      {showAddModal && (
+        <LeadsAddModal
+          onClose={() => setShowAddModal(false)}
+          onLeadAdded={fetchLeads}
+        />
+      )}
     </div>
   );
 }

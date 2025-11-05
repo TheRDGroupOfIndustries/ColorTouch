@@ -1,31 +1,22 @@
+import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import  prisma from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
     const { campaignId, status } = await req.json();
-
-    if (!campaignId || !status) {
+    if (!campaignId || !status)
       return NextResponse.json(
-        { success: false, error: "campaignId and status required" },
+        { error: "campaignId and status required" },
         { status: 400 }
       );
-    }
 
-    await prisma.whatsappCampaign.update({
+    const updated = await prisma.whatsappCampaign.update({
       where: { id: campaignId },
-      data: { status },
+      data: { status: status.toUpperCase() },
     });
 
-    return NextResponse.json({
-      success: true,
-      message: `Campaign status updated to ${status}`,
-    });
-  } catch (error: any) {
-    console.error("Error updating campaign status:", error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json(updated);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
