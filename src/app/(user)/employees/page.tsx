@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
+// Import the modal component
+import EmployeModels from "@/components/ui/EmployeModels"; 
 import {
   Users,
   UserCheck,
@@ -20,7 +22,7 @@ import {
 import Image from "next/image";
 
 /** Backend user structure */
-interface BackendUser {
+export interface BackendUser {
   id: string;
   email?: string | null;
   name: string;
@@ -45,12 +47,15 @@ export default function Employees() {
   const [perPage, setPerPage] = useState(10);
   const [selectedRole, setSelectedRole] = useState("User Role");
   const [roleOpen, setRoleOpen] = useState(false);
+  // Replaced 'lead' logic with 'user' logic
+  const [popup, setPopup] = useState<null | "view" | "edit">(null); 
+  const [selectedUser, setSelectedUser] = useState<BackendUser | null>(null);
 
   /** Fetch users from backend */
-  useEffect(() => {
+  const fetchUsers = () => {
     let mounted = true;
+    setLoading(true);
 
-    // fetch users; loading is true by default on mount so avoid sync setState here
     fetch("/api/auth/user", { method: "GET", credentials: "same-origin" })
       .then(async (res) => {
         if (!res.ok) throw new Error(await res.text());
@@ -70,7 +75,21 @@ export default function Employees() {
     return () => {
       mounted = false;
     };
+  };
+
+  useEffect(() => {
+    fetchUsers();
   }, []);
+
+  const closepop = () => setPopup(null);
+
+  // Updated logic to use BackendUser
+  const openModal = (action: "view" | "edit", user: BackendUser) => {
+    setSelectedUser(user);
+    setPopup(action);
+  };
+
+  // ... (stats, filtering, pagination logic remains the same)
 
   /** Stats summary */
   const stats = useMemo(() => {
@@ -80,7 +99,8 @@ export default function Employees() {
         const role = u.role.toUpperCase();
         if (role.includes("ADMIN")) a.admins++;
         if (role.includes("EMPLOYEE")) a.employees++;
-        if (role.includes("CUSTOMER")) a.customers++;
+        // Note: The original code used 'CUSTOMER' which might not be a direct role
+        if (!role.includes("ADMIN") && !role.includes("EMPLOYEE")) a.customers++;
         return a;
       },
       { admins: 0, employees: 0, customers: 0 }
@@ -141,7 +161,7 @@ export default function Employees() {
   const totalItems = filtered.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / perPage));
   useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
+    if (page > totalPages && totalPages > 0) setPage(totalPages);
   }, [page, totalPages]);
 
   const paginated = useMemo(() => {
@@ -149,25 +169,20 @@ export default function Employees() {
     return filtered.slice(start, start + perPage);
   }, [filtered, page, perPage]);
 
-  /** Navigation actions */
-  const handleView = (id: string) =>
-    router.push(`/console/admin/users/view/${id}`);
-  const handleEdit = (id: string) =>
-    router.push(`/console/admin/users/manage/${id}`);
-
   /** Avatar helper */
+  const hashCode = (s: string) =>
+    s.split("").reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
+
   const avatarFor = (u: BackendUser) =>
     u.avatar ||
     (u.email
       ? `https://ui-avatars.com/api/?name=${encodeURIComponent(
           u.name
         )}&background=ddd&color=333&size=128`
-      : `https://randomuser.me/api/portraits/lego/${Math.abs(
-          hashCode(u.name || u.id)
-        ) % 10}.jpg`);
+      : `https://randomuser.me/api/portraits/lego/${
+          Math.abs(hashCode(u.name || u.id)) % 10
+        }.jpg`);
 
-  const hashCode = (s: string) =>
-    s.split("").reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
 
   return (
     <div className="px-3">
@@ -258,10 +273,6 @@ export default function Employees() {
             )}
           </div>
         </div>
-
-        {/* <button className="hidden lg:flex h-8 items-center gap-1.5 rounded-md border px-3 text-sm font-medium bg-card hover:bg-accent hover:text-accent-foreground">
-          <Settings2 className="h-4 w-4" /> View
-        </button> */}
       </div>
 
       {/* Table */}
@@ -312,14 +323,14 @@ export default function Employees() {
                     <div className="flex justify-center gap-4">
                       <button
                         title="View"
-                        onClick={() => handleView(u.id)}
+                        onClick={() => openModal("view", u)} // Pass user 'u'
                         className="p-1 hover:text-primary"
                       >
                         <Eye className="h-4 w-4 text-muted-foreground" />
                       </button>
                       <button
                         title="Edit"
-                        onClick={() => handleEdit(u.id)}
+                        onClick={() => openModal("edit", u)} // Pass user 'u'
                         className="p-1 hover:text-primary"
                       >
                         <SquarePen className="h-4 w-4 text-muted-foreground" />
@@ -367,6 +378,14 @@ export default function Employees() {
           <ChevronsRight className="size-4" />
         </button>
       </div>
+
+       <EmployeModels
+        show={popup !== null}
+        action={popup}
+        user={selectedUser}
+        onClose={closepop}
+        onUserUpdated={fetchUsers}  
+      />
     </div>
   );
 }
