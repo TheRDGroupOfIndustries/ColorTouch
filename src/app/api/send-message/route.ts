@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "campaignId required" }, { status: 400 });
 
     // ✅ Auth check
-    const session = await getToken({ req, secret: process.env.AUTH_SECRET });
+    const session = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     if (!session?.userId)
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 

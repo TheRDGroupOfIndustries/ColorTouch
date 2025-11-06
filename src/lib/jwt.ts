@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import jwt, { SignOptions } from "jsonwebtoken";
 
-const JWT_SECRET: string = process.env.AUTH_SECRET || "super_secret_key";
+const JWT_SECRET: string = process.env.NEXTAUTH_SECRET || "super_secret_key";
 const JWT_EXP: SignOptions["expiresIn"] = (process.env.JWT_EXPIRES_IN || "7d") as SignOptions["expiresIn"];
 
 export interface AuthPayload {

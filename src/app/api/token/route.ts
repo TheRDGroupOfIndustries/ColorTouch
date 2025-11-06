@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
-     const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     
         if (!token || !token.userId) {
           return NextResponse.json(
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as { token: string };
-    const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
     if (!token || !token.userId) {
       return NextResponse.json(
