@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const users = await prisma.user.findMany({
       orderBy: {
@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
   try {
     const { email } = await req.json();
 

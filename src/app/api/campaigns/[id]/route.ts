@@ -1,9 +1,9 @@
 import prisma from "@/lib/prisma";
 import { CampaignType, MessageType, Priority } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
-  req: Request,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -37,7 +37,7 @@ interface Campaignupdate {
 }
 
 export async function PUT(
-  req: Request,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -66,7 +66,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  req: Request,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {

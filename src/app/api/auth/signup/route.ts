@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { signJwt } from "@/lib/jwt";
 import { hashPassword } from "@/lib/hash";
@@ -12,7 +12,7 @@ interface SignupRequestBody {
   role?: Role;
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as SignupRequestBody;
 

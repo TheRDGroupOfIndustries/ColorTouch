@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
@@ -22,7 +22,7 @@ type LeadRow = {
   tag?: Tag;
 };
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     // --- 1️⃣ Extract userId from cookies ---
     // const cookieStore = cookies();

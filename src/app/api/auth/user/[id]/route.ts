@@ -1,9 +1,9 @@
 import prisma from "@/lib/prisma";
 import { Role, SubscriptionType } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
-  req: Request,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -34,7 +34,7 @@ interface UserUpdate {
 }
 
 export async function PUT(
-  req: Request,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {

@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { CampaignType, MessageType, Priority, User } from "@prisma/client";
 import { getToken } from "next-auth/jwt";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 interface CampaignCreate {
   campaignName: string;
@@ -14,7 +14,7 @@ interface CampaignCreate {
   templateID?: string;
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as CampaignCreate;
     const token = await getToken({ req, secret: process.env.AUTH_SECRET });
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET(req: Request) { {
+export async function GET(req: NextRequest) { {
   try {
     const token = await getToken({ req, secret: process.env.AUTH_SECRET });
     if (!token || !token.userId) {
