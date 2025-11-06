@@ -1,9 +1,9 @@
 import prisma from "@/lib/prisma";
 import { Tag } from "@prisma/client";
 import { getToken } from "next-auth/jwt";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
      const token = await getToken({ req, secret: process.env.AUTH_SECRET });
     
@@ -39,7 +39,7 @@ interface leaducreate {
   duration: number;
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as leaducreate
     const token = await getToken({ req, secret: process.env.AUTH_SECRET });
