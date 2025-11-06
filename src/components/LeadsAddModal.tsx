@@ -1,19 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, UserPlus, Building2, Mail, Phone, StickyNote } from "lucide-react";
+import { X, UserPlus, Building2, Mail, Phone, StickyNote, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
 
 interface LeadFormData {
   name: string;
-  email: string;
-  phone: string;
-  company: string;
-  tag: string;
-  source: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  source?: string;
   notes?: string;
+  tag: string;
   duration?: number;
 }
 
@@ -28,21 +28,22 @@ const LeadsAddModal: React.FC<LeadsAddModalProps> = ({ onClose, onLeadAdded }) =
     email: "",
     phone: "",
     company: "",
-    tag: "Cold",
-    source: "Website",
+    source: "",
     notes: "",
+    tag: "DISQUALIFIED",
     duration: 0,
   });
 
   const [loading, setLoading] = useState(false);
+  const [tagOpen, setTagOpen] = useState(false);
 
   const handleChange = (field: keyof LeadFormData, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.email || !formData.phone) {
-      toast.error("⚠️ Please fill all required fields");
+    if (!formData.name) {
+      toast.error("⚠️ Please fill in the required name field");
       return;
     }
 
@@ -70,16 +71,16 @@ const LeadsAddModal: React.FC<LeadsAddModalProps> = ({ onClose, onLeadAdded }) =
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-      <div className="relative bg-gradient-to-b from-white/90 to-white/70 dark:from-gray-900 dark:to-gray-950 text-foreground rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.2)] w-full max-w-2xl border border-gray-200/40 overflow-hidden">
+      <div className="relative bg-gradient-to-b from-zinc-900 via-zinc-950 to-black text-zinc-100 rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.6)] w-full max-w-2xl border border-zinc-800 overflow-hidden">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200/60 bg-gradient-to-r from-primary/10 to-transparent">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-gradient-to-r from-zinc-800/60 to-transparent">
           <div className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold tracking-tight">Add New Lead</h2>
+            <UserPlus className="w-5 h-5 text-zinc-300" />
+            <h2 className="text-xl font-semibold tracking-tight text-white">Add New Lead</h2>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+            <X className="w-5 h-5 text-zinc-400 hover:text-white" />
           </Button>
         </div>
 
@@ -87,126 +88,141 @@ const LeadsAddModal: React.FC<LeadsAddModalProps> = ({ onClose, onLeadAdded }) =
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left Side */}
           <div className="space-y-4">
+            {/* Name */}
             <div>
-              <label className="text-sm text-muted-foreground">Full Name *</label>
-              <div className="relative mt-1">
-                <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  className="pl-9 rounded-lg bg-background/50 border-border focus:ring-2 focus:ring-primary/40"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChange={(e) => handleChange("name", e.target.value)}
-                />
-              </div>
+              <label className="text-sm text-zinc-400">Full Name *</label>
+              <Input
+                value={formData.name}
+                onChange={(e) => handleChange("name", e.target.value)}
+                placeholder="Enter lead name"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+              />
             </div>
 
+            {/* Email */}
             <div>
-              <label className="text-sm text-muted-foreground">Company</label>
-              <div className="relative mt-1">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  className="pl-9 rounded-lg bg-background/50 border-border focus:ring-2 focus:ring-primary/40"
-                  placeholder="Company Name"
-                  value={formData.company}
-                  onChange={(e) => handleChange("company", e.target.value)}
-                />
-              </div>
+              <label className="text-sm text-zinc-400">Email</label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleChange("email", e.target.value)}
+                placeholder="example@domain.com"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+              />
             </div>
 
+            {/* Phone */}
             <div>
-              <label className="text-sm text-muted-foreground">Email *</label>
-              <div className="relative mt-1">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  type="email"
-                  className="pl-9 rounded-lg bg-background/50 border-border focus:ring-2 focus:ring-primary/40"
-                  placeholder="example@domain.com"
-                  value={formData.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                />
-              </div>
+              <label className="text-sm text-zinc-400">Phone</label>
+              <Input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleChange("phone", e.target.value)}
+                placeholder="+91 98765 43210"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+              />
             </div>
 
+            {/* Company */}
             <div>
-              <label className="text-sm text-muted-foreground">Phone *</label>
-              <div className="relative mt-1">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  type="tel"
-                  className="pl-9 rounded-lg bg-background/50 border-border focus:ring-2 focus:ring-primary/40"
-                  placeholder="+91 98765 43210"
-                  value={formData.phone}
-                  onChange={(e) => handleChange("phone", e.target.value)}
-                />
-              </div>
+              <label className="text-sm text-zinc-400">Company</label>
+              <Input
+                value={formData.company}
+                onChange={(e) => handleChange("company", e.target.value)}
+                placeholder="Company Name"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+              />
             </div>
           </div>
 
           {/* Right Side */}
           <div className="space-y-4">
-            <div>
-              <label className="text-sm text-muted-foreground">Tag</label>
-              <Input
-                className="rounded-lg bg-background/50 border-border focus:ring-2 focus:ring-primary/40"
-                placeholder="Hot / Warm / Cold"
-                value={formData.tag}
-                onChange={(e) => handleChange("tag", e.target.value)}
-              />
+            {/* Tag Dropdown */}
+            <div className="relative">
+              <label className="text-sm text-zinc-400">Tag</label>
+              <button
+                type="button"
+                onClick={() => setTagOpen(!tagOpen)}
+                className="w-full flex justify-between items-center bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md px-3 py-2 text-sm hover:bg-zinc-800"
+              >
+                {formData.tag}
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${tagOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+              {tagOpen && (
+                <div className="absolute left-0 mt-1 w-full rounded-md border border-zinc-700 bg-zinc-900 shadow-lg z-50">
+                  {["HOT", "WARM", "COLD", "QUALIFIED", "DISQUALIFIED"].map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => {
+                        handleChange("tag", tag);
+                        setTagOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-800 ${
+                        formData.tag === tag ? "text-white" : "text-zinc-300"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
+            {/* Source */}
             <div>
-              <label className="text-sm text-muted-foreground">Source</label>
+              <label className="text-sm text-zinc-400">Source</label>
               <Input
-                className="rounded-lg bg-background/50 border-border focus:ring-2 focus:ring-primary/40"
-                placeholder="Website, Google Ads, etc."
                 value={formData.source}
                 onChange={(e) => handleChange("source", e.target.value)}
+                placeholder="Website / Referral / Ads"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
               />
             </div>
 
+            {/* Duration */}
             <div>
-              <label className="text-sm text-muted-foreground">Duration (optional)</label>
+              <label className="text-sm text-zinc-400">Duration (Days)</label>
               <Input
                 type="number"
-                className="rounded-lg bg-background/50 border-border focus:ring-2 focus:ring-primary/40"
-                placeholder="Days"
                 value={formData.duration}
                 onChange={(e) => handleChange("duration", Number(e.target.value))}
+                placeholder="e.g., 30"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
               />
             </div>
 
+            {/* Notes */}
             <div>
-              <label className="text-sm text-muted-foreground">Notes (optional)</label>
-              <div className="relative mt-1">
-                <StickyNote className="absolute left-3 top-3 text-muted-foreground w-4 h-4" />
-                <textarea
-                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-background/50 focus:ring-2 focus:ring-primary/40 resize-none h-20"
-                  placeholder="Enter additional notes..."
-                  value={formData.notes}
-                  onChange={(e) => handleChange("notes", e.target.value)}
-                />
-              </div>
+              <label className="text-sm text-zinc-400">Notes</label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => handleChange("notes", e.target.value)}
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 focus:ring-2 focus:ring-zinc-600 resize-none h-24 px-3 py-2 placeholder:text-zinc-500"
+                placeholder="Enter additional notes..."
+              />
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        {/* <div className="flex justify-end gap-3 p-5 border-t border-gray-200/60 bg-gradient-to-r from-transparent to-primary/5">
+        <div className="flex justify-end gap-3 p-5 border-t border-zinc-800 bg-gradient-to-r from-transparent to-zinc-900/60">
           <Button
             variant="outline"
             onClick={onClose}
-            className="border-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
           >
             Cancel
           </Button>
           <Button
-            className="bg-primary hover:bg-primary/90 text-white shadow-md shadow-primary/20"
+            className="bg-zinc-100 text-black hover:bg-zinc-300"
             onClick={handleSubmit}
             disabled={loading}
           >
             {loading ? "Adding..." : "Add Lead"}
           </Button>
-        </div> */}
+        </div>
       </div>
     </div>
   );

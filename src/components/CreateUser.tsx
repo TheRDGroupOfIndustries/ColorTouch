@@ -1,103 +1,60 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { X, UserPen, Loader2, ChevronDown } from "lucide-react";
+import React, { useState } from "react";
+import { X, Loader2, ChevronDown, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
 
-interface UserData {
-  id: string;
-  name: string;
-  email?: string;
-  role?: string;
-  subscription?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-interface EditEmployeeProps {
-  user: UserData;
+interface CreateUserProps {
   open: boolean;
   close: () => void;
-  onUpdated?: () => void;
+  onCreated?: () => void; // 👈 This triggers reload after success
 }
 
-const EditEmployee: React.FC<EditEmployeeProps> = ({
-  user,
-  open,
-  close,
-  onUpdated,
-}) => {
+const ROLE_OPTIONS = ["ADMIN", "EMPLOYEE", "OTHER"];
+const SUBSCRIPTION_OPTIONS = ["FREE", "PREMIUM"];
+
+const CreateUser: React.FC<CreateUserProps> = ({ open, close, onCreated }) => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    role: "",
-    subscription: "",
+    password: "",
+    role: "EMPLOYEE",
+    subscription: "FREE",
   });
 
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [roleOpen, setRoleOpen] = useState(false);
   const [subOpen, setSubOpen] = useState(false);
 
-  // ✅ Fetch and prefill user details
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const fetchUser = async () => {
-      try {
-        const res = await fetch(`/api/auth/user/${user.id}`, { cache: "no-store" });
-        const data = await res.json();
-
-        if (!res.ok || !data) throw new Error("Failed to load user details");
-
-        setFormData({
-          name: data.name || "",
-          email: data.email || "",
-          role: data.role || "",
-          subscription: data.subscription || "FREE",
-        });
-      } catch (err: any) {
-        toast.error("❌ Failed to fetch user data");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, [user]);
-
-  // ✅ Handle change
   const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // ✅ Save (PUT)
-  const handleSave = async () => {
-    if (!formData.name || !formData.email) {
+  const handleCreate = async () => {
+    if (!formData.name || !formData.email || !formData.password) {
       toast.error("⚠️ Please fill all required fields");
       return;
     }
 
     setSaving(true);
     try {
-      const res = await fetch(`/api/auth/user/${user.id}`, {
-        method: "PUT",
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData), // ✅ only valid fields
+        body: JSON.stringify(formData),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to update user");
+      if (!res.ok) throw new Error(data.error || "Failed to create user");
 
-      toast.success("✅ Employee updated successfully!");
-      onUpdated?.();
-      close();
+      toast.success("✅ User created successfully!");
+      onCreated?.(); // 👈 Auto-refresh user list after creation
+      close(); // Close modal
     } catch (err: any) {
-      console.error("Error updating user:", err);
-      toast.error(`❌ ${err.message || "Update failed"}`);
+      console.error("Error creating user:", err);
+      toast.error(`❌ ${err.message || "Something went wrong"}`);
     } finally {
       setSaving(false);
     }
@@ -105,26 +62,17 @@ const EditEmployee: React.FC<EditEmployeeProps> = ({
 
   if (!open) return null;
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-        <div className="bg-zinc-900 rounded-xl p-8 flex flex-col items-center justify-center shadow-xl border border-zinc-700">
-          <Loader2 className="w-6 h-6 animate-spin text-zinc-200 mb-3" />
-          <p className="text-sm text-zinc-400">Loading employee data...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-      <div className="relative bg-gradient-to-b from-zinc-900 via-zinc-950 to-black text-zinc-100 rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.6)] w-full max-w-2xl border border-zinc-800 overflow-hidden">
-        
+      <div className="relative bg-gradient-to-b from-zinc-900 via-zinc-950 to-black text-zinc-100 rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.6)] w-full max-w-xl border border-zinc-800 overflow-hidden">
+
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-gradient-to-r from-zinc-800/60 to-transparent">
           <div className="flex items-center gap-2">
-            <UserPen className="w-5 h-5 text-zinc-300" />
-            <h2 className="text-xl font-semibold tracking-tight text-white">Edit Employee</h2>
+            <UserPlus className="w-5 h-5 text-zinc-300" />
+            <h2 className="text-xl font-semibold tracking-tight text-white">
+              Create New User
+            </h2>
           </div>
           <Button variant="ghost" size="icon" onClick={close}>
             <X className="w-5 h-5 text-zinc-400 hover:text-white" />
@@ -133,7 +81,7 @@ const EditEmployee: React.FC<EditEmployeeProps> = ({
 
         {/* Form */}
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Side */}
+          {/* Left side */}
           <div className="space-y-4">
             <div>
               <label className="text-sm text-zinc-400">Full Name *</label>
@@ -141,7 +89,7 @@ const EditEmployee: React.FC<EditEmployeeProps> = ({
                 value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
-                placeholder="Full name"
+                placeholder="Enter name"
               />
             </div>
 
@@ -152,12 +100,23 @@ const EditEmployee: React.FC<EditEmployeeProps> = ({
                 value={formData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
                 className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
-                placeholder="Email"
+                placeholder="Enter email"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-zinc-400">Password *</label>
+              <Input
+                type="password"
+                value={formData.password}
+                onChange={(e) => handleChange("password", e.target.value)}
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+                placeholder="Enter password"
               />
             </div>
           </div>
 
-          {/* Right Side */}
+          {/* Right side */}
           <div className="space-y-4">
             {/* Role Dropdown */}
             <div className="relative">
@@ -167,14 +126,16 @@ const EditEmployee: React.FC<EditEmployeeProps> = ({
                 onClick={() => setRoleOpen(!roleOpen)}
                 className="w-full flex justify-between items-center bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md px-3 py-2 text-sm hover:bg-zinc-800"
               >
-                {formData.role ? formData.role.toUpperCase() : "Select Role"}
+                {formData.role.toUpperCase()}
                 <ChevronDown
-                  className={`h-4 w-4 transition-transform ${roleOpen ? "rotate-180" : ""}`}
+                  className={`h-4 w-4 transition-transform ${
+                    roleOpen ? "rotate-180" : ""
+                  }`}
                 />
               </button>
               {roleOpen && (
                 <div className="absolute left-0 mt-1 w-full rounded-md border border-zinc-700 bg-zinc-900 shadow-lg z-50">
-                  {["ADMIN", "EMPLOYEE"].map((role) => (
+                  {ROLE_OPTIONS.map((role) => (
                     <button
                       key={role}
                       onClick={() => {
@@ -182,7 +143,9 @@ const EditEmployee: React.FC<EditEmployeeProps> = ({
                         setRoleOpen(false);
                       }}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-800 ${
-                        formData.role === role ? "text-white" : "text-zinc-300"
+                        formData.role === role
+                          ? "text-white font-semibold"
+                          : "text-zinc-300"
                       }`}
                     >
                       {role}
@@ -200,14 +163,16 @@ const EditEmployee: React.FC<EditEmployeeProps> = ({
                 onClick={() => setSubOpen(!subOpen)}
                 className="w-full flex justify-between items-center bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md px-3 py-2 text-sm hover:bg-zinc-800"
               >
-                {formData.subscription ? formData.subscription.toUpperCase() : "Select Subscription"}
+                {formData.subscription.toUpperCase()}
                 <ChevronDown
-                  className={`h-4 w-4 transition-transform ${subOpen ? "rotate-180" : ""}`}
+                  className={`h-4 w-4 transition-transform ${
+                    subOpen ? "rotate-180" : ""
+                  }`}
                 />
               </button>
               {subOpen && (
                 <div className="absolute left-0 mt-1 w-full rounded-md border border-zinc-700 bg-zinc-900 shadow-lg z-50">
-                  {["FREE", "PREMIUM"].map((sub) => (
+                  {SUBSCRIPTION_OPTIONS.map((sub) => (
                     <button
                       key={sub}
                       onClick={() => {
@@ -215,7 +180,9 @@ const EditEmployee: React.FC<EditEmployeeProps> = ({
                         setSubOpen(false);
                       }}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-800 ${
-                        formData.subscription === sub ? "text-white" : "text-zinc-300"
+                        formData.subscription === sub
+                          ? "text-white font-semibold"
+                          : "text-zinc-300"
                       }`}
                     >
                       {sub}
@@ -238,15 +205,15 @@ const EditEmployee: React.FC<EditEmployeeProps> = ({
           </Button>
           <Button
             className="bg-zinc-100 text-black hover:bg-zinc-300"
-            onClick={handleSave}
+            onClick={handleCreate}
             disabled={saving}
           >
             {saving ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...
               </>
             ) : (
-              "Save Changes"
+              "Create"
             )}
           </Button>
         </div>
@@ -255,4 +222,4 @@ const EditEmployee: React.FC<EditEmployeeProps> = ({
   );
 };
 
-export default EditEmployee;
+export default CreateUser;
