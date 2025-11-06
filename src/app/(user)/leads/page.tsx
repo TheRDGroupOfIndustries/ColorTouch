@@ -82,6 +82,7 @@ export default function LeadsPage() {
       const res = await fetch("/api/leads", { cache: "no-store" });
       if (!res.ok) throw new Error(await res.text());
       console.log("Fetch leads response:", res);
+      console.log("Fetch leads response:", res);
       const data = await res.json();
       setLeads(Array.isArray(data) ? data : data.leads || []);
     } catch (err: any) {
