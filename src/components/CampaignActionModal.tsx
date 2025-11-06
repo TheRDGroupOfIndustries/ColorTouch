@@ -50,7 +50,7 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
     campaignName: "",
     description: "",
     campaignType: "MARKETING",
-    priority: "NORMAL",
+    priority: "MEDIUM",
     messageType: "TEXT",
     messageContent: "",
     mediaURL: "",
