@@ -36,12 +36,12 @@ export async function POST(req: Request) {
       },
     });
 
-    const token = signJwt({
-      userId: user.id,
-      name: user.name,
-      email: body.email,
-      role: user.role,
-    });
+    // const token = signJwt({
+    //   userId: user.id,
+    //   name: user.name,
+    //   email: body.email,
+    //   role: user.role,
+    // });
 
     const safeUser = {
       userId: user.id,
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     };
 
     const response = NextResponse.json({ user: safeUser });
-    response.headers.set("Set-Cookie", setTokenCookie(token));
+    // response.headers.set("Set-Cookie", setTokenCookie(token));
     return response;
   } catch (error: any) {
     console.error(

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, UserPen, Building2, Mail, Phone, StickyNote, Loader2 } from "lucide-react";
+import { X, UserPen, Loader2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
@@ -23,6 +23,8 @@ interface LeadsEditModalProps {
   onLeadUpdated: () => void;
 }
 
+const TAG_OPTIONS = ["HOT", "WARM", "COLD", "QUALIFIED", "DISQUALIFIED"];
+
 const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
   leadId,
   onClose,
@@ -33,13 +35,15 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
     email: "",
     phone: "",
     company: "",
-    tag: "",
+    tag: "DISQUALIFIED",
     source: "",
     notes: "",
     duration: 0,
   });
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [tagOpen, setTagOpen] = useState(false);
 
   // ✅ Fetch lead details
   useEffect(() => {
@@ -56,7 +60,7 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
           email: lead.email || "",
           phone: lead.phone || "",
           company: lead.company || "",
-          tag: lead.tag || "",
+          tag: lead.tag || "DISQUALIFIED",
           source: lead.source || "",
           notes: lead.notes || "",
           duration: lead.duration || 0,
@@ -106,10 +110,10 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md">
-        <div className="bg-card rounded-xl p-8 flex flex-col items-center justify-center shadow-xl border border-border">
-          <Loader2 className="w-6 h-6 animate-spin text-primary mb-3" />
-          <p className="text-sm text-muted-foreground">Loading lead data...</p>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <div className="bg-zinc-900 rounded-xl p-8 flex flex-col items-center justify-center shadow-xl border border-zinc-700">
+          <Loader2 className="w-6 h-6 animate-spin text-zinc-200 mb-3" />
+          <p className="text-sm text-zinc-400">Loading lead data...</p>
         </div>
       </div>
     );
@@ -117,16 +121,16 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-      <div className="relative bg-gradient-to-b from-white/90 to-white/70 dark:from-gray-900 dark:to-gray-950 text-foreground rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.2)] w-full max-w-2xl border border-gray-200/40 overflow-hidden">
+      <div className="relative bg-gradient-to-b from-zinc-900 via-zinc-950 to-black text-zinc-100 rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.6)] w-full max-w-2xl border border-zinc-800">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200/60 bg-gradient-to-r from-primary/10 to-transparent">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-gradient-to-r from-zinc-800/60 to-transparent">
           <div className="flex items-center gap-2">
-            <UserPen className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-semibold tracking-tight">Edit Lead</h2>
+            <UserPen className="w-5 h-5 text-zinc-300" />
+            <h2 className="text-xl font-semibold tracking-tight text-white">Edit Lead</h2>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-5 h-5 text-muted-foreground hover:text-foreground" />
+            <X className="w-5 h-5 text-zinc-400 hover:text-white" />
           </Button>
         </div>
 
@@ -135,43 +139,43 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
           {/* Left Side */}
           <div className="space-y-4">
             <div>
-              <label className="text-sm text-muted-foreground">Full Name *</label>
+              <label className="text-sm text-zinc-400">Full Name *</label>
               <Input
                 value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
-                className="bg-background/50 border-border"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
                 placeholder="Full name"
               />
             </div>
 
             <div>
-              <label className="text-sm text-muted-foreground">Email *</label>
+              <label className="text-sm text-zinc-400">Email *</label>
               <Input
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
-                className="bg-background/50 border-border"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
                 placeholder="Email"
               />
             </div>
 
             <div>
-              <label className="text-sm text-muted-foreground">Phone *</label>
+              <label className="text-sm text-zinc-400">Phone *</label>
               <Input
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
-                className="bg-background/50 border-border"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
                 placeholder="Phone number"
               />
             </div>
 
             <div>
-              <label className="text-sm text-muted-foreground">Company</label>
+              <label className="text-sm text-zinc-400">Company</label>
               <Input
                 value={formData.company}
                 onChange={(e) => handleChange("company", e.target.value)}
-                className="bg-background/50 border-border"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
                 placeholder="Company"
               />
             </div>
@@ -179,42 +183,65 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
 
           {/* Right Side */}
           <div className="space-y-4">
-            <div>
-              <label className="text-sm text-muted-foreground">Tag</label>
-              <Input
-                value={formData.tag}
-                onChange={(e) => handleChange("tag", e.target.value)}
-                className="bg-background/50 border-border"
-                placeholder="Hot / Warm / Cold"
-              />
+            {/* ✅ Tag Dropdown */}
+            <div className="relative">
+              <label className="text-sm text-zinc-400">Tag</label>
+              <button
+                type="button"
+                onClick={() => setTagOpen(!tagOpen)}
+                className="w-full flex justify-between items-center bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md px-3 py-2 text-sm hover:bg-zinc-800"
+              >
+                {formData.tag ? formData.tag.toUpperCase() : "Select Tag"}
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${tagOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+              {tagOpen && (
+                <div className="absolute left-0 mt-1 w-full rounded-md border border-zinc-700 bg-zinc-900 shadow-lg z-50">
+                  {TAG_OPTIONS.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => {
+                        handleChange("tag", tag);
+                        setTagOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-800 ${
+                        formData.tag === tag ? "text-white" : "text-zinc-300"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
-              <label className="text-sm text-muted-foreground">Source</label>
+              <label className="text-sm text-zinc-400">Source</label>
               <Input
                 value={formData.source}
                 onChange={(e) => handleChange("source", e.target.value)}
-                className="bg-background/50 border-border"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
                 placeholder="Source"
               />
             </div>
 
             <div>
-              <label className="text-sm text-muted-foreground">Duration (Days)</label>
+              <label className="text-sm text-zinc-400">Duration (Days)</label>
               <Input
                 type="number"
                 value={formData.duration}
                 onChange={(e) => handleChange("duration", Number(e.target.value))}
-                className="bg-background/50 border-border"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100"
               />
             </div>
 
             <div>
-              <label className="text-sm text-muted-foreground">Notes</label>
+              <label className="text-sm text-zinc-400">Notes</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => handleChange("notes", e.target.value)}
-                className="w-full rounded-lg border border-border bg-background/50 focus:ring-2 focus:ring-primary/40 resize-none h-24 px-3 py-2"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 focus:ring-2 focus:ring-zinc-600 resize-none h-24 px-3 py-2 placeholder:text-zinc-500"
                 placeholder="Enter notes..."
               />
             </div>
@@ -222,12 +249,16 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-5 border-t border-gray-200/60 bg-gradient-to-r from-transparent to-primary/5">
-          <Button variant="outline" onClick={onClose}>
+        <div className="flex justify-end gap-3 p-5 border-t border-zinc-800 bg-gradient-to-r from-transparent to-zinc-900/60">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+          >
             Cancel
           </Button>
           <Button
-            className="bg-primary hover:bg-primary/90 text-white"
+            className="bg-zinc-100 text-black hover:bg-zinc-300"
             onClick={handleSave}
             disabled={saving}
           >

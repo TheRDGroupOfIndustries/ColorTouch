@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import EditEmployee from "@/components/EmployeeEdit";
+import EmployeeView from "@/components/EmployeeView";
+import CreateUser from "@/components/CreateUser";
 
 /** Backend user structure */
 export interface BackendUser {
@@ -51,6 +53,7 @@ export default function Employees() {
   // Replaced 'lead' logic with 'user' logic
   const [popup, setPopup] = useState<null | "view" | "edit">(null); 
   const [selectedUser, setSelectedUser] = useState<BackendUser | null>(null);
+  const [openCreateUser, setOpenCreateUser] = useState(false);
 
   /** Fetch users from backend */
   const fetchUsers = () => {
@@ -222,11 +225,18 @@ export default function Employees() {
             Manage your users
           </div>
         </div>
-        <Link href="/console/admin/users/manage">
-          <button className="inline-flex items-center gap-2 rounded-md bg-[#cbc6c6] px-4 py-2 text-sm font-medium text-black transition-all hover:bg-[#cbc6c6]/90 active:scale-95">
-            Add User
-          </button>
-        </Link>
+        <div className="p-6">
+      {/* Add User Button */}
+      <button
+        onClick={() => setOpenCreateUser(true)}
+        className="inline-flex items-center gap-2 rounded-md bg-[#cbc6c6] px-4 py-2 text-sm font-medium text-black transition-all hover:bg-[#cbc6c6]/90 active:scale-95"
+      >
+        Add User
+      </button>
+
+      {/* ✅ Modal component */}
+      <CreateUser open={openCreateUser} close={() => setOpenCreateUser(false)} />
+    </div>
       </div>
 
       {/* Stats */}
@@ -406,6 +416,20 @@ export default function Employees() {
           <ChevronsRight className="size-4" />
         </button>
       </div>
+{popup === "edit" && selectedUser && (
+  <EditEmployee
+    user={selectedUser}
+    open={popup === "edit"}
+    close={closepop}
+    onUpdated={fetchUsers} // refresh list after edit
+  />
+)}
+
+{popup === "view" && selectedUser && (
+  <EmployeeView user={selectedUser} close={closepop} />
+)}
+
+
     </div>
   );
 }

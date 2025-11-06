@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    const user = await prisma.user.findMany({
+    const user = await prisma.user.findUnique({
       where: { id: id },
     });
 
