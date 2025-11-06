@@ -5,22 +5,24 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
-     const token = await getToken({ req, secret: process.env.AUTH_SECRET });
-    
-        if (!token || !token.userId) {
-          return NextResponse.json(
-            { success: false, error: "Unauthorized" },
-            { status: 401 }
-          );
-        }
-    
-        const userId = token.userId as string;
+    // Get token using either AUTH_SECRET or NEXTAUTH_SECRET
+    const token =
+      (await getToken({ req, secret: process.env.AUTH_SECRET }));
+
+    // Check both userId and sub (sub = default user ID field in NextAuth)
+    const userId = (token?.userId) as string | undefined;
+
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
     const leads = await prisma.lead.findMany({
-      where: { userId: userId },
+      where: { userId },
       orderBy: { createdAt: "desc" },
     });
-
 
     return NextResponse.json(leads);
   } catch (error: any) {
@@ -41,20 +43,22 @@ interface leaducreate {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as leaducreate
-    const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+    const body = (await req.json()) as leaducreate;
 
-    if (!token || !token.userId) {
+    const token =
+      (await getToken({ req, secret: process.env.AUTH_SECRET }));
+
+    const userId = (token?.userId || token?.sub) as string | undefined;
+
+    if (!userId) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const userId = token.userId as string;
-
     const created = await prisma.lead.create({
-      data: { ...body, userId: userId },
+      data: { ...body, userId },
     });
 
     return NextResponse.json(created);
