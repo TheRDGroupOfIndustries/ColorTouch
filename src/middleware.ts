@@ -2,17 +2,29 @@ import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Public routes (don't require login)
+// ✅ Extend NextRequest type temporarily to include `auth`
+interface AuthenticatedRequest extends NextRequest {
+  auth?: {
+    user?: {
+      id?: string;
+      name?: string;
+      email?: string;
+      role?: string;
+    };
+  } | null;
+}
+
+// Public routes
 const publicRoutes = ["/api/auth", "/login", "/public"];
 
-export default auth(async (req: NextRequest) => {
+export default auth(async (req: AuthenticatedRequest) => {
   const { nextUrl } = req;
 
-  // ✅ Allow static files and Next.js internals
+  // ✅ Allow static & internal files
   if (
-    nextUrl.pathname.startsWith("/_next") || // Next.js internal files
-    nextUrl.pathname.startsWith("/static") || // Static files
-    nextUrl.pathname.includes(".") // Files with extensions (css, js, images, etc.)
+    nextUrl.pathname.startsWith("/_next") ||
+    nextUrl.pathname.startsWith("/static") ||
+    nextUrl.pathname.includes(".")
   ) {
     return NextResponse.next();
   }
@@ -21,35 +33,24 @@ export default auth(async (req: NextRequest) => {
     nextUrl.pathname.startsWith(path)
   );
 
-  // ✅ If user is already authenticated and tries to visit /login, block it
+  // ✅ If user is already logged in, redirect away from /login
   if (req.auth && nextUrl.pathname === "/login") {
-    const redirectUrl = new URL("/", req.url); // 👈 redirect to home (or change to "/dashboard" if you prefer)
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
-  // If route is public, allow access
+  // ✅ Allow public routes
   if (isPublic) return NextResponse.next();
 
-  // If not signed in, redirect to sign-in page
+  // 🚫 Redirect unauthenticated users
   if (!req.auth) {
-    const signInUrl = new URL("/login", req.url);
-    return NextResponse.redirect(signInUrl);
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Otherwise, allow request
   return NextResponse.next();
 });
 
-// ✅ Add matcher config to only run middleware on specific routes
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\..*|public).*)",
   ],
 };

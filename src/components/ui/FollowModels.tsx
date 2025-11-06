@@ -125,7 +125,10 @@ const FollowModels: React.FC<FollowModelsProps> = ({
     }
   };
 
-  const renderViewField = (label: string, value: string | number | JSX.Element) => (
+  const renderViewField = (
+  label: string,
+  value: string | number | React.ReactNode
+) => (
     <div className="space-y-1">
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
       {typeof value === 'string' || typeof value === 'number' ? (

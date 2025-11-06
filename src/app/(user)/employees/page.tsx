@@ -418,7 +418,7 @@ export default function Employees() {
       </div>
 {popup === "edit" && selectedUser && (
   <EditEmployee
-    user={selectedUser}
+    user={selectedUser as any}
     open={popup === "edit"}
     close={closepop}
     onUpdated={fetchUsers} // refresh list after edit
