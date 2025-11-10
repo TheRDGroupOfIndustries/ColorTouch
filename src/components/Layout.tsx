@@ -51,7 +51,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
             <Cloud className="w-6 h-6 text-primary-foreground" />
           </div>
-          <h1 className="text-lg font-bold text-foreground">SkyTouch CRM</h1>
+          <h1 className="text-lg font-bold text-foreground">ColorTouch CRM</h1>
         </div>
 
         {/* Navigation */}
@@ -86,7 +86,7 @@ export default function Layout({ children }: LayoutProps) {
             Unlock automation & go ad-free
           </p>
           <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-            Get SkyTouch Pro
+            Get SkyTouch Pro 
           </Button>
         </div>
       </aside>
