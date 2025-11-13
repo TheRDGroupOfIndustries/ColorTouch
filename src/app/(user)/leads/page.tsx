@@ -34,6 +34,7 @@ import LeadsAddModal from "@/components/LeadsAddModal";
 import LeadViewModal from "@/components/LeadViewModal";
 import LeadEditModal from "@/components/LeadEditModal";
 import LeadsEditModal from "@/components/LeadEditModal";
+import { SelectGroup, SelectLabel } from "@/components/ui/select";
 
 interface Lead {
   id: string;
@@ -44,6 +45,7 @@ interface Lead {
   source: string;
   stage: string;
   tag: string;
+  status: string;
   value: string;
   created: string;
   avatar?: string;
@@ -68,9 +70,11 @@ export default function LeadsPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedStage, setSelectedStage] = useState<string>("");
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [selectedTag, setSelectedTag] = useState<string>("");
-  const [popup, setPopup] = useState<null | "add" | "view" | "edit" | "delete">(null);
+  const [popup, setPopup] = useState<null | "add" | "view" | "edit" | "delete">(
+    null
+  );
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   const closePopup = () => setPopup(null);
@@ -81,9 +85,8 @@ export default function LeadsPage() {
       setLoading(true);
       const res = await fetch("/api/leads", { cache: "no-store" });
       if (!res.ok) throw new Error(await res.text());
-      console.log("Fetch leads response:", res);
-      console.log("Fetch leads response:", res);
       const data = await res.json();
+      console.log("Fetch leads response:", data);
       setLeads(Array.isArray(data) ? data : data.leads || []);
     } catch (err: any) {
       setError(err.message || "Failed to fetch leads");
@@ -118,11 +121,29 @@ export default function LeadsPage() {
     }
   };
 
-  const handleUpdateLead = async (leadId: string, data: Partial<Lead>) => {
-    await new Promise((resolve) => setTimeout(resolve, 300)); // placeholder
-    setLeads((prev) =>
-      prev.map((lead) => (lead.id === leadId ? { ...lead, ...data } : lead))
-    );
+  const handleUpdateLead = async (leadId: string, formData: Partial<Lead>) => {
+       if (!leadId || !formData) {
+         toast.error("⚠️ Please fill all required fields");
+         return;
+       }
+
+       try {
+         const res = await fetch(`/api/leads/${leadId}`, {
+           method: "PUT",
+           headers: { "Content-Type": "application/json" },
+           body: JSON.stringify(formData),
+         });
+
+         const data = await res.json();
+         if (!res.ok) throw new Error(data.error || "Failed to update lead");
+
+         toast.success(" Lead updated successfully!");
+         fetchLeads();
+       } catch (err: any) {
+         console.error("Error updating lead:", err);
+         toast.error(` ${err.message || "Update failed"}`);
+       } 
+     
   };
 
   const openModal = (action: "view" | "edit" | "delete", lead: Lead | null) => {
@@ -182,9 +203,9 @@ export default function LeadsPage() {
         lead.email.toLowerCase().includes(search.toLowerCase()) ||
         lead.company.toLowerCase().includes(search.toLowerCase());
 
-      const matchesStage =
-        selectedStage && selectedStage !== "all"
-          ? lead.stage.toLowerCase() === selectedStage.toLowerCase()
+      const matchesStatus =
+        selectedStatus && selectedStatus !== "all"
+          ? lead.status === selectedStatus
           : true;
 
       const matchesTag =
@@ -192,9 +213,9 @@ export default function LeadsPage() {
           ? lead.tag.toLowerCase() === selectedTag.toLowerCase()
           : true;
 
-      return matchesSearch && matchesStage && matchesTag;
+      return matchesSearch && matchesStatus && matchesTag;
     });
-  }, [leads, search, selectedStage, selectedTag]);
+  }, [leads, search, selectedStatus, selectedTag]);
 
   // ✅ UI (unchanged)
   return (
@@ -204,7 +225,9 @@ export default function LeadsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-foreground">Lead Management</h2>
+          <h2 className="text-3xl font-bold text-foreground">
+            Lead Management
+          </h2>
           <p className="text-sm text-muted-foreground">
             Manage and track your leads efficiently
           </p>
@@ -289,6 +312,18 @@ export default function LeadsPage() {
           />
         </div>
 
+        <Select onValueChange={setSelectedStatus}>
+          <SelectTrigger className="w-48 bg-card border-border">
+            <SelectValue placeholder="Filter by Status" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover border-border">
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="PENDING">Pending</SelectItem>
+            <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
+            <SelectItem value="CONVERTED">Converted</SelectItem>
+            <SelectItem value="REJECTED">Rejected</SelectItem>
+          </SelectContent>
+        </Select>
         <Select onValueChange={setSelectedTag}>
           <SelectTrigger className="w-48 bg-card border-border">
             <SelectValue placeholder="Filter by Tag" />
@@ -336,10 +371,10 @@ export default function LeadsPage() {
                     "Lead",
                     "Contact",
                     "Source",
-                    "Stage",
+                    // "Stage",
                     "Tag",
-                    "Value",
-                    "Created",
+                    // "Value",
+                    "Status",
                     "Actions",
                   ].map((h) => (
                     <th
@@ -353,7 +388,10 @@ export default function LeadsPage() {
               </thead>
               <tbody>
                 {filteredLeads.map((lead) => (
-                  <tr key={lead.id} className="border-b border-border hover:bg-secondary/50">
+                  <tr
+                    key={lead.id}
+                    className="border-b border-border hover:bg-secondary/50"
+                  >
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <Avatar className="w-10 h-10 bg-info">
@@ -377,26 +415,50 @@ export default function LeadsPage() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <div className="text-sm text-foreground">{lead.email}</div>
+                      <div className="text-sm text-foreground">
+                        {lead.email}
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         {lead.phone}
                       </div>
                     </td>
                     <td className="p-4 flex items-center gap-2">
-                      <span className="text-lg">{getSourceIcon(lead.source)}</span>
-                      <span className="text-sm text-foreground">{lead.source}</span>
+                      <span className="text-lg">
+                        {getSourceIcon(lead.source)}
+                      </span>
+                      <span className="text-sm text-foreground">
+                        {lead.source}
+                      </span>
                     </td>
-                    <td className="p-4">
+                    {/* <td className="p-4">
                       <Badge variant="secondary">{lead.stage}</Badge>
-                    </td>
+                    </td> */}
                     <td className="p-4">
                       <Badge variant="secondary">{lead.tag}</Badge>
                     </td>
-                    <td className="p-4 font-semibold text-foreground">
+                    {/* <td className="p-4 font-semibold text-foreground">
                       {lead.value}
-                    </td>
-                    <td className="p-4 text-sm text-muted-foreground">
-                      {lead.created}
+                    </td> */}
+                    <td className="p-4">
+                      <Select
+                        value={lead.status}
+                        onValueChange={(newStatus) =>
+                          handleUpdateLead(lead.id, { status: newStatus })
+                        }
+                      >
+                        <SelectTrigger className="w-[140px] h-8 text-sm">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {/* <SelectLabel>Lead Status</SelectLabel> */}
+                            <SelectItem value="PENDING">Pending</SelectItem>
+                            <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
+                            <SelectItem value="CONVERTED">Converted</SelectItem>
+                            <SelectItem value="REJECTED">Rejected</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
                     </td>
                     <td className="p-4 flex gap-1">
                       <Button
@@ -441,15 +503,15 @@ export default function LeadsPage() {
       )}
 
       {popup === "view" && selectedLead && (
-  <LeadViewModal lead={selectedLead} closePopup={closePopup} />
-)}
+        <LeadViewModal lead={selectedLead} closePopup={closePopup} />
+      )}
       {popup === "edit" && selectedLead && (
-  <LeadsEditModal
-    leadId={selectedLead.id}
-    onClose={closePopup}
-    onLeadUpdated={fetchLeads}
-  />
-)}
+        <LeadsEditModal
+          leadId={selectedLead.id}
+          onClose={closePopup}
+          onLeadUpdated={fetchLeads}
+        />
+      )}
     </div>
   );
 }

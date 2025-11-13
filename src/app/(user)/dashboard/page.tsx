@@ -4,11 +4,11 @@ import React, { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  DollarSign, 
-  UserPlus, 
-  Users, 
-  TrendingUp, 
+import {
+  DollarSign,
+  UserPlus,
+  Users,
+  TrendingUp,
   TrendingDown,
   Calendar,
   Clock,
@@ -18,38 +18,39 @@ import {
   Phone,
   Mail,
   MessageSquare,
-  Briefcase
+  Briefcase,
 } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 import AddReminderModal from "@/components/AddReminderModal";
+import LeadsAddModal from "@/components/LeadsAddModal";
 
 interface DashboardMetrics {
   totalRevenue: {
     value: number;
     formatted: string;
     change: string;
-    trend: 'up' | 'down';
+    trend: "up" | "down";
     subtitle: string;
   };
   newLeads: {
     value: number;
     formatted: string;
     change: string;
-    trend: 'up' | 'down';
+    trend: "up" | "down";
     subtitle: string;
   };
   activeEmployees: {
     value: number;
     formatted: string;
     change: string;
-    trend: 'up' | 'down';
+    trend: "up" | "down";
     subtitle: string;
   };
   conversionRate: {
     value: number;
     formatted: string;
     change: string;
-    trend: 'up' | 'down';
+    trend: "up" | "down";
     subtitle: string;
   };
 }
@@ -94,6 +95,7 @@ export default function Dashboard() {
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
   const [reminders, setReminders] = useState<GroupedReminders | null>(null);
   const [reminderStats, setReminderStats] = useState<any>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,26 +105,26 @@ export default function Dashboard() {
       setError(null);
 
       // Fetch dashboard metrics
-      const metricsRes = await fetch('/api/dashboard/metrics', {
-        credentials: 'same-origin',
+      const metricsRes = await fetch("/api/dashboard/metrics", {
+        credentials: "same-origin",
       });
-      
+
       if (!metricsRes.ok) {
-        throw new Error('Failed to fetch dashboard metrics');
+        throw new Error("Failed to fetch dashboard metrics");
       }
-      
+
       const metricsData = await metricsRes.json();
-      
+
       if (metricsData.success) {
         setMetrics(metricsData.data.metrics);
         setRecentLeads(metricsData.data.recentLeads || []);
       }
 
       // Fetch reminders
-      const remindersRes = await fetch('/api/reminders', {
-        credentials: 'same-origin',
+      const remindersRes = await fetch("/api/reminders", {
+        credentials: "same-origin",
       });
-      
+
       if (remindersRes.ok) {
         const remindersData = await remindersRes.json();
         if (remindersData.success) {
@@ -130,11 +132,10 @@ export default function Dashboard() {
           setReminderStats(remindersData.stats);
         }
       }
-
     } catch (err: any) {
-      console.error('Dashboard fetch error:', err);
-      setError(err.message || 'Failed to load dashboard data');
-      toast.error('Failed to load dashboard data');
+      console.error("Dashboard fetch error:", err);
+      setError(err.message || "Failed to load dashboard data");
+      toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
@@ -146,21 +147,31 @@ export default function Dashboard() {
 
   const getStatusColor = (tag: string) => {
     switch (tag.toLowerCase()) {
-      case 'hot': return 'bg-red-100 text-red-800 border-red-200';
-      case 'warm': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'cold': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'qualified': return 'bg-green-100 text-green-800 border-green-200';
-      case 'disqualified': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case "hot":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "warm":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "cold":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "qualified":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "disqualified":
+        return "bg-gray-100 text-gray-800 border-gray-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   const getReminderIcon = (type: string): React.ReactElement => {
     switch (type.toLowerCase()) {
-      case 'call': return <Phone className="w-4 h-4" />;
-      case 'email': return <Mail className="w-4 h-4" />;
-      case 'meeting': return <Briefcase className="w-4 h-4" />;
-      default: return <MessageSquare className="w-4 h-4" />;
+      case "call":
+        return <Phone className="w-4 h-4" />;
+      case "email":
+        return <Mail className="w-4 h-4" />;
+      case "meeting":
+        return <Briefcase className="w-4 h-4" />;
+      default:
+        return <MessageSquare className="w-4 h-4" />;
     }
   };
 
@@ -169,19 +180,19 @@ export default function Dashboard() {
     const now = new Date();
     const diffMs = date.getTime() - now.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
-    
+
     if (diffHours < 24 && diffHours > -24) {
-      return date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+      return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
       });
     }
-    
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -209,8 +220,8 @@ export default function Dashboard() {
             <AlertCircle className="w-5 h-5" />
             <span>Error: {error}</span>
           </div>
-          <Button 
-            onClick={fetchDashboardData} 
+          <Button
+            onClick={fetchDashboardData}
             className="mt-4"
             variant="outline"
           >
@@ -245,13 +256,18 @@ export default function Dashboard() {
                   <span className="text-2xl font-bold text-foreground">
                     {metrics.totalRevenue.formatted}
                   </span>
-                  <span className={`text-xs font-medium flex items-center gap-1 ${
-                    metrics.totalRevenue.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {metrics.totalRevenue.trend === 'up' ? 
-                      <TrendingUp className="w-3 h-3" /> : 
+                  <span
+                    className={`text-xs font-medium flex items-center gap-1 ${
+                      metrics.totalRevenue.trend === "up"
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {metrics.totalRevenue.trend === "up" ? (
+                      <TrendingUp className="w-3 h-3" />
+                    ) : (
                       <TrendingDown className="w-3 h-3" />
-                    }
+                    )}
                     {metrics.totalRevenue.change}
                   </span>
                 </div>
@@ -274,13 +290,18 @@ export default function Dashboard() {
                   <span className="text-2xl font-bold text-foreground">
                     {metrics.newLeads.formatted}
                   </span>
-                  <span className={`text-xs font-medium flex items-center gap-1 ${
-                    metrics.newLeads.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {metrics.newLeads.trend === 'up' ? 
-                      <TrendingUp className="w-3 h-3" /> : 
+                  <span
+                    className={`text-xs font-medium flex items-center gap-1 ${
+                      metrics.newLeads.trend === "up"
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {metrics.newLeads.trend === "up" ? (
+                      <TrendingUp className="w-3 h-3" />
+                    ) : (
                       <TrendingDown className="w-3 h-3" />
-                    }
+                    )}
                     {metrics.newLeads.change}
                   </span>
                 </div>
@@ -303,13 +324,18 @@ export default function Dashboard() {
                   <span className="text-2xl font-bold text-foreground">
                     {metrics.activeEmployees.formatted}
                   </span>
-                  <span className={`text-xs font-medium flex items-center gap-1 ${
-                    metrics.activeEmployees.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {metrics.activeEmployees.trend === 'up' ? 
-                      <TrendingUp className="w-3 h-3" /> : 
+                  <span
+                    className={`text-xs font-medium flex items-center gap-1 ${
+                      metrics.activeEmployees.trend === "up"
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {metrics.activeEmployees.trend === "up" ? (
+                      <TrendingUp className="w-3 h-3" />
+                    ) : (
                       <TrendingDown className="w-3 h-3" />
-                    }
+                    )}
                     {metrics.activeEmployees.change}
                   </span>
                 </div>
@@ -332,13 +358,18 @@ export default function Dashboard() {
                   <span className="text-2xl font-bold text-foreground">
                     {metrics.conversionRate.formatted}
                   </span>
-                  <span className={`text-xs font-medium flex items-center gap-1 ${
-                    metrics.conversionRate.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {metrics.conversionRate.trend === 'up' ? 
-                      <TrendingUp className="w-3 h-3" /> : 
+                  <span
+                    className={`text-xs font-medium flex items-center gap-1 ${
+                      metrics.conversionRate.trend === "up"
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
+                    {metrics.conversionRate.trend === "up" ? (
+                      <TrendingUp className="w-3 h-3" />
+                    ) : (
                       <TrendingDown className="w-3 h-3" />
-                    }
+                    )}
                     {metrics.conversionRate.change}
                   </span>
                 </div>
@@ -357,24 +388,31 @@ export default function Dashboard() {
         {/* Recent Leads */}
         <Card className="p-6 bg-card border-border">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-foreground">Recent Leads</h2>
+            <h2 className="text-xl font-semibold text-foreground">
+              Recent Leads
+            </h2>
             <Button variant="ghost" size="sm" className="text-primary">
               View All
             </Button>
           </div>
-          
+
           <div className="space-y-4">
             {recentLeads.length > 0 ? (
               recentLeads.slice(0, 5).map((lead) => (
-                <div key={lead.id} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                <div
+                  key={lead.id}
+                  className="flex items-center justify-between p-3 bg-secondary rounded-lg"
+                >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
                       {lead.name.substring(0, 2).toUpperCase()}
                     </div>
                     <div>
-                      <div className="font-medium text-foreground">{lead.name}</div>
+                      <div className="font-medium text-foreground">
+                        {lead.name}
+                      </div>
                       <div className="text-sm text-muted-foreground">
-                        {lead.company || lead.email || 'No company'}
+                        {lead.company || lead.email || "No company"}
                       </div>
                     </div>
                   </div>
@@ -402,27 +440,35 @@ export default function Dashboard() {
         <Card className="p-6 bg-card border-border">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Upcoming Reminders</h2>
+              <h2 className="text-xl font-semibold text-foreground">
+                Upcoming Reminders
+              </h2>
               {reminderStats && (
                 <p className="text-sm text-muted-foreground">
-                  {reminderStats.pending} pending • {reminderStats.overdue} overdue
+                  {reminderStats.pending} pending • {reminderStats.overdue}{" "}
+                  overdue
                 </p>
               )}
             </div>
             <AddReminderModal onReminderAdded={fetchDashboardData} />
           </div>
-          
+
           <div className="space-y-3">
             {reminders && (
               <>
                 {/* Overdue */}
                 {reminders.overdue.map((reminder) => (
-                  <div key={reminder.id} className="flex items-center gap-3 p-3 border-l-4 border-red-500 bg-red-50 rounded-r">
+                  <div
+                    key={reminder.id}
+                    className="flex items-center gap-3 p-3 border-l-4 border-red-500 bg-red-50 rounded-r"
+                  >
                     <div className="text-red-600">
                       {getReminderIcon(reminder.reminderType)}
                     </div>
                     <div className="flex-1">
-                      <div className="font-medium text-foreground">{reminder.title}</div>
+                      <div className="font-medium text-foreground">
+                        {reminder.title}
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         {reminder.lead?.name} • Overdue
                       </div>
@@ -432,17 +478,23 @@ export default function Dashboard() {
                     </Badge>
                   </div>
                 ))}
-                
+
                 {/* Today */}
                 {reminders.today.map((reminder) => (
-                  <div key={reminder.id} className="flex items-center gap-3 p-3 border-l-4 border-orange-500 bg-orange-50 rounded-r">
+                  <div
+                    key={reminder.id}
+                    className="flex items-center gap-3 p-3 border-l-4 border-orange-500 bg-orange-50 rounded-r"
+                  >
                     <div className="text-orange-600">
                       {getReminderIcon(reminder.reminderType)}
                     </div>
                     <div className="flex-1">
-                      <div className="font-medium text-foreground">{reminder.title}</div>
+                      <div className="font-medium text-foreground">
+                        {reminder.title}
+                      </div>
                       <div className="text-sm text-muted-foreground">
-                        {reminder.lead?.name} • {formatDate(reminder.reminderDate)}
+                        {reminder.lead?.name} •{" "}
+                        {formatDate(reminder.reminderDate)}
                       </div>
                     </div>
                     <Badge className="bg-orange-100 text-orange-800 border-orange-200">
@@ -450,47 +502,61 @@ export default function Dashboard() {
                     </Badge>
                   </div>
                 ))}
-                
+
                 {/* Tomorrow & This Week */}
-                {[...reminders.tomorrow, ...reminders.thisWeek.slice(0, 3)].map((reminder) => (
-                  <div key={reminder.id} className="flex items-center gap-3 p-3 border-l-4 border-blue-500 bg-blue-50 rounded-r">
-                    <div className="text-blue-600">
-                      {getReminderIcon(reminder.reminderType)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-foreground">{reminder.title}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {reminder.lead?.name} • {formatDate(reminder.reminderDate)}
+                {[...reminders.tomorrow, ...reminders.thisWeek.slice(0, 3)].map(
+                  (reminder) => (
+                    <div
+                      key={reminder.id}
+                      className="flex items-center gap-3 p-3 border-l-4 border-blue-500 bg-blue-50 rounded-r"
+                    >
+                      <div className="text-blue-600">
+                        {getReminderIcon(reminder.reminderType)}
                       </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-foreground">
+                          {reminder.title}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {reminder.lead?.name} •{" "}
+                          {formatDate(reminder.reminderDate)}
+                        </div>
+                      </div>
+                      <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                        {reminder.priority}
+                      </Badge>
                     </div>
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                      {reminder.priority}
-                    </Badge>
-                  </div>
-                ))}
+                  )
+                )}
               </>
             )}
-            
-            {reminders && 
-             reminders.overdue.length === 0 && 
-             reminders.today.length === 0 && 
-             reminders.tomorrow.length === 0 && 
-             reminders.thisWeek.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No upcoming reminders</p>
-                <p className="text-sm">Create reminders to stay organized</p>
-              </div>
-            )}
+
+            {reminders &&
+              reminders.overdue.length === 0 &&
+              reminders.today.length === 0 &&
+              reminders.tomorrow.length === 0 &&
+              reminders.thisWeek.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No upcoming reminders</p>
+                  <p className="text-sm">Create reminders to stay organized</p>
+                </div>
+              )}
           </div>
         </Card>
       </div>
 
       {/* Quick Actions */}
       <Card className="p-6 bg-card border-border">
-        <h3 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-4">
+          Quick Actions
+        </h3>
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button
+            onClick={() => setShowAddModal(true)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
             <UserPlus className="w-4 h-4" />
             Add Lead
           </Button>
@@ -502,8 +568,8 @@ export default function Dashboard() {
             <MessageSquare className="w-4 h-4" />
             Send Campaign
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="flex items-center gap-2"
             onClick={fetchDashboardData}
           >
@@ -512,6 +578,13 @@ export default function Dashboard() {
           </Button>
         </div>
       </Card>
+
+      {showAddModal && (
+        <LeadsAddModal
+          onClose={() => setShowAddModal(false)}
+          onLeadAdded={fetchDashboardData}
+        />
+      )}
     </div>
   );
 }

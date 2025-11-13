@@ -46,32 +46,32 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
   const [tagOpen, setTagOpen] = useState(false);
 
   // ✅ Fetch lead details
+  const fetchLead = async () => {
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, { cache: "no-store" });
+      const data = await res.json();
+
+      if (!res.ok || !data[0]) throw new Error("Failed to load lead details");
+      const lead = data[0];
+
+      setFormData({
+        name: lead.name || "",
+        email: lead.email || "",
+        phone: lead.phone || "",
+        company: lead.company || "",
+        tag: lead.tag || "DISQUALIFIED",
+        source: lead.source || "",
+        notes: lead.notes || "",
+        duration: lead.duration || 0,
+      });
+    } catch (err: any) {
+      toast.error("❌ Failed to fetch lead data");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    const fetchLead = async () => {
-      try {
-        const res = await fetch(`/api/leads/${leadId}`, { cache: "no-store" });
-        const data = await res.json();
-
-        if (!res.ok || !data[0]) throw new Error("Failed to load lead details");
-        const lead = data[0];
-
-        setFormData({
-          name: lead.name || "",
-          email: lead.email || "",
-          phone: lead.phone || "",
-          company: lead.company || "",
-          tag: lead.tag || "DISQUALIFIED",
-          source: lead.source || "",
-          notes: lead.notes || "",
-          duration: lead.duration || 0,
-        });
-      } catch (err: any) {
-        toast.error("❌ Failed to fetch lead data");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
 
     fetchLead();
   }, [leadId]);
