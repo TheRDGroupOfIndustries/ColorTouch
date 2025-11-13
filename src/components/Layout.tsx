@@ -28,7 +28,7 @@ interface LayoutProps {
 }
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Lead Management", href: "/leads", icon: Users },
   { name: "WhatsApp Campaigns", href: "/whatsapp", icon: MessageCircle },
   { name: "Leads Follow-Up", href: "/follow-up", icon: Calendar },
