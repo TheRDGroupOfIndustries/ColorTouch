@@ -14,8 +14,8 @@ export default function LeadsUploader() {
     if (!selectedFile) return;
 
     // Validate file type
-    if (!selectedFile.name.endsWith('.xlsx')) {
-      toast.error('❌ Invalid file type. Only .xlsx files allowed.');
+    if (!selectedFile.name.endsWith('.xlsx') && !selectedFile.name.endsWith('.csv')) {
+      toast.error('❌ Invalid file type. Only .xlsx or .csv files allowed.');
       e.target.value = ''; // reset input
       return;
     }
@@ -86,7 +86,7 @@ export default function LeadsUploader() {
               Upload Your Leads File
             </h2>
             <p className="text-sm text-muted-foreground">
-              Upload your <code>.xlsx</code> file containing leads data. Ensure your columns and enums follow the format below.
+              Upload your <code>.xlsx</code> or <code>.csv</code> file containing leads data. Ensure your columns and enums follow the format below.
             </p>
           </div>
           <button
@@ -160,7 +160,7 @@ export default function LeadsUploader() {
           <div className="space-y-3">
             <label htmlFor="leadFile" className="flex items-center gap-2 text-sm font-medium leading-none">
               <CloudUpload className="h-4 w-4" />
-              Excel File (.xlsx)
+              Excel or CSV File (.xlsx, .csv)
               <Info className="h-3.5 w-3.5 text-muted-foreground" />
             </label>
 
@@ -173,7 +173,7 @@ export default function LeadsUploader() {
                 <input
                   id="leadFile"
                   type="file"
-                  accept=".xlsx"
+                  accept=".xlsx,.csv"
                   className="sr-only"
                   onChange={handleFileChange}
                 />
@@ -203,7 +203,7 @@ export default function LeadsUploader() {
             </button>
 
             <p className="text-sm text-muted-foreground">
-              Accepts <code>.xlsx</code> only. Max 5MB. Max 20 leads per upload.
+              Accepts <code>.xlsx</code> or <code>.csv</code> files. Max 5MB. Max 100 leads per upload.
             </p>
 
             <hr className="h-px bg-border" />
