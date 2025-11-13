@@ -20,22 +20,24 @@ model User {
   whatsappIntegrations WhatsAppIntegration[]
   campaigns            WhatsappCampaign[]
   whatsappTokens       WhatsappToken[]
+  reminders            Reminder[]
 }
 
 model Lead {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   name      String
-  email     String?  @unique
-  phone     String?  @db.VarChar(20)
+  email     String?    @unique
+  phone     String?    @db.VarChar(20)
   company   String?
   source    String?
   notes     String?
-  tag       Tag      @default(DISQUALIFIED)
+  tag       Tag        @default(DISQUALIFIED)
   duration  Int
   userId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reminders Reminder[]
 }
 
 model WhatsAppIntegration {
@@ -75,6 +77,22 @@ model WhatsappToken {
   updatedAt DateTime @updatedAt
 
   @@unique([userId])
+}
+
+model Reminder {
+  id           String        @id @default(cuid())
+  title        String
+  description  String?
+  reminderDate DateTime
+  reminderType ReminderType  @default(GENERAL)
+  priority     Priority      @default(MEDIUM)
+  isCompleted  Boolean       @default(false)
+  userId       String
+  leadId       String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead         Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
 }
 
 enum Role {
@@ -146,4 +164,13 @@ enum Provider {
 enum CampaignStatus {
   ACTIVE
   PAUSED
+}
+
+enum ReminderType {
+  CALL
+  EMAIL
+  MEETING
+  FOLLOW_UP
+  GENERAL
+  TASK
 }

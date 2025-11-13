@@ -1,13 +1,6 @@
-import AuthButton from "@/components/AuthButton";
-import Layout from "@/components/Layout";
-import Dashboard from "@/pages/Dashboard";
-import Image from "next/image";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return (
-    <div>
-      <Dashboard />
-      {/* <AuthButton /> */}
-    </div>
-  );
+  // Redirect to dashboard
+  redirect("/dashboard");
 }

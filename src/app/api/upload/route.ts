@@ -22,6 +22,28 @@ type LeadRow = {
   tag?: Tag;
 };
 
+// Map incoming (possibly non-enum) tag values to valid Tag enum values.
+// Adjust mappings as business semantics evolve.
+const tagAliasMap: Record<string, Tag> = {
+  HOT: Tag.HOT,
+  WARM: Tag.WARM,
+  COLD: Tag.COLD,
+  QUALIFIED: Tag.QUALIFIED,
+  DISQUALIFIED: Tag.DISQUALIFIED,
+  // External synonyms coming from legacy CSVs
+  LEAD: Tag.WARM, // Treat generic LEAD as WARM by default
+  PROSPECT: Tag.HOT, // Treat PROSPECT as HOT interest
+};
+
+const normalizeTag = (raw?: string): { tag?: Tag; invalid?: string } => {
+  if (!raw) return { tag: undefined };
+  const upper = raw.trim().toUpperCase();
+  if (tagAliasMap[upper]) {
+    return { tag: tagAliasMap[upper] };
+  }
+  return { tag: undefined, invalid: upper }; // Capture invalid for reporting
+};
+
 export async function POST(req: NextRequest) {
   try {
     // --- 1️⃣ Extract userId from cookies ---
@@ -48,14 +70,24 @@ export async function POST(req: NextRequest) {
 
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-    if (!token || !token.userId) {
+    // Support multiple potential id fields from next-auth token structure
+    const userId = (token?.userId || (token as any)?.sub || (token as any)?.id) as string | undefined;
+
+    if (!token || !userId) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized" },
+        { success: false, error: "Unauthorized: Missing user identifier in session token." },
         { status: 401 }
       );
     }
 
-    const userId = token.userId as string;
+    // Ensure user exists to avoid foreign key violations
+    const userExists = await prisma.user.findUnique({ where: { id: userId } });
+    if (!userExists) {
+      return NextResponse.json(
+        { success: false, error: `User with id '${userId}' does not exist. Create the user (signup) before importing leads.` },
+        { status: 404 }
+      );
+    }
 
     // --- 2️⃣ Handle file upload ---
     const formData = await req.formData();
@@ -93,7 +125,16 @@ export async function POST(req: NextRequest) {
       if (file.name.endsWith(".csv")) {
         // Handle CSV files
         const csvText = Buffer.from(arrayBuffer).toString('utf-8');
-        const csvRows = csvText.split('\n').map(row => row.split(',').map(cell => cell.trim()));
+        const csvRows = csvText.split('\n').map(row => row.split(',').map(cell => {
+          // Remove extra quotes and trim whitespace
+          let cleanCell = cell.trim();
+          // Remove leading/trailing quotes if present
+          if ((cleanCell.startsWith('"') && cleanCell.endsWith('"')) || 
+              (cleanCell.startsWith("'") && cleanCell.endsWith("'"))) {
+            cleanCell = cleanCell.slice(1, -1);
+          }
+          return cleanCell;
+        }));
         
         if (csvRows.length === 0) {
           return NextResponse.json(
@@ -104,6 +145,7 @@ export async function POST(req: NextRequest) {
 
         const headers = csvRows[0].map(h => h.toLowerCase().trim());
 
+        const invalidTags: string[] = [];
         for (let i = 1; i < csvRows.length; i++) {
           const row = csvRows[i];
           if (row.length === 0 || row[0] === '') continue;
@@ -118,13 +160,17 @@ export async function POST(req: NextRequest) {
             else if (header.includes('source')) rowData.source = value;
             else if (header.includes('note')) rowData.notes = value;
             else if (header.includes('tag')) {
-              rowData.tag = value.toUpperCase() as Tag;
+              const { tag, invalid } = normalizeTag(value);
+              if (tag) rowData.tag = tag; else if (invalid) invalidTags.push(invalid);
             }
           });
 
           if (rowData.name) {
             rows.push(rowData);
           }
+        }
+        if (invalidTags.length) {
+          console.log(`⚠️ Invalid tag values encountered (mapped to default DISQUALIFIED): ${invalidTags.join(', ')}`);
         }
       } else {
         // Handle Excel files
@@ -159,6 +205,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Process data rows
+        const invalidTags: string[] = [];
         worksheet.eachRow((row, rowNumber) => {
           if (rowNumber === 1) return; // Skip header row
           
@@ -174,7 +221,8 @@ export async function POST(req: NextRequest) {
             else if (header.includes('source')) rowData.source = value;
             else if (header.includes('note')) rowData.notes = value;
             else if (header.includes('tag')) {
-              rowData.tag = value.toUpperCase() as Tag;
+              const { tag, invalid } = normalizeTag(value);
+              if (tag) rowData.tag = tag; else if (invalid) invalidTags.push(invalid);
             }
           });
           
@@ -182,6 +230,9 @@ export async function POST(req: NextRequest) {
             rows.push(rowData);
           }
         });
+        if (invalidTags.length) {
+          console.log(`⚠️ Invalid tag values encountered (mapped to default DISQUALIFIED): ${invalidTags.join(', ')}`);
+        }
       }
     } catch (fileError: any) {
       return NextResponse.json(
@@ -210,7 +261,7 @@ export async function POST(req: NextRequest) {
           company: row.company ? String(row.company).trim().substring(0, 255) : null,
           source: row.source ? String(row.source).trim().substring(0, 50) : null,
           notes: row.notes ? String(row.notes).trim().substring(0, 1000) : null, // Notes limited
-          tag: row.tag || undefined,
+          tag: row.tag || Tag.DISQUALIFIED,
           duration: 0,
           userId,
         };
