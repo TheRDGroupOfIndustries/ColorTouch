@@ -53,12 +53,22 @@ export async function GET(req: NextRequest) { {
     }
     const userId = token.userId as string;
 
-    const campaigns = await prisma.whatsappCampaign.findMany({
-      where: { userId: userId },
-      orderBy: { createdAt: "desc" },
-    });
+    let campaigns: any[] = [];
+    
+    try {
+      campaigns = await prisma.whatsappCampaign.findMany({
+        where: { userId: userId },
+        orderBy: { createdAt: "desc" },
+      });
+    } catch (dbErr) {
+      console.error("Database unavailable for campaigns — returning empty list:", dbErr);
+      // Return empty array when DB is unavailable instead of crashing
+      campaigns = [];
+    }
+    
     return NextResponse.json(campaigns);
   } catch (error: any) {
+    console.error("Campaigns API error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

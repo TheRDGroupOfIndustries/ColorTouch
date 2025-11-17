@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Search,
   Plus,
@@ -70,74 +70,8 @@ const stats = [
   },
 ];
 
-const initialActivities: Activity[] = [
-  {
-    id: 1,
-    name: "Karan Malhotra",
-    company: "Media House",
-    type: "Call",
-    priority: "Medium",
-    scheduled: "636 days ago",
-    time: "12:00",
-    status: "Overdue",
-    avatar: "KM",
-  },
-  {
-    id: 2,
-    name: "Pooja Bansal",
-    company: "Travel Agency",
-    type: "Follow-Up",
-    priority: "Low",
-    scheduled: "635 days ago",
-    time: "17:00",
-    status: "Overdue",
-    avatar: "PB",
-  },
-  {
-    id: 3,
-    name: "Sanjay Kapoor",
-    company: "Automotive Parts",
-    type: "Email",
-    priority: "High",
-    scheduled: "634 days ago",
-    time: "08:30",
-    status: "Overdue",
-    avatar: "SK",
-  },
-  {
-    id: 4,
-    name: "Rajesh Kumar",
-    company: "Tech Solutions Pvt Ltd",
-    type: "Call",
-    priority: "High",
-    scheduled: "633 days ago",
-    time: "10:00",
-    status: "Pending",
-    avatar: "RK",
-  },
-  {
-    id: 5,
-    name: "Priya Sharma",
-    company: "Digital Marketing Co",
-    type: "Email",
-    priority: "Medium",
-    scheduled: "633 days ago",
-    time: "14:30",
-    status: "Pending",
-    avatar: "PS",
-  },
-  {
-    id: 6,
-    name: "Amit Patel",
-    company: "Manufacturing Ltd",
-    type: "Meeting",
-    priority: "High",
-    scheduled: "632 days ago",
-    time: "11:00",
-    status: "Pending",
-    avatar: "AP",
-  },
-];
+// This will be populated from the database
+const initialActivities: Activity[] = [];
 
 const quickFilters = [
   { label: "Overdue", value: "overdue", variant: "destructive" as const },
@@ -152,6 +86,45 @@ const Page = () => {
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
   const [popup, setPopup] = useState<null | "view" | "edit">(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch leads with FOLLOW_UP status from database
+  const fetchFollowUpLeads = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/leads", { cache: "no-store" });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      const leads = Array.isArray(data) ? data : data.leads || [];
+      
+      // Filter only FOLLOW_UP leads and transform to Activity format
+      const followUpLeads = leads
+        .filter((lead: any) => lead.status === 'FOLLOW_UP')
+        .map((lead: any, index: number) => ({
+          id: parseInt(lead.id.slice(-6), 16) || index + 1, // Convert part of ID to number
+          name: lead.name,
+          company: lead.company || 'Unknown Company',
+          type: 'Follow-Up',
+          priority: lead.tag === 'HOT' ? 'High' : lead.tag === 'WARM' ? 'Medium' : 'Low',
+          scheduled: new Date(lead.createdAt).toLocaleDateString(),
+          time: new Date(lead.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+          status: 'Pending' as const,
+          avatar: lead.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase(),
+        }));
+      
+      setActivities(followUpLeads);
+    } catch (error) {
+      console.error('Error fetching follow-up leads:', error);
+      setActivities([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchFollowUpLeads();
+  }, []);
 
   const handleCompleteActivity = (activityId: number) => {
     setActivities((prev) => prev.filter((a) => a.id !== activityId));
@@ -368,99 +341,113 @@ const Page = () => {
                 </tr>
               </thead>
               <tbody>
-                {activities.map((activity) => (
-                  <tr
-                    key={activity.id}
-                    className="border-b border-border hover:bg-secondary/50"
-                  >
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10 bg-info">
-                          <AvatarFallback className="text-white font-semibold">
-                            {activity.avatar}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium text-foreground">
-                            {activity.name}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {activity.company}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4">{activity.type}</td>
-                    <td className="p-4">
-                      <Badge
-                        variant="secondary"
-                        className={
-                          activity.priority === "High"
-                            ? "bg-destructive/20 text-destructive"
-                            : activity.priority === "Medium"
-                            ? "bg-warning/20 text-warning"
-                            : "bg-success/20 text-success"
-                        }
-                      >
-                        {activity.priority}
-                      </Badge>
-                    </td>
-                    <td className="p-4">
-                      <div className="text-sm text-foreground">
-                        {activity.scheduled}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {activity.time}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <Badge
-                        variant="secondary"
-                        className={
-                          activity.status === "Overdue"
-                            ? "bg-destructive/20 text-destructive"
-                            : activity.status === "Pending"
-                            ? "bg-warning/20 text-warning"
-                            : "bg-success/20 text-success"
-                        }
-                      >
-                        {activity.status}
-                      </Badge>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex gap-1">
-                        <Button
-                          onClick={() =>
-                            openModal("view", activityToLead(activity))
-                          }
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-green-500 hover:text-green-400 hover:bg-green-900/20"
-                          onClick={() => handleCompleteActivity(activity.id)}
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          onClick={() =>
-                            openModal("edit", activityToLead(activity))
-                          }
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/20"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
+                {loading ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                      Loading follow-up leads...
                     </td>
                   </tr>
-                ))}
+                ) : activities.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-muted-foreground">
+                      No follow-up leads found. Leads with "FOLLOW_UP" status will appear here.
+                    </td>
+                  </tr>
+                ) : (
+                  activities.map((activity) => (
+                    <tr
+                      key={activity.id}
+                      className="border-b border-border hover:bg-secondary/50"
+                    >
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-10 h-10 bg-info">
+                            <AvatarFallback className="text-white font-semibold">
+                              {activity.avatar}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium text-foreground">
+                              {activity.name}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {activity.company}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">{activity.type}</td>
+                      <td className="p-4">
+                        <Badge
+                          variant="secondary"
+                          className={
+                            activity.priority === "High"
+                              ? "bg-destructive/20 text-destructive"
+                              : activity.priority === "Medium"
+                              ? "bg-warning/20 text-warning"
+                              : "bg-success/20 text-success"
+                          }
+                        >
+                          {activity.priority}
+                        </Badge>
+                      </td>
+                      <td className="p-4">
+                        <div className="text-sm text-foreground">
+                          {activity.scheduled}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {activity.time}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <Badge
+                          variant="secondary"
+                          className={
+                            activity.status === "Overdue"
+                              ? "bg-destructive/20 text-destructive"
+                              : activity.status === "Pending"
+                              ? "bg-warning/20 text-warning"
+                              : "bg-success/20 text-success"
+                          }
+                        >
+                          {activity.status}
+                        </Badge>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex gap-1">
+                          <Button
+                            onClick={() =>
+                              openModal("view", activityToLead(activity))
+                            }
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-green-500 hover:text-green-400 hover:bg-green-900/20"
+                            onClick={() => handleCompleteActivity(activity.id)}
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            onClick={() =>
+                              openModal("edit", activityToLead(activity))
+                            }
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/20"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

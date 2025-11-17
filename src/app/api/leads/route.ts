@@ -16,14 +16,22 @@ export async function GET(req: NextRequest) {
     
         const userId = token.userId as string;
 
-    const leads = await prisma.lead.findMany({
-      where: { userId: userId },
-      orderBy: { createdAt: "desc" },
-    });
-
+    let leads: any[] = [];
+    
+    try {
+      leads = await prisma.lead.findMany({
+        where: { userId: userId },
+        orderBy: { createdAt: "desc" },
+      });
+    } catch (dbErr) {
+      console.error("Database unavailable for leads — returning empty list:", dbErr);
+      // Return empty array when DB is unavailable instead of crashing
+      leads = [];
+    }
 
     return NextResponse.json(leads);
   } catch (error: any) {
+    console.error("Leads API error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

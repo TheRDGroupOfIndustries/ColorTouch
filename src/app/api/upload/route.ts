@@ -81,12 +81,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Ensure user exists to avoid foreign key violations
-    const userExists = await prisma.user.findUnique({ where: { id: userId } });
-    if (!userExists) {
-      return NextResponse.json(
-        { success: false, error: `User with id '${userId}' does not exist. Create the user (signup) before importing leads.` },
-        { status: 404 }
-      );
+    try {
+      const userExists = await prisma.user.findUnique({ where: { id: userId } });
+      if (!userExists) {
+        return NextResponse.json(
+          { success: false, error: `User with id '${userId}' does not exist. Create the user (signup) before importing leads.` },
+          { status: 404 }
+        );
+      }
+    } catch (dbErr) {
+      console.error("Database unavailable for user check — allowing upload to proceed:", dbErr);
+      // If DB is unavailable, skip user existence check and proceed with upload
+      // The foreign key constraint will be handled at insert time
     }
 
     // --- 2️⃣ Handle file upload ---
@@ -275,17 +281,23 @@ export async function POST(req: NextRequest) {
     if (leadsToInsert.some(lead => lead.email)) {
       const emails = leadsToInsert.map(lead => lead.email).filter((email): email is string => email !== null && email !== undefined);
       if (emails.length > 0) {
-        const existingLeads = await prisma.lead.findMany({
-          where: {
-            userId,
-            email: { in: emails }
-          },
-          select: { email: true }
-        });
-        
-        existingLeads.forEach(lead => {
-          if (lead.email) existingEmails.add(lead.email);
-        });
+        try {
+          const existingLeads = await prisma.lead.findMany({
+            where: {
+              userId,
+              email: { in: emails }
+            },
+            select: { email: true }
+          });
+          
+          existingLeads.forEach(lead => {
+            if (lead.email) existingEmails.add(lead.email);
+          });
+        } catch (dbErr) {
+          console.error("Database unavailable for duplicate check — proceeding without duplicate detection:", dbErr);
+          // If DB is unavailable, skip duplicate detection and proceed
+          // Prisma will handle unique constraint violations at insert time
+        }
       }
     }
 
@@ -337,10 +349,20 @@ export async function POST(req: NextRequest) {
     }
 
     // --- 5️⃣ Bulk insert using Prisma ---
-    const created = await prisma.lead.createMany({
-      data: finalLeadsToInsert,
-      skipDuplicates: false // We handle duplicates manually above
-    });
+    let created: any;
+    try {
+      created = await prisma.lead.createMany({
+        data: finalLeadsToInsert,
+        skipDuplicates: false // We handle duplicates manually above
+      });
+    } catch (dbErr) {
+      console.error("Database unavailable for bulk insert:", dbErr);
+      return NextResponse.json({
+        success: false,
+        error: "Database is currently unavailable. Please try uploading leads later when the database connection is restored.",
+        details: "The database server appears to be unreachable. This may be a temporary connectivity issue."
+      }, { status: 503 });
+    }
 
     const duplicatesSkipped = leadsToInsert.length - finalLeadsToInsert.length;
     

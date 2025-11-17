@@ -132,26 +132,50 @@ export async function GET(req: NextRequest) {
       }
     }
     
-    const reminders = await prisma.reminder.findMany({
-      where: whereConditions,
-      include: {
-        lead: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            company: true,
-            tag: true
+    let reminders: any[] = [];
+    
+    try {
+      reminders = await prisma.reminder.findMany({
+        where: whereConditions,
+        include: {
+          lead: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              company: true,
+              tag: true
+            }
           }
+        },
+        orderBy: [
+          { isCompleted: 'asc' },
+          { reminderDate: 'asc' },
+          { priority: 'desc' }
+        ]
+      });
+    } catch (dbErr) {
+      console.error('Get reminders error:', dbErr);
+      // Return empty grouped structure when DB is unavailable
+      return NextResponse.json({
+        success: true,
+        groupedReminders: {
+          overdue: [],
+          today: [],
+          tomorrow: [],
+          thisWeek: [],
+          later: [],
+          completed: []
+        },
+        stats: {
+          total: 0,
+          pending: 0,
+          overdue: 0,
+          completed: 0
         }
-      },
-      orderBy: [
-        { isCompleted: 'asc' },
-        { reminderDate: 'asc' },
-        { priority: 'desc' }
-      ]
-    });
+      });
+    }
     
     // Group reminders by urgency
     const now = new Date();

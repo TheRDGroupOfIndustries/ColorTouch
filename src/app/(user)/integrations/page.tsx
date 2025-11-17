@@ -20,6 +20,7 @@ export default function Integrations() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ token: apiKey }),
+        credentials: "same-origin",
     });
 
     const data = await res.json();
@@ -43,10 +44,21 @@ export default function Integrations() {
 useEffect(() => {
     const fetchBanners = async () => {
       try {
-        const res = await axios.get("/api/token");
-      console.log(res.data);
-      } catch (err) {
+        // include credentials so next-auth cookie is sent when fetching tokens
+        const res = await axios.get("/api/token", { withCredentials: true });
+        if (res.status === 401) {
+          toast.error("Please sign in to view integrations");
+          return;
+        }
+        console.log(res.data);
+      } catch (err: any) {
         console.error("Error fetching banners:", err);
+        const status = err?.response?.status;
+        if (status === 401) {
+          toast.error("Please sign in to view integrations");
+        } else {
+          toast.error("Failed to fetch integration tokens");
+        }
       }
     };
     fetchBanners();

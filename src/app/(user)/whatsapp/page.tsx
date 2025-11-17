@@ -47,8 +47,15 @@ export default function WhatsAppPage() {
   // --- Fetch all campaigns from DB ---
   const fetchCampaigns = async () => {
     try {
-      const res = await fetch("/api/campaigns", { cache: "no-store" });
-      if (!res.ok) throw new Error("Failed to fetch campaigns");
+      const res = await fetch("/api/campaigns", { cache: "no-store", credentials: "same-origin" });
+      if (!res.ok) {
+        if (res.status === 401) {
+          toast.error("Session expired. Please log in.");
+          router.push("/login");
+          return;
+        }
+        throw new Error("Failed to fetch campaigns");
+      }
       const data = await res.json();
 
       const formatted: UICampaign[] = data.map((c: any) => ({
@@ -90,6 +97,7 @@ export default function WhatsAppPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ campaignId, status }),
+        credentials: "same-origin",
       });
       if (!res.ok) throw new Error("Failed to update status");
       const updated = await res.json();
@@ -135,6 +143,7 @@ export default function WhatsAppPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ campaignId }),
+          credentials: "same-origin",
         });
         const data = await res.json();
         toast.dismiss();
@@ -155,6 +164,7 @@ export default function WhatsAppPage() {
         toast.loading("Deleting campaign...");
         const res = await fetch(`/api/campaigns/${campaignId}`, {
           method: "DELETE",
+          credentials: "same-origin",
         });
         const data = await res.json();
         toast.dismiss();

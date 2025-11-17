@@ -116,8 +116,23 @@ export default function Dashboard() {
       const metricsData = await metricsRes.json();
 
       if (metricsData.success) {
-        setMetrics(metricsData.data.metrics);
-        setRecentLeads(metricsData.data.recentLeads || []);
+        const apiMetrics = metricsData.data?.metrics;
+        const apiRecent = metricsData.data?.recentLeads || [];
+
+        // Guard against unexpected API responses
+        if (!apiMetrics) {
+          console.warn("Dashboard metrics API returned no metrics");
+          setMetrics(null);
+        } else {
+          setMetrics(apiMetrics);
+        }
+
+        setRecentLeads(Array.isArray(apiRecent) ? apiRecent : []);
+      } else {
+        // If the API returns success: false, show a toast and set friendly defaults
+        console.warn("Dashboard metrics API reported failure", metricsData.error);
+        setMetrics(null);
+        setRecentLeads([]);
       }
 
       // Fetch reminders
