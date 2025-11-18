@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:admin": "node prisma/seed.js",
+    "db:push": "npx prisma db push",
+    "db:seed": "npx prisma db seed"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
