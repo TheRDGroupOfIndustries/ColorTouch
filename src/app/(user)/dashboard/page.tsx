@@ -475,7 +475,7 @@ export default function Dashboard() {
                 {reminders.overdue.map((reminder) => (
                   <div
                     key={reminder.id}
-                    className="flex items-center gap-3 p-3 border-l-4 border-red-500 bg-red-50 rounded-r"
+                    className="flex items-center gap-3 p-3 border-l-4 border-red-500 bg-red-500/10 backdrop-blur-sm rounded-r"
                   >
                     <div className="text-red-600">
                       {getReminderIcon(reminder.reminderType)}
@@ -498,7 +498,7 @@ export default function Dashboard() {
                 {reminders.today.map((reminder) => (
                   <div
                     key={reminder.id}
-                    className="flex items-center gap-3 p-3 border-l-4 border-orange-500 bg-orange-50 rounded-r"
+                    className="flex items-center gap-3 p-3 border-l-4 border-orange-500 bg-orange-500/10 backdrop-blur-sm rounded-r"
                   >
                     <div className="text-orange-600">
                       {getReminderIcon(reminder.reminderType)}
@@ -523,7 +523,7 @@ export default function Dashboard() {
                   (reminder) => (
                     <div
                       key={reminder.id}
-                      className="flex items-center gap-3 p-3 border-l-4 border-blue-500 bg-blue-50 rounded-r"
+                      className="flex items-center gap-3 p-3 border-l-4 border-blue-500 bg-blue-500/10 backdrop-blur-sm rounded-r"
                     >
                       <div className="text-blue-600">
                         {getReminderIcon(reminder.reminderType)}

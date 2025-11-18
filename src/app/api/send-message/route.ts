@@ -43,10 +43,26 @@ export async function POST(req: Request) {
 
     const [leads, tokens] = await Promise.all([leadRes.json(), tokenRes.json()]);
     const items = Array.isArray(leads) ? leads : [];
-    const token = Array.isArray(tokens) && tokens.length > 0 ? tokens[0].token : null;
+    const tokenData = Array.isArray(tokens) && tokens.length > 0 ? tokens[0].token : null;
 
-    if (!token)
+    if (!tokenData)
       return NextResponse.json({ success: false, error: "No WhatsApp token found." }, { status: 404 });
+
+    // Parse token data to detect provider
+    const istwilio = tokenData.includes(':twilio');
+    let accountSid = '', authToken = '', phoneNumber = '', apiToken = '';
+    
+    console.log(`🔍 Debug: tokenData="${tokenData.substring(0, 50)}..." istwilio=${istwilio}`);
+    
+    if (istwilio) {
+      const parts = tokenData.split(':');
+      accountSid = parts[0];
+      authToken = parts[1];
+      phoneNumber = parts[2] || '';
+      console.log(`🔍 Debug: parsed phoneNumber="${phoneNumber}"`);
+    } else {
+      apiToken = tokenData;
+    }
 
     const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
@@ -55,21 +71,59 @@ export async function POST(req: Request) {
       const phone = lead.phone?.toString().replace(/\D/g, "");
       if (!phone) continue;
 
-      const messageBody = {
-        to: `91${phone}`,
-        body: `Hello${lead.name}, ${campaign.campaignName}: ${campaign.messageContent}, ${campaign.description},${campaign.mediaURL},`,
-      };
-
+      const messageText = `Hello ${lead.name || ''}, ${campaign.campaignName}: ${campaign.messageContent || ''} ${campaign.description || ''} ${campaign.mediaURL || ''}`;
+      
       console.log(`📤 Sending to ${phone} (${i + 1}/${items.length})`);
 
-      const response = await fetch("https://gate.whapi.cloud/messages/text", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(messageBody),
-      });
+      let response;
+      
+      if (istwilio) {
+        // Twilio WhatsApp API - aggressive sanitization for Unicode chars
+        const rawPhone = phoneNumber || '+14155238886';
+        console.log(`🔍 Debug: raw phoneNumber="${JSON.stringify(rawPhone)}"`);
+        
+        // Strip all Unicode control chars, spaces, and normalize
+        const cleanPhone = rawPhone
+          .replace(/[\u200B-\u200D\u202A-\u202E\u2060-\u206F]/g, '') // Remove Unicode formatting
+          .replace(/\s+/g, '') // Remove all whitespace
+          .replace(/^whatsapp:/i, '') // Remove whatsapp: prefix
+          .replace(/[^\d+]/g, ''); // Keep only digits and +
+        
+        const fromNumber = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
+        
+        console.log(`🔍 Debug: cleaned fromNumber="${fromNumber}"`);
+        console.log(`🔍 Debug: accountSid="${accountSid.substring(0, 10)}..."`);
+
+        const twilioBody = new URLSearchParams({
+          From: `whatsapp:${fromNumber}`,
+          To: `whatsapp:+91${phone}`,
+          Body: messageText
+        });
+
+        response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
+          },
+          body: twilioBody,
+        });
+      } else {
+        // Original Whapi.cloud API
+        const messageBody = {
+          to: `91${phone}`,
+          body: messageText,
+        };
+
+        response = await fetch("https://gate.whapi.cloud/messages/text", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiToken}`,
+          },
+          body: JSON.stringify(messageBody),
+        });
+      }
 
       const text = await response.text();
       console.log("Response Status:", response.status);

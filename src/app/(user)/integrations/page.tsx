@@ -7,6 +7,7 @@ import axios from "axios";
 export default function Integrations() {
   const [apiKey, setApiKey] = useState("");
   const [apiSecret, setApiSecret] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [showSecret, setShowSecret] = useState(false);
   const [provider, setProvider] = useState("whatsapp-business-api");
 
@@ -19,7 +20,12 @@ export default function Integrations() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ token: apiKey }),
+      body: JSON.stringify({ 
+        token: apiKey,
+        secret: apiSecret,
+        provider: provider,
+        phoneNumber: phoneNumber
+      }),
         credentials: "same-origin",
     });
 
@@ -35,6 +41,7 @@ export default function Integrations() {
     console.log("Saved key response:", data);
     setApiKey("");
     setApiSecret("");
+    setPhoneNumber("");
   } catch (error) {
     console.error("Error submitting API key:", error);
     toast.error("Something went wrong while saving the API key.");
@@ -109,7 +116,7 @@ useEffect(() => {
                     {/* API Key */}
                     <div className="grid gap-2">
                       <label className="flex flex-row gap-1 text-sm font-medium leading-none">
-                        <span>API Key</span>
+                        <span>{provider === 'twilio' ? 'Account SID' : 'API Key'}</span>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="h-[11px] w-[11px]"
@@ -128,7 +135,7 @@ useEffect(() => {
                         name="apiKey"
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
-                        placeholder="Enter your WhatsApp API Key"
+                        placeholder={provider === 'twilio' ? 'Enter your Twilio Account SID' : 'Enter your WhatsApp API Key'}
                         className="border-input  placeholder:text-muted-foreground flex h-10 w-full rounded-md border px-3 py-2 text-base md:text-sm"
                         required
                       />
@@ -137,7 +144,7 @@ useEffect(() => {
                     {/* API Secret */}
                     <div className="grid gap-2">
                       <label className="text-sm font-medium leading-none">
-                        API Secret (Optional)
+                        {provider === 'twilio' ? 'Auth Token' : 'API Secret (Optional)'}
                       </label>
                       <div className="relative">
                         <input
@@ -145,8 +152,9 @@ useEffect(() => {
                           name="apiSecret"
                           value={apiSecret}
                           onChange={(e) => setApiSecret(e.target.value)}
-                          placeholder="Enter your WhatsApp API Secret"
+                          placeholder={provider === 'twilio' ? 'Enter your Twilio Auth Token' : 'Enter your WhatsApp API Secret'}
                           className="border-input  placeholder:text-muted-foreground flex h-10 w-full rounded-md border px-3 py-2 text-base md:text-sm"
+                          required={provider === 'twilio'}
                         />
                         <button
                           type="button"
@@ -158,6 +166,25 @@ useEffect(() => {
                         </button>
                       </div>
                     </div>
+
+                    {/* Phone Number (Twilio Only) */}
+                    {provider === 'twilio' && (
+                      <div className="grid gap-2">
+                        <label className="text-sm font-medium leading-none">
+                          WhatsApp Sandbox Number (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          placeholder="+14155238886 (default sandbox)"
+                          className="border-input placeholder:text-muted-foreground flex h-10 w-full rounded-md border px-3 py-2 text-base md:text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Leave empty to use Twilio's default sandbox: +14155238886
+                        </p>
+                      </div>
+                    )}
 
                     {/* Provider */}
                     <div className="grid gap-2">

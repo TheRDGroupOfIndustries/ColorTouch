@@ -1,0 +1,8 @@
+preloader 
+uploading in user side and admin side 
+database issue
+make static whtsapp camp
+dynamic leads followup
+remove employee page in user side 
+zapier api - integration
+payment integration - razor pay
