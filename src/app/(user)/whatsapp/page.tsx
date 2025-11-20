@@ -38,7 +38,8 @@ type CampaignStatus = "ACTIVE" | "PAUSED";
 export default function WhatsAppPage() {
   const router = useRouter();
   const [campaigns, setCampaigns] = useState<UICampaign[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Make page static/non-functional by default: don't auto-load campaigns
+  const [loading, setLoading] = useState(false);
   const [popup, setPopup] = useState<"view" | "edit" | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<UICampaign | null>(
     null
@@ -76,9 +77,9 @@ export default function WhatsAppPage() {
     }
   };
 
-  useEffect(() => {
-    fetchCampaigns();
-  }, []);
+  // NOTE: Campaigns page is intentionally static/non-functional in this environment.
+  // The original `fetchCampaigns()` call has been disabled to avoid any API/database
+  // interactions. If you want to re-enable, restore the call to `fetchCampaigns()`.
 
   const closePopup = () => {
     setPopup(null);
@@ -91,96 +92,17 @@ export default function WhatsAppPage() {
   };
 
   // --- Update campaign status in DB ---
-  const updateStatus = async (campaignId: string, status: CampaignStatus) => {
-    try {
-      const res = await fetch("/api/campaigns/status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campaignId, status }),
-        credentials: "same-origin",
-      });
-      if (!res.ok) throw new Error("Failed to update status");
-      const updated = await res.json();
-
-      // ✅ Update UI immediately from backend response
-      setCampaigns((prev) =>
-        prev.map((c) =>
-          c.id === campaignId
-            ? { ...c, status: updated.campaign?.status ?? c.status }
-            : c
-        )
-      );
-
-      return updated;
-    } catch (error) {
-      console.error("Error updating status:", error);
-      toast.error("Failed to update campaign status");
-      throw error;
-    }
+  // Disabled: prevent any status updates against the backend
+  const updateStatus = async (_campaignId: string, _status: CampaignStatus) => {
+    toast.error("Campaign actions are disabled in this environment.");
+    return null;
   };
 
   // --- Handle all actions ---
-  const handleAction = async (action: string, campaignId: string) => {
-    if (action === "PAUSED") {
-      try {
-        await updateStatus(campaignId, "PAUSED");
-        toast.success("⏸️ Campaign paused");
-      } catch {
-        toast.error("Failed to pause campaign");
-      }
-    }
-
-    if (action === "ACTIVE") {
-      toast.loading("🚀 Starting campaign...");
-      try {
-        await updateStatus(campaignId, "ACTIVE");
-
-        // Small delay to ensure DB commit before sending
-        await new Promise((r) => setTimeout(r, 300));
-
-        // Trigger backend message sending
-        const res = await fetch("/api/send-message", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ campaignId }),
-          credentials: "same-origin",
-        });
-        const data = await res.json();
-        toast.dismiss();
-
-        if (!res.ok) {
-          toast.error(`Failed: ${data.error}`);
-        } else {
-          toast.success("✅ Messages are being sent!");
-        }
-      } catch (error) {
-        toast.dismiss();
-        toast.error("Error starting campaign");
-      }
-    }
-
-    if (action === "DELETE") {
-      try {
-        toast.loading("Deleting campaign...");
-        const res = await fetch(`/api/campaigns/${campaignId}`, {
-          method: "DELETE",
-          credentials: "same-origin",
-        });
-        const data = await res.json();
-        toast.dismiss();
-
-        if (!res.ok) {
-          toast.error(`❌ Failed: ${data.error || "Could not delete"}`);
-          return;
-        }
-
-        setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
-        toast.success("🗑️ Campaign deleted successfully!");
-      } catch (error) {
-        toast.dismiss();
-        toast.error("Something went wrong while deleting campaign");
-      }
-    }
+  // All actions are disabled — short-circuit and show a message instead of calling backend
+  const handleAction = async (_action: string, _campaignId: string) => {
+    toast.error("Campaign actions are disabled in this environment.");
+    return;
   };
 
   // --- Stats ---
@@ -244,8 +166,9 @@ export default function WhatsAppPage() {
           </p>
         </div>
         <Button
-          onClick={() => router.push("/Campaigns")}
+          onClick={() => toast.error("Campaign creation is disabled.")}
           className="bg-success hover:bg-success/90 text-white"
+          disabled
         >
           <Plus className="w-4 h-4 mr-2" />
           Create Campaign
@@ -298,8 +221,9 @@ export default function WhatsAppPage() {
               Create your first WhatsApp campaign to get started
             </p>
             <Button
-              onClick={() => router.push("/Campaigns")}
+              onClick={() => toast.error("Campaign creation is disabled.")}
               className="bg-success hover:bg-success/90"
+              disabled
             >
               <Plus className="w-4 h-4 mr-2" />
               Create Your First Campaign
@@ -374,7 +298,8 @@ export default function WhatsAppPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => openModal("view", campaign)}
+                      onClick={() => toast.error("Viewing campaigns is disabled.")}
+                      disabled
                     >
                       <Eye className="w-5 text-info hover:text-info/80" />
                     </Button>
@@ -382,7 +307,8 @@ export default function WhatsAppPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => openModal("edit", campaign)}
+                      onClick={() => toast.error("Editing campaigns is disabled.")}
+                      disabled
                     >
                       <Edit className="w-5 text-warning hover:text-warning/80" />
                     </Button>

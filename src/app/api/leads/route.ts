@@ -15,14 +15,31 @@ export async function GET(req: NextRequest) {
         }
     
         const userId = token.userId as string;
+        const userRole = token.role as string;
 
     let leads: any[] = [];
     
     try {
-      leads = await prisma.lead.findMany({
-        where: { userId: userId },
-        orderBy: { createdAt: "desc" },
-      });
+      if (userRole === "ADMIN") {
+        // Admin sees ALL leads from all users
+        leads = await prisma.lead.findMany({
+          orderBy: { createdAt: "desc" },
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true
+              }
+            }
+          }
+        });
+      } else {
+        // Employee sees only their own leads
+        leads = await prisma.lead.findMany({
+          where: { userId: userId },
+          orderBy: { createdAt: "desc" },
+        });
+      }
     } catch (dbErr) {
       console.error("Database unavailable for leads — returning empty list:", dbErr);
       // Return empty array when DB is unavailable instead of crashing
@@ -61,11 +78,20 @@ export async function POST(req: NextRequest) {
 
     const userId = token.userId as string;
 
-    const created = await prisma.lead.create({
-      data: { ...body, userId: userId },
-    });
+    try {
+      const created = await prisma.lead.create({
+        data: { ...body, userId: userId },
+      });
 
-    return NextResponse.json(created);
+      return NextResponse.json(created);
+    } catch (dbErr) {
+      console.error("Database unavailable for lead creation:", dbErr);
+      return NextResponse.json({
+        success: false,
+        error: "Database is currently unavailable. Please try creating the lead later when the database connection is restored.",
+        details: "The database server appears to be unreachable. This may be a temporary connectivity issue."
+      }, { status: 503 });
+    }
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

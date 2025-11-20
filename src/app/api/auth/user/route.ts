@@ -10,6 +10,11 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json({ users });
   } catch (error: any) {
+    const msg = error && error.message ? String(error.message) : "Failed to fetch users";
+    console.error("Auth user GET error:", error);
+    if (msg.includes("Can't reach database server") || msg.includes('PrismaClientInitializationError')) {
+      return NextResponse.json({ users: [], warning: 'Database unreachable. Showing empty results.' });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -28,6 +33,11 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ message: "User deleted" });
   } catch (error: any) {
+    const msg = error && error.message ? String(error.message) : "Failed to delete user";
+    console.error("Auth user DELETE error:", error);
+    if (msg.includes("Can't reach database server") || msg.includes('PrismaClientInitializationError')) {
+      return NextResponse.json({ error: 'Database unreachable. Could not perform delete at this time.' }, { status: 503 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

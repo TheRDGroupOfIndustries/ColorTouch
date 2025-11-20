@@ -1,435 +1,555 @@
 "use client";
 
-import Link from "next/link";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useState } from "react";
-// Import the modal component
-import EmployeModels from "@/components/ui/EmployeModels"; 
+import { useSession } from "next-auth/react";
 import {
   Users,
-  UserCheck,
-  Crown,
+  UserPlus,
   Shield,
-  Settings2,
-  ChevronsLeft,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsRight,
-  ChevronDown,
+  Crown,
+  Search,
   Eye,
-  SquarePen,
+  Edit,
+  Trash,
+  Plus
 } from "lucide-react";
-import Image from "next/image";
-import EditEmployee from "@/components/EmployeeEdit";
-import EmployeeView from "@/components/EmployeeView";
-import CreateUser from "@/components/CreateUser";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import toast, { Toaster } from "react-hot-toast";
 
-/** Backend user structure */
-export interface BackendUser {
+interface Employee {
   id: string;
-  email?: string | null;
   name: string;
+  email: string;
   role: string;
-  password?: string | null;
-  subscription?: string | null;
+  subscription: string;
   createdAt: string;
-  updatedAt?: string;
-  avatar?: string | null;
-  whatsapp?: string | null;
+  updatedAt: string;
+  _count: {
+    leads: number;
+    campaigns: number;
+  };
+}
+
+interface Stats {
+  total: number;
+  admins: number;
+  employees: number;
+  premium: number;
+  free: number;
+  recentlyActive: number;
+  activePercentage: string;
 }
 
 export default function Employees() {
   const router = useRouter();
-
-  // states
-  const [users, setUsers] = useState<BackendUser[]>([]);
+  const { data: session, status } = useSession();
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [stats, setStats] = useState<Stats>({
+    total: 0,
+    admins: 0,
+    employees: 0,
+    premium: 0,
+    free: 0,
+    recentlyActive: 0,
+    activePercentage: "0",
+  });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
-  const [selectedRole, setSelectedRole] = useState("User Role");
-  const [roleOpen, setRoleOpen] = useState(false);
-  // Replaced 'lead' logic with 'user' logic
-  const [popup, setPopup] = useState<null | "view" | "edit">(null); 
-  const [selectedUser, setSelectedUser] = useState<BackendUser | null>(null);
-  const [openCreateUser, setOpenCreateUser] = useState(false);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [viewEmployee, setViewEmployee] = useState<Employee | null>(null);
+  const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", email: "", role: "" });
 
-  /** Fetch users from backend */
-  const fetchUsers = () => {
-    let mounted = true;
-    setLoading(true);
-
-    fetch("/api/auth/user", { method: "GET", credentials: "same-origin" })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(await res.text());
-        return res.json();
-      })
-      .then((data) => {
-        if (!mounted) return;
-        if (Array.isArray(data)) setUsers(data);
-        else if (data?.users) setUsers(data.users);
-        else setUsers([]);
-      })
-      .catch((err: any) => {
-        if (mounted) setError(err.message ?? "Failed to load users");
-      })
-      .finally(() => mounted && setLoading(false));
-
-    return () => {
-      mounted = false;
-    };
-  };
-
+  // Redirect non-admin users
   useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const closepop = () => setPopup(null);
-
-  // Updated logic to use BackendUser
-  const openModal = (action: "view" | "edit", user: BackendUser) => {
-    setSelectedUser(user);
-    setPopup(action);
-  };
-
-  // ... (stats, filtering, pagination logic remains the same)
-
-  /** Stats summary */
-  const stats = useMemo(() => {
-    const total = users.length;
-    const counts = users.reduce(
-      (a, u) => {
-        const role = u.role.toUpperCase();
-        if (role.includes("ADMIN")) a.admins++;
-        if (role.includes("EMPLOYEE")) a.employees++;
-        // Note: The original code used 'CUSTOMER' which might not be a direct role
-        if (!role.includes("ADMIN") && !role.includes("EMPLOYEE")) a.customers++;
-        return a;
-      },
-      { admins: 0, employees: 0, customers: 0 }
-    );
-
-    return [
-      {
-        value: total,
-        title: "Total Users",
-        description: "All registered users on the platform",
-        icon: <Users className="size-6 text-muted-foreground" />,
-      },
-      {
-        value: counts.customers,
-        title: "Total Customers",
-        description: "Active customers using the platform",
-        icon: <UserCheck className="size-6 text-muted-foreground" />,
-      },
-      {
-        value: counts.employees,
-        title: "Total Employees",
-        description: "All employees with system access",
-        icon: <Crown className="size-6 text-muted-foreground" />,
-      },
-      {
-        value: counts.admins,
-        title: "Total Admins",
-        description: "Administrators managing the platform",
-        icon: <Shield className="size-6 text-muted-foreground" />,
-      },
-    ];
-  }, [users]);
-
-  /** Filter & role search */
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    let list = users.filter(
-      (u) =>
-        u.name.toLowerCase().includes(q) ||
-        (u.email || "").toLowerCase().includes(q)
-    );
-
-    if (selectedRole !== "User Role") {
-      list = list.filter((u) => {
-        const r = u.role.toLowerCase();
-        if (selectedRole === "Admin") return r.includes("admin");
-        if (selectedRole === "Employee") return r.includes("employee");
-        if (selectedRole === "Other")
-          return !r.includes("admin") && !r.includes("employee");
-        return true;
-      });
+    if (status === "loading") return;
+    
+    if (!session) {
+      router.push("/login");
+      return;
     }
 
-    return list;
-  }, [users, search, selectedRole]);
+    if (session.user?.role !== "ADMIN") {
+      toast.error("Access denied. Admin only.");
+      router.push("/dashboard");
+      return;
+    }
+  }, [session, status, router]);
 
-  /** Pagination logic */
-  const totalItems = filtered.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / perPage));
+  const fetchEmployees = async () => {
+    try {
+      setLoading(true);
+      setWarning(null);
+      
+      const res = await fetch("/api/employees", { cache: "no-store" });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to fetch employees");
+      }
+
+      if (data.warning) {
+        setWarning(data.warning);
+        toast.error(data.warning);
+      }
+
+      setEmployees(data.employees || []);
+      setStats(data.stats || stats);
+    } catch (error: any) {
+      console.error("Error fetching employees:", error);
+      toast.error(error.message || "Failed to fetch employees");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (page > totalPages && totalPages > 0) setPage(totalPages);
-  }, [page, totalPages]);
+    if (session?.user?.role === "ADMIN") {
+      fetchEmployees();
+    }
+  }, [session]);
 
-  const paginated = useMemo(() => {
-    const start = (page - 1) * perPage;
-    return filtered.slice(start, start + perPage);
-  }, [filtered, page, perPage]);
+  const handleDeleteEmployee = async (employeeId: string) => {
+    if (!confirm("Are you sure you want to delete this employee?")) return;
 
-  /** Navigation actions */
-  const handleView = (id: string) =>
-    router.push(`/console/admin/users/view/${id}`);
-  const handleEdit = (id: string) =>
-    router.push(`/console/admin/users/manage/${id}`);
-
-  /** Avatar helper */
-  const hashCode = (s: string) =>
-    s.split("").reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0);
-
-  const avatarFor = (u: BackendUser) =>
-    u.avatar ||
-    (u.email
-      ? `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          u.name
-        )}&background=ddd&color=333&size=128`
-      : `https://randomuser.me/api/portraits/lego/${
-          Math.abs(hashCode(u.name || u.id)) % 10
-        }.jpg`);
-
-
-  function fetchLeads(): void {
-    setLoading(true);
-    setError(null);
-
-    fetch("/api/auth/user", { method: "GET", credentials: "same-origin" })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(await res.text());
-        return res.json();
-      })
-      .then((data) => {
-        if (Array.isArray(data)) setUsers(data);
-        else if (data?.users) setUsers(data.users);
-        else setUsers([]);
-      })
-      .catch((err: any) => {
-        setError(err?.message ?? "Failed to load users");
-      })
-      .finally(() => {
-        setLoading(false);
+    try {
+      toast.loading("Deleting employee...");
+      const res = await fetch(`/api/employees/${employeeId}`, {
+        method: "DELETE",
       });
+      
+      toast.dismiss();
+      
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to delete employee");
+      }
+
+      toast.success("Employee deleted successfully");
+      fetchEmployees(); // Refresh the list
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleViewEmployee = (employee: Employee) => {
+    setViewEmployee(employee);
+  };
+
+  const handleEditEmployee = (employee: Employee) => {
+    setEditEmployee(employee);
+    setEditForm({
+      name: employee.name || "",
+      email: employee.email || "",
+      role: employee.role || "EMPLOYEE"
+    });
+  };
+
+  const handleUpdateEmployee = async () => {
+    if (!editEmployee) return;
+    
+    try {
+      setIsEditing(true);
+      const res = await fetch(`/api/employees/${editEmployee.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm)
+      });
+      
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to update employee");
+      }
+      
+      toast.success("Employee updated successfully");
+      setEditEmployee(null);
+      fetchEmployees();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update employee");
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const filteredEmployees = employees.filter(emp =>
+    emp.name?.toLowerCase().includes(search.toLowerCase()) ||
+    emp.email?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Show loading or redirect message for non-admins
+  if (status === "loading" || !session || session.user?.role !== "ADMIN") {
+    return (
+      <div className="p-6 flex items-center justify-center h-[60vh]">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold">
+            {status === "loading" ? "Loading..." : "Access Denied"}
+          </h2>
+          {status !== "loading" && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Admin access required. You will be redirected.
+            </p>
+          )}
+        </div>
+      </div>
+    );
   }
+
   return (
-    <div className="px-3">
+    <div className="p-6 space-y-6">
+      <Toaster position="top-right" />
+
       {/* Header */}
-      <div className="flex items-center justify-between p-6 pb-0 mb-3">
-        <div>
-          <div className="text-2xl font-semibold">Users</div>
-          <div className="text-base text-muted-foreground">
-            Manage your users
-          </div>
-        </div>
-        <div className="p-6">
-          {/* Add User Button */}
-          <button
-            onClick={() => setOpenCreateUser(true)}
-            className="inline-flex items-center gap-2 rounded-md bg-[#cbc6c6] px-4 py-2 text-sm font-medium text-black transition-all hover:bg-[#cbc6c6]/90 active:scale-95"
-          >
-            Add User
-          </button>
-
-          {/* ✅ Modal component */}
-          <CreateUser
-            open={openCreateUser}
-            close={() => setOpenCreateUser(false)}
-            onCreated={fetchUsers}       />
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="flex flex-col pb-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {stats.map((s, i) => (
-            <div
-              key={i}
-              className="flex flex-col gap-3 rounded-xl border bg-card p-6 shadow-sm"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-2xl font-semibold">{s.value}</div>
-                  <div className="font-semibold">{s.title}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {s.description}
-                  </div>
-                </div>
-                {s.icon}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Search + Filters */}
       <div className="flex items-center justify-between">
-        <div className="flex flex-1 items-center gap-2">
-          <input
-            type="text"
-            placeholder="Search name..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            className="h-8 w-full max-w-80 rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-ring"
-          />
+        <div>
+          <h2 className="text-3xl font-bold text-foreground">Employee Management</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage team members and their access levels
+          </p>
+        </div>
+        <Button className="bg-primary text-primary-foreground">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Employee
+        </Button>
+      </div>
 
-          {/* Role dropdown */}
-          <div className="relative inline-block text-left">
-            <button
-              type="button"
-              onClick={() => setRoleOpen((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 h-8 rounded-md border px-3 text-sm font-medium bg-card hover:bg-accent hover:text-accent-foreground transition-all"
+      {/* Warning Banner */}
+      {warning && (
+        <Card className="p-4 border-orange-500 bg-orange-50 dark:bg-orange-900/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Shield className="w-5 h-5 text-orange-600" />
+              <span className="text-orange-800 dark:text-orange-200">{warning}</span>
+            </div>
+            <Button 
+              onClick={fetchEmployees} 
+              size="sm" 
+              variant="outline"
+              className="border-orange-600 text-orange-600 hover:bg-orange-600 hover:text-white"
             >
-              {selectedRole}
-              <ChevronDown
-                className={`ml-2 h-4 w-4 transition-transform ${
-                  roleOpen ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-            {roleOpen && (
-              <div
-                className="absolute left-0 mt-2 w-36 rounded-md border bg-card shadow-lg z-50"
-                onMouseLeave={() => setRoleOpen(false)}
-              >
-                {["Admin", "Employee", "Other"].map((role) => (
-                  <button
-                    key={role}
-                    onClick={() => {
-                      setSelectedRole(role);
-                      setRoleOpen(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground"
-                  >
-                    {role}
-                  </button>
-                ))}
-              </div>
-            )}
+              Retry
+            </Button>
           </div>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="mt-4 min-h-[60vh] rounded-xl border bg-card p-6 shadow-sm">
-        {loading ? (
-          <div className="py-12 text-center text-muted-foreground">
-            Loading users...
-          </div>
-        ) : error ? (
-          <div className="py-12 text-center text-destructive">{error}</div>
-        ) : (
-          <table className="w-full border-collapse text-sm">
-            <thead className="h-14 border-b">
-              <tr className="text-left">
-                <th className="px-4">Image</th>
-                <th className="px-4">Name</th>
-                <th className="px-4">Email</th>
-                <th className="px-4">Role</th>
-                <th className="px-4">Created At</th>
-                <th className="px-4 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginated.map((u) => (
-                <tr
-                  key={u.id}
-                  className="border-b transition-colors hover:bg-muted/30"
-                >
-                  <td className="px-4 py-2">
-                    <Image
-                      src={avatarFor(u)}
-                      alt={u.name}
-                      width={40}
-                      height={40}
-                      unoptimized
-                      className="rounded-full border object-cover"
-                    />
-                  </td>
-                  <td className="px-4 py-2 font-medium">{u.name}</td>
-                  <td className="px-4 py-2 text-muted-foreground">
-                    {u.email ?? "—"}
-                  </td>
-                  <td className="px-4 py-2">{u.role}</td>
-                  <td className="px-4 py-2">
-                    {new Date(u.createdAt).toISOString().slice(0, 10)}
-                  </td>
-                  <td className="px-4 py-2 text-center">
-                    <div className="flex justify-center gap-4">
-                      <button
-                        title="View"
-                        onClick={() => openModal("view", u)} // Pass user 'u'
-                        className="p-1 hover:text-primary"
-                      >
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                      <button
-                        title="Edit"
-                        onClick={() => openModal("edit", u)} // Pass user 'u'
-                        className="p-1 hover:text-primary"
-                      >
-                        <SquarePen className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Pagination */}
-      <div className="mt-4 flex items-center justify-center gap-3 rounded-xl border bg-card py-4 shadow-sm">
-        <button
-          disabled={page === 1}
-          onClick={() => setPage(1)}
-          className="hidden h-8 w-8 items-center justify-center rounded-md border bg-card hover:bg-accent lg:flex"
-        >
-          <ChevronsLeft className="size-4" />
-        </button>
-        <button
-          disabled={page === 1}
-          onClick={() => setPage((p) => p - 1)}
-          className="h-8 w-8 flex items-center justify-center rounded-md border bg-card hover:bg-accent"
-        >
-          <ChevronLeft className="size-4" />
-        </button>
-        <div className="rounded-md border px-4 py-1 text-sm font-medium">
-          Page {page} of {totalPages}
-        </div>
-        <button
-          disabled={page === totalPages}
-          onClick={() => setPage((p) => p + 1)}
-          className="h-8 w-8 flex items-center justify-center rounded-md border bg-card hover:bg-accent"
-        >
-          <ChevronRight className="size-4" />
-        </button>
-        <button
-          disabled={page === totalPages}
-          onClick={() => setPage(totalPages)}
-          className="hidden h-8 w-8 items-center justify-center rounded-md border bg-card hover:bg-accent lg:flex"
-        >
-          <ChevronsRight className="size-4" />
-        </button>
-      </div>
-      {popup === "edit" && selectedUser && (
-        <EditEmployee
-          user={selectedUser as any}
-          open={popup === "edit"}
-          close={closepop}
-          onUpdated={fetchUsers} // refresh list after edit
-        />
+        </Card>
       )}
 
-      {popup === "view" && selectedUser && (
-        <EmployeeView user={selectedUser} close={closepop} />
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-6 bg-card border-border">
+          <div className="flex items-start justify-between mb-4">
+            <p className="text-sm text-muted-foreground">Total Employees</p>
+            <Users className="w-6 h-6 text-info" />
+          </div>
+          <div className="text-3xl font-bold text-foreground">{stats.total}</div>
+        </Card>
+
+        <Card className="p-6 bg-card border-border">
+          <div className="flex items-start justify-between mb-4">
+            <p className="text-sm text-muted-foreground">Admins</p>
+            <Crown className="w-6 h-6 text-warning" />
+          </div>
+          <div className="text-3xl font-bold text-foreground">{stats.admins}</div>
+        </Card>
+
+        <Card className="p-6 bg-card border-border">
+          <div className="flex items-start justify-between mb-4">
+            <p className="text-sm text-muted-foreground">Active Users</p>
+            <UserPlus className="w-6 h-6 text-success" />
+          </div>
+          <div className="text-3xl font-bold text-foreground">{stats.recentlyActive}</div>
+        </Card>
+
+        <Card className="p-6 bg-card border-border">
+          <div className="flex items-start justify-between mb-4">
+            <p className="text-sm text-muted-foreground">Activity Rate</p>
+            <Shield className="w-6 h-6 text-info" />
+          </div>
+          <div className="text-3xl font-bold text-foreground">{stats.activePercentage}%</div>
+        </Card>
+      </div>
+
+      {/* Search */}
+      <div className="flex items-center gap-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input
+            placeholder="Search employees..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 bg-card border-border"
+          />
+        </div>
+      </div>
+
+      {/* Employees Table */}
+      <Card className="bg-card border-border">
+        <div className="p-6 border-b border-border flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-foreground">
+            Employees ({filteredEmployees.length})
+          </h3>
+        </div>
+
+        {loading ? (
+          <div className="p-6 text-center">
+            <div className="inline-flex items-center gap-3 text-muted-foreground">
+              <div className="w-5 h-5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin"></div>
+              <span>Loading employees...</span>
+            </div>
+          </div>
+        ) : filteredEmployees.length === 0 ? (
+          <div className="p-6 text-center text-muted-foreground">
+            {warning ? "Database unavailable - showing empty results" : "No employees found"}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="border-b border-border">
+                <tr>
+                  {[
+                    "Employee",
+                    "Role",
+                    "Subscription",
+                    "Leads",
+                    "Campaigns", 
+                    "Joined",
+                    "Actions",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left p-4 text-sm font-medium text-muted-foreground"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEmployees.map((employee) => (
+                  <tr
+                    key={employee.id}
+                    className="border-b border-border hover:bg-secondary/50"
+                  >
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10 bg-info">
+                          <AvatarFallback className="bg-info text-white font-semibold">
+                            {employee.name
+                              ?.split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase() || "??"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium text-foreground">
+                            {employee.name || "Unknown"}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {employee.email}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <Badge 
+                        variant={employee.role === "ADMIN" ? "destructive" : "secondary"}
+                        className="text-xs font-medium"
+                      >
+                        {employee.role}
+                      </Badge>
+                    </td>
+                    <td className="p-4">
+                      <Badge variant={employee.subscription === "PREMIUM" ? "default" : "outline"}>
+                        {employee.subscription}
+                      </Badge>
+                    </td>
+                    <td className="p-4 text-foreground">
+                      {employee._count?.leads || 0}
+                    </td>
+                    <td className="p-4 text-foreground">
+                      {employee._count?.campaigns || 0}
+                    </td>
+                    <td className="p-4 text-sm text-muted-foreground">
+                      {new Date(employee.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="p-4 flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-info hover:bg-info/10"
+                        onClick={() => handleViewEmployee(employee)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-warning hover:bg-warning/10"
+                        onClick={() => handleEditEmployee(employee)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDeleteEmployee(employee.id)}
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* View Employee Modal */}
+      {viewEmployee && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-card p-6 rounded-lg max-w-md w-full mx-4 border border-border shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-foreground">Employee Details</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewEmployee(null)}
+                className="h-8 w-8 p-0 hover:bg-destructive/20"
+              >
+                ✕
+              </Button>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <Avatar className="w-12 h-12 bg-info">
+                  <AvatarFallback className="bg-info text-white font-semibold">
+                    {viewEmployee.name
+                      ?.split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase() || "??"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-medium text-foreground">{viewEmployee.name}</div>
+                  <div className="text-sm text-muted-foreground">{viewEmployee.email}</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-muted-foreground">Role</label>
+                  <div className="mt-1">
+                    <Badge variant={viewEmployee.role === "ADMIN" ? "destructive" : "secondary"}>
+                      {viewEmployee.role}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Subscription</label>
+                  <div className="mt-1">
+                    <Badge variant={viewEmployee.subscription === "PREMIUM" ? "default" : "outline"}>
+                      {viewEmployee.subscription}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Total Leads</label>
+                  <div className="mt-1 text-foreground font-medium">{viewEmployee._count?.leads || 0}</div>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Total Campaigns</label>
+                  <div className="mt-1 text-foreground font-medium">{viewEmployee._count?.campaigns || 0}</div>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Joined</label>
+                  <div className="mt-1 text-foreground font-medium">
+                    {new Date(viewEmployee.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Last Updated</label>
+                  <div className="mt-1 text-foreground font-medium">
+                    {new Date(viewEmployee.updatedAt).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Employee Modal */}
+      {editEmployee && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-card p-6 rounded-lg max-w-md w-full mx-4 border border-border shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-foreground">Edit Employee</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditEmployee(null)}
+                className="h-8 w-8 p-0 hover:bg-destructive/20"
+              >
+                ✕
+              </Button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">Name</label>
+                <Input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                  className="bg-background border-border"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">Email</label>
+                <Input
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                  className="bg-background border-border"
+                  type="email"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">Role</label>
+                <select
+                  value={editForm.role}
+                  onChange={(e) => setEditForm({...editForm, role: e.target.value})}
+                  className="w-full p-2 bg-background border border-border rounded-md text-foreground"
+                >
+                  <option value="EMPLOYEE">Employee</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={() => setEditEmployee(null)}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpdateEmployee}
+                  disabled={isEditing}
+                  className="flex-1"
+                >
+                  {isEditing ? "Updating..." : "Update"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

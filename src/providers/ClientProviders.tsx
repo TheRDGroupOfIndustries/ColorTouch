@@ -16,7 +16,14 @@ function AuthWrapper({ children }: { children: React.ReactNode }) {
 
   // Optionally, show a loading state while checking session
   if (status === "loading") {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="inline-flex items-center gap-3 text-muted-foreground">
+          <div className="w-6 h-6 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin"></div>
+          <span>Loading...</span>
+        </div>
+      </div>
+    );
   }
 
   // If no session, show login page

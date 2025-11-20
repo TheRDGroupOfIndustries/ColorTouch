@@ -63,6 +63,26 @@ export async function GET(req: NextRequest) {
     
   } catch (error: any) {
     console.error("Employees API error:", error);
+    // If the error is a Prisma connection issue, return a safe empty payload so the admin UI
+    // can display a friendly message instead of the server throwing a 500.
+    const msg = (error && error.message) ? String(error.message) : "Failed to fetch employees";
+    if (msg.includes("Can't reach database server") || msg.includes('PrismaClientInitializationError')) {
+      return NextResponse.json({
+        success: true,
+        employees: [],
+        stats: {
+          total: 0,
+          admins: 0,
+          employees: 0,
+          premium: 0,
+          free: 0,
+          recentlyActive: 0,
+          activePercentage: 0
+        },
+        warning: 'Database unreachable. Showing empty results.'
+      });
+    }
+
     return NextResponse.json(
       { success: false, error: error.message || "Failed to fetch employees" },
       { status: 500 }

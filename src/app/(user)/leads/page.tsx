@@ -32,7 +32,6 @@ import { useRouter } from "next/navigation";
 import toast, { Toaster } from "react-hot-toast";
 import LeadsAddModal from "@/components/LeadsAddModal";
 import LeadViewModal from "@/components/LeadViewModal";
-import LeadEditModal from "@/components/LeadEditModal";
 import LeadsEditModal from "@/components/LeadEditModal";
 import { SelectGroup, SelectLabel } from "@/components/ui/select";
 
@@ -353,8 +352,11 @@ export default function LeadsPage() {
         </div>
 
         {loading ? (
-          <div className="p-6 text-center text-muted-foreground">
-            Loading leads...
+          <div className="p-6 text-center">
+            <div className="inline-flex items-center gap-3 text-muted-foreground">
+              <div className="w-5 h-5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin"></div>
+              <span>Loading leads...</span>
+            </div>
           </div>
         ) : error ? (
           <div className="p-6 text-center text-destructive">{error}</div>

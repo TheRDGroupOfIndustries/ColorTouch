@@ -19,6 +19,8 @@ type LeadRow = {
   company?: string;
   source?: string;
   notes?: string;
+  // amount/value fields from CSV/Excel (may include currency symbols)
+  amount?: string;
   tag?: Tag;
 };
 
@@ -72,6 +74,8 @@ export async function POST(req: NextRequest) {
 
     // Support multiple potential id fields from next-auth token structure
     const userId = (token?.userId || (token as any)?.sub || (token as any)?.id) as string | undefined;
+    // Use an effectiveUserId variable we can modify when we need to map the env-admin fallback
+    let effectiveUserId = userId;
 
     if (!token || !userId) {
       return NextResponse.json(
@@ -82,17 +86,46 @@ export async function POST(req: NextRequest) {
 
     // Ensure user exists to avoid foreign key violations
     try {
-      const userExists = await prisma.user.findUnique({ where: { id: userId } });
+      // Special-case: when admin logged in via environment fallback, authorize or create real admin user
+      if (userId === "env-admin") {
+        // Try to find admin by configured admin email
+        const adminEmail = process.env.ADMIN_EMAIL;
+        if (adminEmail) {
+          const adminUser = await prisma.user.findUnique({ where: { email: adminEmail } });
+          if (adminUser) {
+            effectiveUserId = adminUser.id;
+            console.log(`Mapped env-admin fallback to DB admin user id ${effectiveUserId}`);
+          } else {
+            // Create admin user record if it doesn't exist
+            const createdAdmin = await prisma.user.create({
+              data: {
+                email: adminEmail,
+                name: process.env.ADMIN_NAME || "Administrator",
+                role: "ADMIN",
+                // password left null for env-admin; they authenticate via credentials fallback
+              },
+            });
+            effectiveUserId = createdAdmin.id;
+            console.log(`Created DB admin user with id ${effectiveUserId} for env-admin fallback`);
+          }
+        } else {
+          console.warn("env-admin fallback present but ADMIN_EMAIL not configured");
+        }
+      }
+
+      const userExists = await prisma.user.findUnique({ where: { id: effectiveUserId } });
       if (!userExists) {
         return NextResponse.json(
-          { success: false, error: `User with id '${userId}' does not exist. Create the user (signup) before importing leads.` },
+          { success: false, error: `User with id '${effectiveUserId}' does not exist. Create the user (signup) before importing leads.` },
           { status: 404 }
         );
       }
     } catch (dbErr) {
+      // Database error — provide a clearer message for transient DB termination (E57P01)
       console.error("Database unavailable for user check — allowing upload to proceed:", dbErr);
       // If DB is unavailable, skip user existence check and proceed with upload
-      // The foreign key constraint will be handled at insert time
+      // The foreign key constraint will be handled at insert time. If the DB connection
+      // was forcibly terminated (E57P01), advise the client to retry later.
     }
 
     // --- 2️⃣ Handle file upload ---
@@ -165,6 +198,9 @@ export async function POST(req: NextRequest) {
             else if (header.includes('company')) rowData.company = value;
             else if (header.includes('source')) rowData.source = value;
             else if (header.includes('note')) rowData.notes = value;
+            else if (header.includes('amount') || header.includes('value') || header.includes('price') || header.includes('revenue')) {
+              rowData.amount = value;
+            }
             else if (header.includes('tag')) {
               const { tag, invalid } = normalizeTag(value);
               if (tag) rowData.tag = tag; else if (invalid) invalidTags.push(invalid);
@@ -226,6 +262,9 @@ export async function POST(req: NextRequest) {
             else if (header.includes('company')) rowData.company = value;
             else if (header.includes('source')) rowData.source = value;
             else if (header.includes('note')) rowData.notes = value;
+            else if (header.includes('amount') || header.includes('value') || header.includes('price') || header.includes('revenue')) {
+              rowData.amount = value;
+            }
             else if (header.includes('tag')) {
               const { tag, invalid } = normalizeTag(value);
               if (tag) rowData.tag = tag; else if (invalid) invalidTags.push(invalid);
@@ -267,9 +306,11 @@ export async function POST(req: NextRequest) {
           company: row.company ? String(row.company).trim().substring(0, 255) : null,
           source: row.source ? String(row.source).trim().substring(0, 50) : null,
           notes: row.notes ? String(row.notes).trim().substring(0, 1000) : null, // Notes limited
+          // Normalize amount: strip currency symbols and commas, keep two decimals
+          amount: row.amount ? String(parseFloat(String(row.amount).replace(/[^0-9.-]+/g, '') || '0').toFixed(2)) : null,
           tag: row.tag || Tag.DISQUALIFIED,
           duration: 0,
-          userId,
+          userId: effectiveUserId!,
         };
       })
       .filter((r): r is NonNullable<typeof r> => r !== null);
@@ -284,7 +325,7 @@ export async function POST(req: NextRequest) {
         try {
           const existingLeads = await prisma.lead.findMany({
             where: {
-              userId,
+              userId: effectiveUserId!,
               email: { in: emails }
             },
             select: { email: true }
@@ -366,7 +407,7 @@ export async function POST(req: NextRequest) {
 
     const duplicatesSkipped = leadsToInsert.length - finalLeadsToInsert.length;
     
-    console.log(`✅ Imported ${created.count} leads for user ${userId}`);
+    console.log(`✅ Imported ${created.count} leads for user ${effectiveUserId}`);
     if (duplicatesSkipped > 0) {
       console.log(`⚠️ Skipped ${duplicatesSkipped} duplicate leads`);
     }

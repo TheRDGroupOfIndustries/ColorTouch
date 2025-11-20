@@ -84,6 +84,12 @@ const activityToLead = (activity: Activity): Lead => activity as Lead;
 
 const Page = () => {
   const [activities, setActivities] = useState<Activity[]>(initialActivities);
+  const [statsCounts, setStatsCounts] = useState({
+    urgent: 0,
+    today: 0,
+    thisWeek: 0,
+    completed: 0,
+  });
   const [popup, setPopup] = useState<null | "view" | "edit">(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,6 +119,28 @@ const Page = () => {
         }));
       
       setActivities(followUpLeads);
+      // Also fetch reminders and compute stats for FOLLOW_UP reminders
+      try {
+        const remRes = await fetch('/api/reminders?timeframe=all', { cache: 'no-store' });
+        if (remRes.ok) {
+          const remData = await remRes.json();
+          const grouped = remData.groupedReminders || {};
+
+          const filterFollow = (arr: any[] = []) =>
+            arr.filter((r: any) => r.reminderType === 'FOLLOW_UP');
+
+          const urgent = filterFollow(grouped.overdue || []).length;
+          const today = filterFollow(grouped.today || []).length;
+          const thisWeek = filterFollow(grouped.thisWeek || []).length;
+          const completed = filterFollow(grouped.completed || []).length;
+
+          setStatsCounts({ urgent, today, thisWeek, completed });
+        } else {
+          console.warn('Failed to fetch reminders for stats');
+        }
+      } catch (remErr) {
+        console.error('Error fetching reminders:', remErr);
+      }
     } catch (error) {
       console.error('Error fetching follow-up leads:', error);
       setActivities([]);
@@ -196,45 +224,54 @@ const Page = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat) => (
-            <Card key={stat.title} className="p-6 bg-card border-border">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">
-                    {stat.title}
-                  </p>
-                  {stat.subtitle && (
-                    <p className="text-xs text-muted-foreground">
-                      {stat.subtitle}
+          {stats.map((stat) => {
+            // pick dynamic values when available
+            let value = stat.value;
+            if (stat.title === 'Urgent') value = String(statsCounts.urgent ?? stat.value);
+            if (stat.title === 'Today') value = String(statsCounts.today ?? stat.value);
+            if (stat.title === 'This Week') value = String(statsCounts.thisWeek ?? stat.value);
+            if (stat.title === 'Completed') value = String(statsCounts.completed ?? stat.value);
+
+            return (
+              <Card key={stat.title} className="p-6 bg-card border-border">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {stat.title}
                     </p>
-                  )}
-                  {stat.change && (
-                    <span className="text-sm font-medium text-success">
-                      {stat.change}
-                    </span>
-                  )}
+                    {stat.subtitle && (
+                      <p className="text-xs text-muted-foreground">
+                        {stat.subtitle}
+                      </p>
+                    )}
+                    {stat.change && (
+                      <span className="text-sm font-medium text-success">
+                        {stat.change}
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className={`w-12 h-12 rounded-xl ${stat.color}/20 flex items-center justify-center`}
+                  >
+                    <stat.icon
+                      className={`w-6 h-6 ${
+                        stat.color === "bg-destructive"
+                          ? "text-destructive"
+                          : stat.color === "bg-warning"
+                          ? "text-warning"
+                          : stat.color === "bg-info"
+                          ? "text-info"
+                          : "text-success"
+                      }`}
+                    />
+                  </div>
                 </div>
-                <div
-                  className={`w-12 h-12 rounded-xl ${stat.color}/20 flex items-center justify-center`}
-                >
-                  <stat.icon
-                    className={`w-6 h-6 ${
-                      stat.color === "bg-destructive"
-                        ? "text-destructive"
-                        : stat.color === "bg-warning"
-                        ? "text-warning"
-                        : stat.color === "bg-info"
-                        ? "text-info"
-                        : "text-success"
-                    }`}
-                  />
+                <div className="text-3xl font-bold text-foreground">
+                  {value}
                 </div>
-              </div>
-              <div className="text-3xl font-bold text-foreground">
-                {stat.value}
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
 
         {/* Filters */}

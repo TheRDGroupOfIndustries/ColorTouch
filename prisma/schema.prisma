@@ -29,6 +29,7 @@ model Lead {
   email     String?    @unique
   phone     String?    @db.VarChar(20)
   company   String?
+  amount    Decimal?  @db.Decimal(12, 2)
   source    String?
   notes     String?
   tag       Tag        @default(DISQUALIFIED)

@@ -42,6 +42,14 @@ export default function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
  const { data: session } = useSession();
 
+  // Hide certain links from non-admin users (e.g., Employees page)
+  const visibleNav = navigation.filter((item) => {
+    if (item.name === "Employees") {
+      return session?.user?.role === "ADMIN";
+    }
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-background flex w-full">
       {/* Sidebar */}
@@ -56,7 +64,7 @@ export default function Layout({ children }: LayoutProps) {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {navigation.map((item) => {
+          {visibleNav.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
