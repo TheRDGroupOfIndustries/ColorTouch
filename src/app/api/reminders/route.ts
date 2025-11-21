@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 // Create a new reminder
 export async function POST(req: NextRequest) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET });
     
     if (!token || !token.userId) {
       return NextResponse.json(
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 // Get reminders for the user
 export async function GET(req: NextRequest) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET });
     
     if (!token || !token.userId) {
       return NextResponse.json(

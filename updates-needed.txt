@@ -4,5 +4,5 @@ database issue //done
 make static whtsapp camp //done
 dynamic leads followup //done
 remove employee page in user side //done
-zapier api - integration
+zapier api - integration //done
 payment integration - razor pay

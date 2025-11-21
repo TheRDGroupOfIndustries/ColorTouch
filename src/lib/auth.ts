@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs"; // Install: npm install bcryptjs
 import "@/lib/env-check"; // Debug environment variables
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
   trustHost: true, // Required for deployment
   providers: [
     Google({

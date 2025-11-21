@@ -1,11 +1,12 @@
 import prisma from "@/lib/prisma";
+import { sendLeadCreated } from "@/lib/zapier";
 import { Tag } from "@prisma/client";
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
-     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET });
     
         if (!token || !token.userId) {
           return NextResponse.json(
@@ -67,7 +68,7 @@ interface leaducreate {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as leaducreate
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET });
 
     if (!token || !token.userId) {
       return NextResponse.json(
@@ -82,6 +83,13 @@ export async function POST(req: NextRequest) {
       const created = await prisma.lead.create({
         data: { ...body, userId: userId },
       });
+
+      // Fire-and-forget: notify Zapier of the newly created lead
+      try {
+        void sendLeadCreated(created);
+      } catch (notifyErr) {
+        console.error("Failed to notify Zapier:", notifyErr);
+      }
 
       return NextResponse.json(created);
     } catch (dbErr) {

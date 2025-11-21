@@ -7,6 +7,7 @@ import { PrismaClient, Tag } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { verifyJwt } from "@/lib/jwt";
 import { getToken } from "next-auth/jwt";
+import { sendLeadCreated } from "@/lib/zapier";
 
 const prisma = new PrismaClient();
 export const runtime = "nodejs";
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
     //   );
     // }
 
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET });
 
     // Support multiple potential id fields from next-auth token structure
     const userId = (token?.userId || (token as any)?.sub || (token as any)?.id) as string | undefined;
@@ -410,6 +411,16 @@ export async function POST(req: NextRequest) {
     console.log(`✅ Imported ${created.count} leads for user ${effectiveUserId}`);
     if (duplicatesSkipped > 0) {
       console.log(`⚠️ Skipped ${duplicatesSkipped} duplicate leads`);
+    }
+
+    // Notify Zapier for each inserted lead (use the original data since createMany doesn't return records)
+    try {
+      for (const lead of finalLeadsToInsert) {
+        // Send lead payload (non-blocking)
+        void sendLeadCreated(lead);
+      }
+    } catch (notifyErr) {
+      console.error("Failed to notify Zapier for uploaded leads:", notifyErr);
     }
 
     return NextResponse.json({
