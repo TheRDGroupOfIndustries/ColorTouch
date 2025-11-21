@@ -3,9 +3,11 @@ import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs"; // Install: npm install bcryptjs
+import "@/lib/env-check"; // Debug environment variables
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true, // Required for deployment
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
