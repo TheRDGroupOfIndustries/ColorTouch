@@ -1,22 +1,23 @@
 import prisma from "@/lib/prisma";
 import { sendLeadCreated } from "@/lib/zapier";
 import { Tag } from "@prisma/client";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
-     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET });
+     const session = await auth();
+     const user = session?.user;
     
-        if (!token || !token.userId) {
+        if (!user || !user.id) {
           return NextResponse.json(
             { success: false, error: "Unauthorized" },
             { status: 401 }
           );
         }
     
-        const userId = token.userId as string;
-        const userRole = token.role as string;
+        const userId = user.id as string;
+        const userRole = user.role as string;
 
     let leads: any[] = [];
     
@@ -68,16 +69,17 @@ interface leaducreate {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as leaducreate
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET });
+    const session = await auth();
+    const user = session?.user;
 
-    if (!token || !token.userId) {
+    if (!user || !user.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const userId = token.userId as string;
+    const userId = user.id as string;
 
     try {
       const created = await prisma.lead.create({

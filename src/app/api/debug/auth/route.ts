@@ -1,23 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   try {
     console.log('🔍 Auth Debug - Headers:', Object.fromEntries(req.headers.entries()));
     
-    // Try different token extraction methods
-    const token1 = await getToken({ 
-      req, 
-      secret: process.env.NEXTAUTH_SECRET 
-    });
+    // Use NextAuth v5 session method instead of getToken
+    const session = await auth();
+    const user = session?.user;
     
-    const token2 = await getToken({ 
-      req, 
-      secret: process.env.AUTH_SECRET 
-    });
-    
-    console.log('🔍 Token with NEXTAUTH_SECRET:', token1 ? 'FOUND' : 'NOT_FOUND');
-    console.log('🔍 Token with AUTH_SECRET:', token2 ? 'FOUND' : 'NOT_FOUND');
+    console.log('🔍 Session found:', session ? 'YES' : 'NO');
+    console.log('🔍 User data:', user ? { id: user.id, email: user.email, role: user.role } : 'NONE');
     
     const cookies = req.cookies.getAll();
     console.log('🔍 All cookies:', cookies.map(c => ({ name: c.name, hasValue: !!c.value })));
@@ -25,15 +18,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ 
       success: true, 
       debug: {
-        tokenWithNextAuthSecret: token1 ? {
-          userId: token1.userId,
-          email: token1.email,
-          role: token1.role
-        } : null,
-        tokenWithAuthSecret: token2 ? {
-          userId: token2.userId,
-          email: token2.email,
-          role: token2.role
+        session: session ? {
+          user: {
+            id: user?.id,
+            email: user?.email, 
+            name: user?.name,
+            role: user?.role
+          },
+          expires: session.expires
         } : null,
         environment: {
           NODE_ENV: process.env.NODE_ENV,

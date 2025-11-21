@@ -1,21 +1,19 @@
 // This is the correct code for an API file. It just sends data.
 import prisma from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
-    const token = await getToken({ 
-      req, 
-      secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET 
-    });
+    const session = await auth();
+    const user = session?.user;
 
-    if (!token || !token.userId) {
+    if (!user || !user.id) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = token.userId as string;
-    const userRole = token.role as string;
+    const userId = user.id as string;
+    const userRole = user.role as string;
 
     // Basic metrics derived from the leads table — keep this simple and safe.
     // try to fetch counts; if DB is unreachable, we'll catch and fallback below

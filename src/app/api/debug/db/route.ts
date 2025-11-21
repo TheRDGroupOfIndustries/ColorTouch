@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { auth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 
 // Simple database + auth diagnostics endpoint
@@ -7,8 +7,8 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const includeSample = url.searchParams.get('sample') === '1';
   try {
-    const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
-    const token = await getToken({ req: req as any, secret });
+    const session = await auth();
+    const token = session?.user;
 
     // Basic connectivity checks
     const leadCount = await prisma.lead.count();
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
         hasAuthSecret: Boolean(process.env.AUTH_SECRET),
       },
       auth: token
-        ? { present: true, userId: (token as any).userId, role: (token as any).role }
+        ? { present: true, userId: token.id, role: token.role, email: token.email }
         : { present: false },
       counts: { leads: leadCount, users: userCount, reminders: reminderCount },
       sample,
