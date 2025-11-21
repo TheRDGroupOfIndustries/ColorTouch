@@ -1,15 +1,24 @@
 import prisma from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET });
+    const session = await auth();
+    const user = session?.user;
     
-    if (!token || !token.userId) {
+    if (!user || !user.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
+      );
+    }
+    
+    // Only admins can view employees
+    if (user.role !== "ADMIN") {
+      return NextResponse.json(
+        { success: false, error: "Access denied. Admin role required." },
+        { status: 403 }
       );
     }
     
