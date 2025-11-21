@@ -1,0 +1,52 @@
+import { NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+import prisma from '@/lib/prisma';
+
+// Simple database + auth diagnostics endpoint
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const includeSample = url.searchParams.get('sample') === '1';
+  try {
+    const secret = process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET;
+    const token = await getToken({ req: req as any, secret });
+
+    // Basic connectivity checks
+    const leadCount = await prisma.lead.count();
+    const userCount = await prisma.user.count();
+    const reminderCount = await prisma.reminder.count();
+
+    let sample: any = undefined;
+    if (includeSample) {
+      sample = await prisma.lead.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, name: true, status: true, amount: true },
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      timestamp: new Date().toISOString(),
+      env: {
+        hasDbUrl: Boolean(process.env.DATABASE_URL),
+        nextauthUrl: process.env.NEXTAUTH_URL,
+        hasNextAuthSecret: Boolean(process.env.NEXTAUTH_SECRET),
+        hasAuthSecret: Boolean(process.env.AUTH_SECRET),
+      },
+      auth: token
+        ? { present: true, userId: (token as any).userId, role: (token as any).role }
+        : { present: false },
+      counts: { leads: leadCount, users: userCount, reminders: reminderCount },
+      sample,
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: err?.message || 'Unknown error',
+        stack: err?.stack,
+      },
+      { status: 500 }
+    );
+  }
+}
