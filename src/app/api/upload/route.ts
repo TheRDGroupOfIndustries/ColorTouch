@@ -6,7 +6,7 @@ import * as ExcelJS from "exceljs";
 import { PrismaClient, Tag } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { verifyJwt } from "@/lib/jwt";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 import { sendLeadCreated } from "@/lib/zapier";
 
 const prisma = new PrismaClient();
@@ -49,41 +49,19 @@ const normalizeTag = (raw?: string): { tag?: Tag; invalid?: string } => {
 
 export async function POST(req: NextRequest) {
   try {
-    // --- 1️⃣ Extract userId from cookies ---
-    // const cookieStore = cookies();
-    // const token =
-    //   (await cookieStore).get('next-auth.session-token')?.value ||
-    //   (await cookieStore).get('token')?.value;
-
-    // if (!token) {
-    //   return NextResponse.json(
-    //     { success: false, error: 'Unauthorized: No session found.' },
-    //     { status: 401 }
-    //   );
-    // }
-
-    // const decoded: any = await verifyJwt(token);
-    // const userId = decoded?.id;
-    // if (!userId) {
-    //   return NextResponse.json(
-    //     { success: false, error: 'Invalid user session.' },
-    //     { status: 403 }
-    //   );
-    // }
-
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET });
-
-    // Support multiple potential id fields from next-auth token structure
-    const userId = (token?.userId || (token as any)?.sub || (token as any)?.id) as string | undefined;
-    // Use an effectiveUserId variable we can modify when we need to map the env-admin fallback
-    let effectiveUserId = userId;
-
-    if (!token || !userId) {
+    // --- 1️⃣ Get user session ---
+    const session = await auth();
+    
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized: Missing user identifier in session token." },
+        { success: false, error: "Unauthorized: Please sign in to upload files." },
         { status: 401 }
       );
     }
+
+    const userId = session.user.id;
+    // Use an effectiveUserId variable we can modify when we need to map the env-admin fallback
+    let effectiveUserId = userId;
 
     // Ensure user exists to avoid foreign key violations
     try {
