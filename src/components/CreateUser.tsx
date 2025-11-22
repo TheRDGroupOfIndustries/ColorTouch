@@ -144,8 +144,8 @@ const CreateUser: React.FC<CreateUserProps> = ({ open, close, onCreated }) => {
                       }}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-800 ${
                         formData.role === role
-                          ? "text-white font-semibold"
-                          : "text-zinc-300"
+                          ? "text-white font-semibold bg-zinc-800"
+                          : "text-zinc-200"
                       }`}
                     >
                       {role}

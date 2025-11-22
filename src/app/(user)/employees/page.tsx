@@ -398,7 +398,7 @@ export default function Employees() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                        className="h-8 w-8 p-0 text-red-500 hover:bg-red-500/10 hover:text-red-400"
                         onClick={() => handleDeleteEmployee(employee.id)}
                       >
                         <Trash className="w-4 h-4" />

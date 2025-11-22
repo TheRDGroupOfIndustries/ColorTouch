@@ -182,7 +182,7 @@ const EditEmployee: React.FC<EditEmployeeProps> = ({
                         setRoleOpen(false);
                       }}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-800 ${
-                        formData.role === role ? "text-white" : "text-zinc-300"
+                        formData.role === role ? "text-white bg-zinc-800 font-semibold" : "text-zinc-200"
                       }`}
                     >
                       {role}
@@ -215,7 +215,7 @@ const EditEmployee: React.FC<EditEmployeeProps> = ({
                         setSubOpen(false);
                       }}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-800 ${
-                        formData.subscription === sub ? "text-white" : "text-zinc-300"
+                        formData.subscription === sub ? "text-white bg-zinc-800 font-semibold" : "text-zinc-200"
                       }`}
                     >
                       {sub}

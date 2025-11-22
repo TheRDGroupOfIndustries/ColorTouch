@@ -448,16 +448,16 @@ export default function LeadsPage() {
                           handleUpdateLead(lead.id, { status: newStatus })
                         }
                       >
-                        <SelectTrigger className="w-[140px] h-8 text-sm">
-                          <SelectValue placeholder="Status" />
+                        <SelectTrigger className="w-[140px] h-8 text-sm bg-background border-border text-foreground">
+                          <SelectValue placeholder="Status" className="text-foreground" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-popover border-border">
                           <SelectGroup>
                             {/* <SelectLabel>Lead Status</SelectLabel> */}
-                            <SelectItem value="PENDING">Pending</SelectItem>
-                            <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
-                            <SelectItem value="CONVERTED">Converted</SelectItem>
-                            <SelectItem value="REJECTED">Rejected</SelectItem>
+                            <SelectItem value="PENDING" className="text-foreground hover:bg-muted">Pending</SelectItem>
+                            <SelectItem value="FOLLOW_UP" className="text-foreground hover:bg-muted">Follow Up</SelectItem>
+                            <SelectItem value="CONVERTED" className="text-foreground hover:bg-muted">Converted</SelectItem>
+                            <SelectItem value="REJECTED" className="text-foreground hover:bg-muted">Rejected</SelectItem>
                           </SelectGroup>
                         </SelectContent>
                       </Select>
@@ -482,7 +482,7 @@ export default function LeadsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10"
+                        className="h-8 w-8 p-0 text-red-500 hover:bg-red-500/10 hover:text-red-400"
                         onClick={() => handleDeleteLead(lead.id)}
                       >
                         <Trash className="w-4 h-4 text-red-600" />

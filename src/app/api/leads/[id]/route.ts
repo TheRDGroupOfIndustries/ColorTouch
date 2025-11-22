@@ -30,8 +30,8 @@ export async function PUT(
       );
     }
     
-    const userId = token.userId as string;
-    const userRole = token.role as string;
+    const userId = session.user.id as string;
+    const userRole = session.user.role as string;
 
     try {
       // Find the lead and check ownership
@@ -89,8 +89,8 @@ export async function DELETE(
       );
     }
     
-    const userId = token.userId as string;
-    const userRole = token.role as string;
+    const userId = session.user.id as string;
+    const userRole = session.user.role as string;
 
     try {
       // Find the lead and check ownership

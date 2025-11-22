@@ -184,7 +184,7 @@ export async function DELETE(
       }
 
       // Prevent deleting the current admin user
-      if (id === token.userId) {
+      if (id === session.user?.id) {
         return NextResponse.json(
           { success: false, error: "Cannot delete your own account" },
           { status: 400 }
@@ -223,9 +223,9 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const session = await auth();
     
-    if (!token || !token.userId) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -233,7 +233,7 @@ export async function GET(
     }
     
     // Only admins can view employee details
-    if (token.role !== "ADMIN") {
+    if (session.user?.role !== "ADMIN") {
       return NextResponse.json(
         { success: false, error: "Access denied. Admin only." },
         { status: 403 }
