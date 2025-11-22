@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 
 interface UpdateEmployeeRequest {
@@ -16,9 +16,10 @@ export async function PUT(
 ) {
   try {
     const { id } = await context.params;
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const session = await auth();
+    const user = session?.user;
     
-    if (!token || !token.userId) {
+    if (!user || !user.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -26,7 +27,7 @@ export async function PUT(
     }
     
     // Only admins can update employee details
-    if (token.role !== "ADMIN") {
+    if (user.role !== "ADMIN") {
       return NextResponse.json(
         { success: false, error: "Access denied. Admin only." },
         { status: 403 }
@@ -151,9 +152,10 @@ export async function DELETE(
 ) {
   try {
     const { id } = await context.params;
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const session = await auth();
+    const user = session?.user;
     
-    if (!token || !token.userId) {
+    if (!user || !user.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -161,7 +163,7 @@ export async function DELETE(
     }
     
     // Only admins can delete employees
-    if (token.role !== "ADMIN") {
+    if (user.role !== "ADMIN") {
       return NextResponse.json(
         { success: false, error: "Access denied. Admin only." },
         { status: 403 }
