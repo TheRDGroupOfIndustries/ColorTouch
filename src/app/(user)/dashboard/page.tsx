@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,6 +93,31 @@ interface GroupedReminders {
 }
 
 export default function Dashboard() {
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  // If employee and not premium, redirect to payments
+  useEffect(() => {
+    const checkAndRedirect = async () => {
+      try {
+        const user = session?.user as any;
+        if (!user || !user.id) return;
+        if (user.role !== "EMPLOYEE") return;
+
+        const res = await fetch(`/api/auth/user/${user.id}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const subscription = data.subscription as string | undefined;
+        if (subscription !== "PREMIUM") {
+          router.replace("/payments");
+        }
+      } catch (err) {
+        console.error("Failed to check subscription for redirect:", err);
+      }
+    };
+
+    checkAndRedirect();
+  }, [session, router]);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
   const [reminders, setReminders] = useState<GroupedReminders | null>(null);

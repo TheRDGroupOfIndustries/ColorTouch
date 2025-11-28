@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { sendLeadCreated } from "@/lib/zapier";
+import { sendToGoogleSheets } from "@/app/api/integrations/google-sheets/route";
 import { Tag } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
@@ -86,11 +87,12 @@ export async function POST(req: NextRequest) {
         data: { ...body, userId: userId },
       });
 
-      // Fire-and-forget: notify Zapier of the newly created lead
+      // Fire-and-forget: notify integrations of the newly created lead
       try {
         void sendLeadCreated(created);
+        void sendToGoogleSheets(created);
       } catch (notifyErr) {
-        console.error("Failed to notify Zapier:", notifyErr);
+        console.error("Failed to notify integrations:", notifyErr);
       }
 
       return NextResponse.json(created);
