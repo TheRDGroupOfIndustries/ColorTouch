@@ -585,7 +585,7 @@ export default function Dashboard() {
                   )
                 )}
               </>
-            )}
+            ) : null}
 
             {reminders &&
               (reminders.overdue?.length === 0 || !reminders.overdue) &&
