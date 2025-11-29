@@ -27,8 +27,15 @@ import AddReminderModal from "@/components/AddReminderModal";
 
 interface Activity {
   id: number;
+  leadId: string; // Original lead ID for API calls
   name: string;
+  email?: string;
+  phone?: string;
   company: string;
+  tag?: string;
+  source?: string;
+  notes?: string;
+  duration?: number;
   type: string;
   priority: "Low" | "Medium" | "High";
   scheduled: string;
@@ -108,9 +115,16 @@ const Page = () => {
       const followUpLeads = leads
         .filter((lead: any) => lead.status === 'FOLLOW_UP')
         .map((lead: any, index: number) => ({
-          id: parseInt(lead.id.slice(-6), 16) || index + 1, // Convert part of ID to number
+          id: parseInt(lead.id.slice(-6), 16) || index + 1, // Display ID
+          leadId: lead.id, // Original lead ID for API calls
           name: lead.name,
+          email: lead.email,
+          phone: lead.phone,
           company: lead.company || 'Unknown Company',
+          tag: lead.tag,
+          source: lead.source,
+          notes: lead.notes || '',
+          duration: lead.duration || 0,
           type: 'Follow-Up',
           priority: lead.tag === 'HOT' ? 'High' : lead.tag === 'WARM' ? 'Medium' : 'Low',
           scheduled: new Date(lead.createdAt).toLocaleDateString(),
@@ -164,17 +178,24 @@ const Page = () => {
         return;
       }
 
-      // Update the lead status to completed via API
+      // Update the lead tag to indicate completion via API
       console.log('Attempting to complete activity:', activity);
-      const response = await fetch(`/api/leads/${activity.id}`, {
+      console.log('Using lead ID:', activity.leadId);
+      const response = await fetch(`/api/leads/${activity.leadId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
         body: JSON.stringify({
-          status: 'CONVERTED', // or whatever status indicates completion
-          tag: 'QUALIFIED'
+          name: activity.name,
+          email: activity.email || '',
+          phone: activity.phone || '',
+          company: activity.company,
+          tag: 'QUALIFIED', // Mark as qualified when completed
+          source: activity.source || '',
+          notes: activity.notes || '',
+          duration: activity.duration || 0
         }),
       });
 

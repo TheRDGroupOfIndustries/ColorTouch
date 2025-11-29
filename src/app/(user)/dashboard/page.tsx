@@ -21,6 +21,7 @@ import {
   Mail,
   MessageSquare,
   Briefcase,
+  Trash2,
 } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 import AddReminderModal from "@/components/AddReminderModal";
@@ -206,6 +207,30 @@ export default function Dashboard() {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const deleteReminder = async (reminderId: string) => {
+    if (!window.confirm("Are you sure you want to delete this reminder?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/reminders/${reminderId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete reminder");
+      }
+
+      toast.success("Reminder deleted successfully");
+      
+      // Refresh the dashboard data to update the reminders list
+      await fetchDashboardData();
+    } catch (error: any) {
+      console.error("Error deleting reminder:", error);
+      toast.error(error.message || "Failed to delete reminder");
+    }
+  };
 
   const getStatusColor = (tag: string) => {
     switch (tag.toLowerCase()) {
@@ -512,7 +537,15 @@ export default function Dashboard() {
                 </p>
               )}
             </div>
-            <AddReminderModal onReminderAdded={fetchDashboardData} />
+            <div className="flex gap-2">
+              <button
+                onClick={() => router.push('/follow-up')}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                View All
+              </button>
+              <AddReminderModal onReminderAdded={fetchDashboardData} />
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -538,6 +571,15 @@ export default function Dashboard() {
                     <Badge variant="destructive" className="text-xs">
                       Overdue
                     </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 hover:bg-red-100 text-red-600 hover:text-red-700"
+                      onClick={() => deleteReminder(reminder.id)}
+                      title="Delete reminder"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 ))}
 
@@ -562,11 +604,20 @@ export default function Dashboard() {
                     <Badge className="bg-orange-100 text-orange-800 border-orange-200">
                       Today
                     </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 hover:bg-orange-100 text-orange-600 hover:text-orange-700"
+                      onClick={() => deleteReminder(reminder.id)}
+                      title="Delete reminder"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 ))}
 
                 {/* Tomorrow & This Week */}
-                {[...reminders.tomorrow || [], ...reminders.thisWeek?.slice(0, 3) || []].map(
+                {[...reminders.tomorrow || [], ...reminders.thisWeek || []].map(
                   (reminder) => (
                     <div
                       key={reminder.id}
@@ -587,11 +638,20 @@ export default function Dashboard() {
                       <Badge className="bg-blue-100 text-blue-800 border-blue-200">
                         {reminder.priority}
                       </Badge>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 hover:bg-blue-100 text-blue-600 hover:text-blue-700"
+                        onClick={() => deleteReminder(reminder.id)}
+                        title="Delete reminder"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   )
                 )}
-                {/* Later reminders (limited to 2) */}
-                {reminders.later && reminders.later.slice(0, 2).map((reminder) => (
+                {/* Later reminders */}
+                {reminders.later && reminders.later.map((reminder) => (
                   <div
                     key={reminder.id}
                     className="flex items-center gap-3 p-3 border-l-4 border-gray-500 bg-gray-500/10 backdrop-blur-sm rounded-r"
@@ -611,6 +671,15 @@ export default function Dashboard() {
                     <Badge className="bg-gray-100 text-gray-800 border-gray-200">
                       {reminder.priority}
                     </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 hover:bg-gray-100 text-gray-600 hover:text-gray-700"
+                      onClick={() => deleteReminder(reminder.id)}
+                      title="Delete reminder"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 ))}
               </>
