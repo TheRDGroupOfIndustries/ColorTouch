@@ -98,7 +98,7 @@ export default function Layout({ children }: LayoutProps) {
               <span className="font-semibold">Upgrade to Pro</span>
             </div>
             <p className="text-xs text-muted-foreground mb-3">Unlock automation & go ad-free</p>
-            <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">Get SkyTouch Pro</Button>
+            <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">Get ColorTouch Pro</Button>
           </div>
         </aside>
 
@@ -182,7 +182,7 @@ export default function Layout({ children }: LayoutProps) {
             Unlock automation & go ad-free
           </p>
           <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-            Get SkyTouch Pro 
+            Get ColorTouch Pro 
           </Button>
         </div>
       </aside>
