@@ -91,7 +91,10 @@ export default function LeadsUploader() {
           </div>
           <button
             type="button"
-            className="h-9 rounded-md bg-white text-black px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 active:scale-[0.98]"
+            onClick={() => {
+              window.open('/api/download/sample-csv', '_blank');
+            }}
+            className="h-9 rounded-md bg-white text-black px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 active:scale-[0.98] cursor-pointer"
           >
             Download Sample
           </button>

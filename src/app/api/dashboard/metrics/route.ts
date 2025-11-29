@@ -20,9 +20,13 @@ export async function GET(req: NextRequest) {
     let totalLeads = 0;
     let convertedLeads = 0;
     let totalRevenue = 0;
+    let activeEmployees = 0;
     let recentLeads: any[] = [];
 
     try {
+      // Count active employees (all users regardless of role)
+      activeEmployees = await prisma.user.count();
+
       if (userRole === "ADMIN") {
         // Admin sees all leads across all users
         const leadsList = await prisma.lead.findMany({ 
@@ -68,7 +72,7 @@ export async function GET(req: NextRequest) {
       }
     } catch (dbErr) {
       console.error("Database unavailable for metrics — returning fallback metrics:", dbErr);
-      // keep defaults
+      // keep defaults (activeEmployees will remain 0 as fallback)
     }
 
     const metrics = {
@@ -87,8 +91,8 @@ export async function GET(req: NextRequest) {
         subtitle: userRole === "ADMIN" ? `${totalLeads} total leads (all users)` : `${totalLeads} your leads`,
       },
       activeEmployees: {
-        value: 1,
-        formatted: "1",
+        value: activeEmployees,
+        formatted: `${activeEmployees}`,
         change: "0%",
         trend: "up",
         subtitle: userRole === "ADMIN" ? "Total active employees" : "Current user only",

@@ -96,6 +96,9 @@ export default function Dashboard() {
   const { data: session } = useSession();
   const router = useRouter();
 
+  const user = session?.user as any;
+  const isAdmin = user?.role === "ADMIN";
+
   // If employee and not premium, redirect to payments
   useEffect(() => {
     const checkAndRedirect = async () => {
@@ -281,7 +284,7 @@ export default function Dashboard() {
 
       {/* Metrics Grid */}
       {metrics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${isAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-2'} gap-4`}>
           {/* Total Revenue */}
           <Card className="p-6 bg-card border-border">
             <div className="flex items-start justify-between mb-4">
@@ -321,7 +324,7 @@ export default function Dashboard() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">
-                  New Leads
+                  {isAdmin ? 'New Leads' : 'Total Leads'}
                 </p>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl font-bold text-foreground">
@@ -350,73 +353,78 @@ export default function Dashboard() {
             </p>
           </Card>
 
-          {/* Active Employees */}
-          <Card className="p-6 bg-card border-border">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">
-                  Active Employees
-                </p>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-foreground">
-                    {metrics.activeEmployees.formatted}
-                  </span>
-                  <span
-                    className={`text-xs font-medium flex items-center gap-1 ${
-                      metrics.activeEmployees.trend === "up"
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {metrics.activeEmployees.trend === "up" ? (
-                      <TrendingUp className="w-3 h-3" />
-                    ) : (
-                      <TrendingDown className="w-3 h-3" />
-                    )}
-                    {metrics.activeEmployees.change}
-                  </span>
+          {/* Admin-only metrics */}
+          {isAdmin && (
+            <>
+              {/* Active Employees */}
+              <Card className="p-6 bg-card border-border">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">
+                      Active Employees
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-foreground">
+                        {metrics.activeEmployees.formatted}
+                      </span>
+                      <span
+                        className={`text-xs font-medium flex items-center gap-1 ${
+                          metrics.activeEmployees.trend === "up"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {metrics.activeEmployees.trend === "up" ? (
+                          <TrendingUp className="w-3 h-3" />
+                        ) : (
+                          <TrendingDown className="w-3 h-3" />
+                        )}
+                        {metrics.activeEmployees.change}
+                      </span>
+                    </div>
+                  </div>
+                  <Users className="w-8 h-8 text-purple-600" />
                 </div>
-              </div>
-              <Users className="w-8 h-8 text-purple-600" />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {metrics.activeEmployees.subtitle}
-            </p>
-          </Card>
+                <p className="text-xs text-muted-foreground">
+                  {metrics.activeEmployees.subtitle}
+                </p>
+              </Card>
 
-          {/* Conversion Rate */}
-          <Card className="p-6 bg-card border-border">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">
-                  Conversion Rate
-                </p>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-bold text-foreground">
-                    {metrics.conversionRate.formatted}
-                  </span>
-                  <span
-                    className={`text-xs font-medium flex items-center gap-1 ${
-                      metrics.conversionRate.trend === "up"
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {metrics.conversionRate.trend === "up" ? (
-                      <TrendingUp className="w-3 h-3" />
-                    ) : (
-                      <TrendingDown className="w-3 h-3" />
-                    )}
-                    {metrics.conversionRate.change}
-                  </span>
+              {/* Conversion Rate */}
+              <Card className="p-6 bg-card border-border">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">
+                      Conversion Rate
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-foreground">
+                        {metrics.conversionRate.formatted}
+                      </span>
+                      <span
+                        className={`text-xs font-medium flex items-center gap-1 ${
+                          metrics.conversionRate.trend === "up"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {metrics.conversionRate.trend === "up" ? (
+                          <TrendingUp className="w-3 h-3" />
+                        ) : (
+                          <TrendingDown className="w-3 h-3" />
+                        )}
+                        {metrics.conversionRate.change}
+                      </span>
+                    </div>
+                  </div>
+                  <TrendingUp className="w-8 h-8 text-orange-600" />
                 </div>
-              </div>
-              <TrendingUp className="w-8 h-8 text-orange-600" />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {metrics.conversionRate.subtitle}
-            </p>
-          </Card>
+                <p className="text-xs text-muted-foreground">
+                  {metrics.conversionRate.subtitle}
+                </p>
+              </Card>
+            </>
+          )}
         </div>
       )}
 

@@ -17,6 +17,7 @@ import {
   Settings,
   Microchip,
   CreditCard,
+  User,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ const navigation = [
   { name: "Leads Follow-Up", href: "/follow-up", icon: Calendar },
   { name: "Payments", href: "/payments", icon: CreditCard },
   { name: "Employees", href: "/employees", icon: UsersRound },
+  { name: "Profile", href: "/profile", icon: User },
   { name: "Integrations", href: "/integrations", icon: LinkIcon },
   { name: "Automation", href: "/automation", icon: Microchip },
 ];

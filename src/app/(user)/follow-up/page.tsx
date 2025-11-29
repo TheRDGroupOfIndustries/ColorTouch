@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import FollowModels from "@/components/ui/FollowModels";
+import AddReminderModal from "@/components/AddReminderModal";
 
 interface Activity {
   id: number;
@@ -93,6 +94,7 @@ const Page = () => {
   const [popup, setPopup] = useState<null | "view" | "edit">(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showReminderModal, setShowReminderModal] = useState(false);
 
   // Fetch leads with FOLLOW_UP status from database
   const fetchFollowUpLeads = async () => {
@@ -215,7 +217,10 @@ const Page = () => {
               <CalendarIcon className="w-4 h-4 mr-2" />
               Calendar View
             </Button>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Button 
+              className="bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer"
+              onClick={() => setShowReminderModal(true)}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Schedule Follow-Up
             </Button>
@@ -496,6 +501,15 @@ const Page = () => {
         closePopup={closePopup}
         onUpdateLead={handleUpdateLead}
       />
+      
+      {showReminderModal && (
+        <AddReminderModal 
+          onReminderAdded={() => {
+            setShowReminderModal(false);
+            fetchFollowUpLeads(); // Refresh the data after adding a reminder
+          }} 
+        />
+      )}
     </div>
   );
 };

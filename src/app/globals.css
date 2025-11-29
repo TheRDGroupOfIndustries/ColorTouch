@@ -87,3 +87,22 @@
     color: var(--color-destructive);
   }
 }
+
+/* ✅ Global button cursor styles */
+@layer base {
+  button {
+    cursor: pointer;
+  }
+  
+  button:disabled {
+    cursor: not-allowed;
+  }
+  
+  [role="button"] {
+    cursor: pointer;
+  }
+  
+  .cursor-pointer {
+    cursor: pointer;
+  }
+}

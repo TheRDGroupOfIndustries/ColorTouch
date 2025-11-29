@@ -48,6 +48,9 @@ interface Lead {
   value: string;
   created: string;
   avatar?: string;
+  notes?: string;
+  duration?: number;
+  amount?: number;
 }
 
 const getSourceIcon = (source: string) => {
@@ -79,6 +82,43 @@ export default function LeadsPage() {
   const closePopup = () => setPopup(null);
 
   // ✅ Fetch leads from API
+  const exportLeads = () => {
+    if (filteredLeads.length === 0) {
+      toast.error("No leads to export");
+      return;
+    }
+
+    // Create CSV content
+    const headers = ["name", "email", "phone", "company", "notes", "source", "tag", "duration", "amount"];
+    const csvContent = [
+      headers.join(","),
+      ...filteredLeads.map(lead => [
+        `"${lead.name || ""}"`,
+        `"${lead.email || ""}"`,
+        `"${lead.phone || ""}"`,
+        `"${lead.company || ""}"`,
+        `"${lead.notes || ""}"`,
+        `"${lead.source || ""}"`,
+        `"${lead.tag || ""}"`,
+        lead.duration || 0,
+        lead.amount || 0
+      ].join(","))
+    ].join("\\n");
+
+    // Create download
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `leads-export-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    toast.success(`Exported ${filteredLeads.length} leads successfully!`);
+  };
+
   const fetchLeads = async () => {
     try {
       setLoading(true);
@@ -344,7 +384,12 @@ export default function LeadsPage() {
             Leads ({filteredLeads.length})
           </h3>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="border-border">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="border-border cursor-pointer"
+              onClick={exportLeads}
+            >
               <Download className="w-4 h-4 mr-2" />
               Export
             </Button>
