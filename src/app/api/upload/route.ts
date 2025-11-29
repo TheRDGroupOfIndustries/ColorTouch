@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
-import * as ExcelJS from "exceljs";
+import ExcelJS from "exceljs";
 import { PrismaClient, Tag } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { verifyJwt } from "@/lib/jwt";
@@ -36,6 +36,7 @@ const tagAliasMap: Record<string, Tag> = {
   // External synonyms coming from legacy CSVs
   LEAD: Tag.WARM, // Treat generic LEAD as WARM by default
   PROSPECT: Tag.HOT, // Treat PROSPECT as HOT interest
+  CUSTOMER: Tag.QUALIFIED, // Treat CUSTOMER as QUALIFIED (revenue-generating)
 };
 
 const normalizeTag = (raw?: string): { tag?: Tag; invalid?: string } => {
@@ -211,7 +212,7 @@ export async function POST(req: NextRequest) {
         const headerRow = worksheet.getRow(1);
         const headers: string[] = [];
         
-        headerRow.eachCell((cell, colNumber) => {
+        headerRow.eachCell((cell: any, colNumber: number) => {
           const headerValue = String(cell.value || '').toLowerCase().trim();
           headers[colNumber] = headerValue;
         });
@@ -227,11 +228,11 @@ export async function POST(req: NextRequest) {
 
         // Process data rows
         const invalidTags: string[] = [];
-        worksheet.eachRow((row, rowNumber) => {
+        worksheet.eachRow((row: any, rowNumber: number) => {
           if (rowNumber === 1) return; // Skip header row
           
           const rowData: LeadRow = {};
-          row.eachCell((cell, colNumber) => {
+          row.eachCell((cell: any, colNumber: number) => {
             const header = headers[colNumber];
             const value = String(cell.value || '').trim();
             

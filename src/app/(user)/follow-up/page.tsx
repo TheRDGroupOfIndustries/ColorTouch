@@ -288,11 +288,11 @@ const Page = () => {
             <SelectTrigger className="w-48 bg-card border-border">
               <SelectValue placeholder="All Priorities" />
             </SelectTrigger>
-            <SelectContent className="bg-popover border-border">
+            <SelectContent className="border-gray-800 bg-gradient-to-b from-black/95 to-black/85 text-white">
               <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="high" className="text-white">High</SelectItem>
+              <SelectItem value="medium" className="text-white">Medium</SelectItem>
+              <SelectItem value="low" className="text-white">Low</SelectItem>
             </SelectContent>
           </Select>
 
@@ -300,11 +300,11 @@ const Page = () => {
             <SelectTrigger className="w-48 bg-card border-border">
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
-            <SelectContent className="bg-popover border-border">
+            <SelectContent className="border-gray-800 bg-gradient-to-b from-black/95 to-black/85 text-white">
               <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="call">Call</SelectItem>
-              <SelectItem value="email">Email</SelectItem>
-              <SelectItem value="meeting">Meeting</SelectItem>
+              <SelectItem value="call" className="text-white">Call</SelectItem>
+              <SelectItem value="email" className="text-white">Email</SelectItem>
+              <SelectItem value="meeting" className="text-white">Meeting</SelectItem>
             </SelectContent>
           </Select>
 
@@ -312,11 +312,11 @@ const Page = () => {
             <SelectTrigger className="w-48 bg-card border-border">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
-            <SelectContent className="bg-popover border-border">
+            <SelectContent className="border-gray-800 bg-gradient-to-b from-black/95 to-black/85 text-white">
               <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="overdue">Overdue</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="pending" className="text-white">Pending</SelectItem>
+              <SelectItem value="overdue" className="text-white">Overdue</SelectItem>
+              <SelectItem value="completed" className="text-white">Completed</SelectItem>
             </SelectContent>
           </Select>
         </div>

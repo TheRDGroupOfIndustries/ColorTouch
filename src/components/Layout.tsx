@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -22,7 +22,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
 import AuthButton from "./AuthButton";
 
 interface LayoutProps {
@@ -42,9 +41,9 @@ const navigation = [
 
 export default function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
- const { data: session } = useSession();
+  const { data: session } = useSession();
 
-  // Hide certain links from non-admin users (e.g., Employees page)
+  // Subscription state (fetch from server to get latest value after payment updates)
   const [subscription, setSubscription] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,6 +54,7 @@ export default function Layout({ children }: LayoutProps) {
         const res = await fetch(`/api/auth/user/${user.id}`);
         if (!res.ok) return;
         const data = await res.json();
+        console.debug("Fetched subscription for user:", user.id, data.subscription);
         setSubscription(data.subscription || null);
       } catch (err) {
         console.error("Failed to fetch user subscription:", err);
@@ -63,9 +63,9 @@ export default function Layout({ children }: LayoutProps) {
 
     fetchSubscription();
   }, [session]);
-
   // If user is an EMPLOYEE and not PREMIUM, show only Payments link
-  if (session?.user?.role === "EMPLOYEE" && subscription !== "PREMIUM") {
+  // Only show the Payments-only sidebar once we have the subscription state
+  if (session?.user?.role === "EMPLOYEE" && subscription !== null && subscription !== "PREMIUM") {
     const paymentsOnly = navigation.filter((item) => item.name === "Payments");
     return (
       <div className="min-h-screen bg-background flex w-full">

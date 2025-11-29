@@ -321,7 +321,7 @@ export default function WhatsAppPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent
                         align="end"
-                        className="bg-black text-white border-border"
+                        className="border-gray-800 bg-gradient-to-b from-black/95 to-black/85 text-white"
                       >
                         {campaign.status?.toString().toUpperCase() ===
                         "PAUSED" ? (

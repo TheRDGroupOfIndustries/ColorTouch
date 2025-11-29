@@ -315,7 +315,7 @@ export default function LeadsPage() {
           <SelectTrigger className="w-48 bg-card border-border">
             <SelectValue placeholder="Filter by Status" />
           </SelectTrigger>
-          <SelectContent className="bg-popover border-border">
+          <SelectContent className="border-gray-800 bg-gradient-to-b from-black/95 to-black/85 text-white">
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="PENDING">Pending</SelectItem>
             <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
@@ -327,7 +327,7 @@ export default function LeadsPage() {
           <SelectTrigger className="w-48 bg-card border-border">
             <SelectValue placeholder="Filter by Tag" />
           </SelectTrigger>
-          <SelectContent className="bg-popover border-border">
+          <SelectContent className="border-gray-800 bg-gradient-to-b from-black/95 to-black/85 text-white">
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="hot">Hot</SelectItem>
             <SelectItem value="warm">Warm</SelectItem>
@@ -444,20 +444,20 @@ export default function LeadsPage() {
                     <td className="p-4">
                       <Select
                         value={lead.status}
-                        onValueChange={(newStatus) =>
+                        onValueChange={(newStatus: string) =>
                           handleUpdateLead(lead.id, { status: newStatus })
                         }
                       >
                         <SelectTrigger className="w-[140px] h-8 text-sm bg-background border-border text-foreground">
                           <SelectValue placeholder="Status" className="text-foreground" />
                         </SelectTrigger>
-                        <SelectContent className="bg-popover border-border">
+                        <SelectContent className="border-gray-800 bg-gradient-to-b from-black/95 to-black/85 text-white">
                           <SelectGroup>
                             {/* <SelectLabel>Lead Status</SelectLabel> */}
-                            <SelectItem value="PENDING" className="text-foreground hover:bg-muted">Pending</SelectItem>
-                            <SelectItem value="FOLLOW_UP" className="text-foreground hover:bg-muted">Follow Up</SelectItem>
-                            <SelectItem value="CONVERTED" className="text-foreground hover:bg-muted">Converted</SelectItem>
-                            <SelectItem value="REJECTED" className="text-foreground hover:bg-muted">Rejected</SelectItem>
+                            <SelectItem value="PENDING" className="text-white">Pending</SelectItem>
+                            <SelectItem value="FOLLOW_UP" className="text-white">Follow Up</SelectItem>
+                            <SelectItem value="CONVERTED" className="text-white">Converted</SelectItem>
+                            <SelectItem value="REJECTED" className="text-white">Rejected</SelectItem>
                           </SelectGroup>
                         </SelectContent>
                       </Select>

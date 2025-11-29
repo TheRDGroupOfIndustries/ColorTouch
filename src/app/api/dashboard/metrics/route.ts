@@ -35,12 +35,16 @@ export async function GET(req: NextRequest) {
           }
         });
         totalLeads = leadsList.length;
-        convertedLeads = leadsList.filter((l: any) => l.status === "CONVERTED").length;
+        convertedLeads = leadsList.filter((l: any) => l.status === "CONVERTED" || l.tag === "QUALIFIED").length;
         recentLeads = leadsList.slice(0, 5);
         
-        // Calculate total revenue from converted leads
+        // Calculate total revenue from converted leads and customers with amounts
         totalRevenue = leadsList
-          .filter((l: any) => l.status === "CONVERTED" && l.amount)
+          .filter((l: any) => 
+            (l.status === "CONVERTED" || l.tag === "QUALIFIED") && 
+            l.amount && 
+            parseFloat(l.amount.toString()) > 0
+          )
           .reduce((sum: number, l: any) => sum + parseFloat(l.amount.toString()), 0);
       } else {
         // Employee sees only their own leads
@@ -50,12 +54,16 @@ export async function GET(req: NextRequest) {
           take: 100 
         });
         totalLeads = leadsList.length;
-        convertedLeads = leadsList.filter((l: any) => l.status === "CONVERTED").length;
+        convertedLeads = leadsList.filter((l: any) => l.status === "CONVERTED" || l.tag === "QUALIFIED").length;
         recentLeads = leadsList.slice(0, 5);
         
-        // Calculate total revenue from converted leads for this user
+        // Calculate total revenue from converted leads and customers with amounts for this user
         totalRevenue = leadsList
-          .filter((l: any) => l.status === "CONVERTED" && l.amount)
+          .filter((l: any) => 
+            (l.status === "CONVERTED" || l.tag === "QUALIFIED") && 
+            l.amount && 
+            parseFloat(l.amount.toString()) > 0
+          )
           .reduce((sum: number, l: any) => sum + parseFloat(l.amount.toString()), 0);
       }
     } catch (dbErr) {
@@ -69,7 +77,7 @@ export async function GET(req: NextRequest) {
         formatted: `$${totalRevenue.toFixed(2)}`,
         change: "0%",
         trend: "up",
-        subtitle: totalRevenue > 0 ? `From ${convertedLeads} converted leads` : "No converted leads yet",
+        subtitle: totalRevenue > 0 ? `From ${convertedLeads} converted/qualified leads` : "No converted/qualified leads yet",
       },
       newLeads: {
         value: totalLeads,
@@ -90,7 +98,7 @@ export async function GET(req: NextRequest) {
         formatted: `${convertedLeads}`,
         change: "0%",
         trend: "up",
-        subtitle: userRole === "ADMIN" ? `${convertedLeads} converted leads (all users)` : `${convertedLeads} your converted leads`,
+        subtitle: userRole === "ADMIN" ? `${convertedLeads} converted/qualified leads (all users)` : `${convertedLeads} your converted/qualified leads`,
       },
     };
 

@@ -140,7 +140,7 @@ export default function AddReminderModal({ onReminderAdded }: AddReminderModalPr
             <Label htmlFor="reminderType">Type</Label>
             <Select 
               value={formData.reminderType} 
-              onValueChange={(value) => handleInputChange("reminderType", value)}
+              onValueChange={(value: string) => handleInputChange("reminderType", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select reminder type" />
@@ -160,7 +160,7 @@ export default function AddReminderModal({ onReminderAdded }: AddReminderModalPr
             <Label htmlFor="priority">Priority</Label>
             <Select 
               value={formData.priority} 
-              onValueChange={(value) => handleInputChange("priority", value)}
+              onValueChange={(value: string) => handleInputChange("priority", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select priority" />

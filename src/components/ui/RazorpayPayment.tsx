@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,16 +16,12 @@ declare global {
 }
 
 interface RazorpayPaymentProps {
-  onSuccess?: (paymentData: any) => void;
-  onError?: (error: any) => void;
   buttonText?: string;
   amount?: number;
   description?: string;
 }
 
 export default function RazorpayPayment({ 
-  onSuccess, 
-  onError, 
   buttonText = "Pay Now", 
   amount: defaultAmount,
   description = "Payment for ColorTouch CRM"
@@ -33,6 +30,7 @@ export default function RazorpayPayment({
   const [amount, setAmount] = useState(defaultAmount || 100);
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "success" | "failed">("idle");
   const router = useRouter();
+  const { data: session, update } = useSession();
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -125,14 +123,46 @@ export default function RazorpayPayment({
 
             if (verifyData.success) {
               setPaymentStatus("success");
-              onSuccess?.(verifyData);
+              // Refresh session and verify via server-side user API; poll until the subscription is refreshed
+              try {
+                await update(); // Ask next-auth to refresh session
+              } catch (err) {
+                console.warn("Session update failed:", err);
+              }
+
+              // Attempt to directly confirm subscription on the server, using session userId
+              const userId = session?.user?.id;
+              if (userId) {
+                const checkSubscription = async () => {
+                  try {
+                    const res = await fetch(`/api/auth/user/${userId}`);
+                    if (!res.ok) return null;
+                    const data = await res.json();
+                    return data.subscription || null;
+                  } catch (err) {
+                    console.warn('Failed to fetch subscription from server:', err);
+                    return null;
+                  }
+                };
+
+                let attempts = 0;
+                let currentSub = await checkSubscription();
+                while (attempts < 10 && currentSub !== 'PREMIUM') {
+                  await new Promise((r) => setTimeout(r, 500));
+                  currentSub = await checkSubscription();
+                  attempts++;
+                }
+                console.debug('Subscription status after payment:', currentSub);
+              }
+
+              // Now force a full reload so Layout re-reads session/subscription and renders the full nav
+              window.location.href = '/dashboard';
             } else {
               throw new Error(verifyData.error || "Payment verification failed");
             }
           } catch (error: any) {
             console.error("Payment verification error:", error);
             setPaymentStatus("failed");
-            onError?.(error);
           }
         },
         prefill: {
@@ -160,7 +190,6 @@ export default function RazorpayPayment({
     } catch (error: any) {
       console.error("Payment error:", error);
       setPaymentStatus("failed");
-      onError?.(error);
     } finally {
       setLoading(false);
     }

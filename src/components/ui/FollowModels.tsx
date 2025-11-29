@@ -159,9 +159,9 @@ const FollowModels: React.FC<FollowModelsProps> = ({
             <SelectTrigger className="w-full bg-card border-border">
               <SelectValue placeholder={`Select ${label}`} />
             </SelectTrigger>
-            <SelectContent className="bg-popover border-border">
+            <SelectContent className="border-gray-800 bg-linear-to-b from-black/95 to-black/85 text-white">
               {options?.map((option) => (
-                <SelectItem key={option} value={option}>
+                <SelectItem key={option} value={option} className="text-white">
                   {option}
                 </SelectItem>
               ))}

@@ -167,7 +167,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try {
           const dbUser = await prisma.user.findUnique({
             where: { email: user.email },
-            select: { id: true, role: true, name: true, email: true },
+            select: { id: true, role: true, name: true, email: true, subscription: true },
           });
 
           if (dbUser) {
@@ -175,6 +175,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.role = dbUser.role;
             token.name = dbUser.name;
             token.email = dbUser.email || "";
+            token.subscription = dbUser.subscription;
           } else {
             // If no DB user found, use the user data from the authorize function
             token.userId = user.id;
@@ -197,13 +198,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         try {
           const dbUser = await prisma.user.findUnique({
             where: { email: token.email! },
-            select: { id: true, role: true, name: true },
+            select: { id: true, role: true, name: true, subscription: true },
           });
 
           if (dbUser) {
             token.userId = dbUser.id;
             token.role = dbUser.role;
             token.name = dbUser.name;
+            token.subscription = dbUser.subscription;
           }
         } catch (dbErr: any) {
           console.error('Database unreachable during token update:', dbErr?.message || dbErr);
@@ -221,6 +223,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.role = token.role as string;
         session.user.name = token.name as string; // ✅ Add this
         session.user.email = token.email as string; // ✅ Add this
+        (session.user as any).subscription = token.subscription as string;
       }
       return session;
     },

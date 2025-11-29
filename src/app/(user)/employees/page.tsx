@@ -525,10 +525,10 @@ export default function Employees() {
                 <select
                   value={editForm.role}
                   onChange={(e) => setEditForm({...editForm, role: e.target.value})}
-                  className="w-full p-2 bg-background border border-border rounded-md text-foreground"
+                  className="w-full p-2 bg-black border border-border rounded-md text-white"
                 >
-                  <option value="EMPLOYEE">Employee</option>
-                  <option value="ADMIN">Admin</option>
+                  <option value="EMPLOYEE" className="bg-black text-white">Employee</option>
+                  <option value="ADMIN" className="bg-black text-white">Admin</option>
                 </select>
               </div>
               <div className="flex gap-3 pt-4">
