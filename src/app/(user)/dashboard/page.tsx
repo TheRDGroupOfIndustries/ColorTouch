@@ -179,7 +179,13 @@ export default function Dashboard() {
         if (remindersData.success && remindersData.groupedReminders) {
           setReminders(remindersData.groupedReminders);
           setReminderStats(remindersData.stats);
-          console.log("Reminders set successfully:", remindersData.groupedReminders);
+          console.log('Reminders set successfully:', remindersData.groupedReminders);
+          console.log('Individual reminder counts:');
+          console.log('- Overdue:', remindersData.groupedReminders.overdue?.length || 0);
+          console.log('- Today:', remindersData.groupedReminders.today?.length || 0);
+          console.log('- Tomorrow:', remindersData.groupedReminders.tomorrow?.length || 0);
+          console.log('- This week:', remindersData.groupedReminders.thisWeek?.length || 0);
+          console.log('- Later:', remindersData.groupedReminders.later?.length || 0);
         } else {
           console.warn("Reminders API returned unsuccessful response:", remindersData);
           setReminders(null);
@@ -584,6 +590,29 @@ export default function Dashboard() {
                     </div>
                   )
                 )}
+                {/* Later reminders (limited to 2) */}
+                {reminders.later && reminders.later.slice(0, 2).map((reminder) => (
+                  <div
+                    key={reminder.id}
+                    className="flex items-center gap-3 p-3 border-l-4 border-gray-500 bg-gray-500/10 backdrop-blur-sm rounded-r"
+                  >
+                    <div className="text-gray-600">
+                      {getReminderIcon(reminder.reminderType)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-foreground">
+                        {reminder.title}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {reminder.lead?.name} •{" "}
+                        {formatDate(reminder.reminderDate)}
+                      </div>
+                    </div>
+                    <Badge className="bg-gray-100 text-gray-800 border-gray-200">
+                      {reminder.priority}
+                    </Badge>
+                  </div>
+                ))}
               </>
             ) : null}
 
@@ -591,7 +620,8 @@ export default function Dashboard() {
               (reminders.overdue?.length === 0 || !reminders.overdue) &&
               (reminders.today?.length === 0 || !reminders.today) &&
               (reminders.tomorrow?.length === 0 || !reminders.tomorrow) &&
-              (reminders.thisWeek?.length === 0 || !reminders.thisWeek) && (
+              (reminders.thisWeek?.length === 0 || !reminders.thisWeek) &&
+              (reminders.later?.length === 0 || !reminders.later) && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>No upcoming reminders</p>

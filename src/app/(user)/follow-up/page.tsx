@@ -165,6 +165,7 @@ const Page = () => {
       }
 
       // Update the lead status to completed via API
+      console.log('Attempting to complete activity:', activity);
       const response = await fetch(`/api/leads/${activity.id}`, {
         method: 'PUT',
         headers: {
@@ -177,13 +178,17 @@ const Page = () => {
         }),
       });
 
+      console.log('API Response status:', response.status);
+      const responseData = await response.json();
+      console.log('API Response data:', responseData);
+
       if (response.ok) {
         // Remove from local state only after successful API update
         setActivities((prev) => prev.filter((a) => a.id !== activityId));
         console.log(`Activity ID: ${activityId} marked as completed and removed from list.`);
       } else {
-        console.error('Failed to update lead status');
-        alert('Failed to complete activity. Please try again.');
+        console.error('Failed to update lead status:', responseData);
+        alert(`Failed to complete activity: ${responseData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error completing activity:', error);
