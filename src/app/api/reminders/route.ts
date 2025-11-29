@@ -28,19 +28,29 @@ export async function POST(req: NextRequest) {
       );
     }
     
+    // Validate and parse the date
+    console.log("Received reminderDate:", reminderDate);
+    const parsedDate = new Date(reminderDate);
+    console.log("Parsed date:", parsedDate, "Valid:", !isNaN(parsedDate.getTime()));
+    
+    if (isNaN(parsedDate.getTime())) {
+      return NextResponse.json(
+        { success: false, error: "Invalid reminder date format" },
+        { status: 400 }
+      );
+    }
+    
     // Create the reminder
     const reminder = await prisma.reminder.create({
       data: {
         title,
         description: description || null,
-        reminderDate: new Date(reminderDate),
+        reminderDate: parsedDate,
         reminderType: reminderType || 'GENERAL',
         priority: priority || 'MEDIUM',
         isCompleted: false,
         userId,
-        leadId: leadId || null,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        leadId: leadId || null
       },
       include: {
         lead: {

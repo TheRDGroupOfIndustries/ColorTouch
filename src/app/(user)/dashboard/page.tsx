@@ -170,12 +170,23 @@ export default function Dashboard() {
         credentials: "include",
       });
 
+      console.log("Reminders API response status:", remindersRes.status);
+      
       if (remindersRes.ok) {
         const remindersData = await remindersRes.json();
-        if (remindersData.success) {
+        console.log("Reminders data received:", remindersData);
+        
+        if (remindersData.success && remindersData.groupedReminders) {
           setReminders(remindersData.groupedReminders);
           setReminderStats(remindersData.stats);
+          console.log("Reminders set successfully:", remindersData.groupedReminders);
+        } else {
+          console.warn("Reminders API returned unsuccessful response:", remindersData);
+          setReminders(null);
         }
+      } else {
+        console.error("Failed to fetch reminders:", remindersRes.status, remindersRes.statusText);
+        setReminders(null);
       }
     } catch (err: any) {
       console.error("Dashboard fetch error:", err);

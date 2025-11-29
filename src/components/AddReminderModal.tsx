@@ -45,6 +45,19 @@ export default function AddReminderModal({ onReminderAdded }: AddReminderModalPr
       return;
     }
 
+    // Validate the date format
+    const dateTest = new Date(formData.reminderDate);
+    if (isNaN(dateTest.getTime())) {
+      console.error("Invalid date provided:", formData.reminderDate);
+      toast.error("Please enter a valid reminder date");
+      return;
+    }
+
+    console.log("Sending reminder data:", {
+      ...formData,
+      parsedDate: dateTest.toISOString()
+    });
+
     try {
       setLoading(true);
       
@@ -54,7 +67,10 @@ export default function AddReminderModal({ onReminderAdded }: AddReminderModalPr
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          reminderDate: formData.reminderDate
+        }),
       });
 
       const result = await response.json();
@@ -133,6 +149,7 @@ export default function AddReminderModal({ onReminderAdded }: AddReminderModalPr
               type="datetime-local"
               value={formData.reminderDate}
               onChange={(e) => handleInputChange("reminderDate", e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
               required
             />
           </div>
