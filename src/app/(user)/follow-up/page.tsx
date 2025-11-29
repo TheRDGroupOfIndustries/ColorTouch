@@ -155,11 +155,40 @@ const Page = () => {
     fetchFollowUpLeads();
   }, []);
 
-  const handleCompleteActivity = (activityId: number) => {
-    setActivities((prev) => prev.filter((a) => a.id !== activityId));
-    console.log(
-      `Activity ID: ${activityId} marked as completed and removed from list.`
-    );
+  const handleCompleteActivity = async (activityId: number) => {
+    try {
+      // Find the activity to get the lead ID
+      const activity = activities.find(a => a.id === activityId);
+      if (!activity) {
+        console.error('Activity not found');
+        return;
+      }
+
+      // Update the lead status to completed via API
+      const response = await fetch(`/api/leads/${activity.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          status: 'CONVERTED', // or whatever status indicates completion
+          tag: 'QUALIFIED'
+        }),
+      });
+
+      if (response.ok) {
+        // Remove from local state only after successful API update
+        setActivities((prev) => prev.filter((a) => a.id !== activityId));
+        console.log(`Activity ID: ${activityId} marked as completed and removed from list.`);
+      } else {
+        console.error('Failed to update lead status');
+        alert('Failed to complete activity. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error completing activity:', error);
+      alert('Error completing activity. Please try again.');
+    }
   };
 
   const handleUpdateLead = async (

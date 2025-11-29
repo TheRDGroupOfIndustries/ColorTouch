@@ -510,10 +510,10 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-3">
-            {reminders && (
+            {reminders ? (
               <>
                 {/* Overdue */}
-                {reminders.overdue.map((reminder) => (
+                {reminders.overdue && reminders.overdue.map((reminder) => (
                   <div
                     key={reminder.id}
                     className="flex items-center gap-3 p-3 border-l-4 border-red-500 bg-red-500/10 backdrop-blur-sm rounded-r"
@@ -536,7 +536,7 @@ export default function Dashboard() {
                 ))}
 
                 {/* Today */}
-                {reminders.today.map((reminder) => (
+                {reminders.today && reminders.today.map((reminder) => (
                   <div
                     key={reminder.id}
                     className="flex items-center gap-3 p-3 border-l-4 border-orange-500 bg-orange-500/10 backdrop-blur-sm rounded-r"
@@ -560,7 +560,7 @@ export default function Dashboard() {
                 ))}
 
                 {/* Tomorrow & This Week */}
-                {[...reminders.tomorrow, ...reminders.thisWeek.slice(0, 3)].map(
+                {[...reminders.tomorrow || [], ...reminders.thisWeek?.slice(0, 3) || []].map(
                   (reminder) => (
                     <div
                       key={reminder.id}
@@ -588,10 +588,10 @@ export default function Dashboard() {
             )}
 
             {reminders &&
-              reminders.overdue.length === 0 &&
-              reminders.today.length === 0 &&
-              reminders.tomorrow.length === 0 &&
-              reminders.thisWeek.length === 0 && (
+              (reminders.overdue?.length === 0 || !reminders.overdue) &&
+              (reminders.today?.length === 0 || !reminders.today) &&
+              (reminders.tomorrow?.length === 0 || !reminders.tomorrow) &&
+              (reminders.thisWeek?.length === 0 || !reminders.thisWeek) && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>No upcoming reminders</p>
