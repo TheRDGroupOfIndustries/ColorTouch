@@ -1,20 +1,21 @@
 import prisma from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 // Create a new reminder
 export async function POST(req: NextRequest) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET });
+    const session = await auth();
+    const user = session?.user;
     
-    if (!token || !token.userId) {
+    if (!user || !user.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
     
-    const userId = token.userId as string;
+    const userId = user.id as string;
     const body = await req.json();
     
     const { leadId, title, description, reminderDate, reminderType, priority } = body;
@@ -71,16 +72,17 @@ export async function POST(req: NextRequest) {
 // Get reminders for the user
 export async function GET(req: NextRequest) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET });
+    const session = await auth();
+    const user = session?.user;
     
-    if (!token || !token.userId) {
+    if (!user || !user.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
     
-    const userId = token.userId as string;
+    const userId = user.id as string;
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status'); // 'pending', 'completed', 'overdue', 'all'
     const timeframe = searchParams.get('timeframe'); // 'today', 'week', 'month', 'all'

@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 // Get a specific reminder
@@ -8,9 +8,10 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const session = await auth();
+    const user = session?.user;
     
-    if (!token || !token.userId) {
+    if (!user || !user.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -18,7 +19,7 @@ export async function GET(
     }
     
     const { id } = await context.params;
-    const userId = token.userId as string;
+    const userId = user.id as string;
     
     const reminder = await prisma.reminder.findFirst({
       where: { 
@@ -66,9 +67,10 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const session = await auth();
+    const user = session?.user;
     
-    if (!token || !token.userId) {
+    if (!user || !user.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -76,7 +78,7 @@ export async function PUT(
     }
     
     const { id } = await context.params;
-    const userId = token.userId as string;
+    const userId = user.id as string;
     const body = await req.json();
     
     // Check if reminder exists and belongs to user
@@ -137,9 +139,10 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const session = await auth();
+    const user = session?.user;
     
-    if (!token || !token.userId) {
+    if (!user || !user.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -147,7 +150,7 @@ export async function DELETE(
     }
     
     const { id } = await context.params;
-    const userId = token.userId as string;
+    const userId = user.id as string;
     
     // Check if reminder exists and belongs to user
     const existingReminder = await prisma.reminder.findFirst({
