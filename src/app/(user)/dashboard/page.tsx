@@ -167,7 +167,7 @@ export default function Dashboard() {
 
       // Fetch reminders
       const remindersRes = await fetch("/api/reminders", {
-        credentials: "same-origin",
+        credentials: "include",
       });
 
       if (remindersRes.ok) {
@@ -436,7 +436,7 @@ export default function Dashboard() {
             <h2 className="text-xl font-semibold text-foreground">
               Recent Leads
             </h2>
-            <Button variant="ghost" size="sm" className="text-primary">
+            <Button variant="ghost" size="sm" className="text-primary" onClick={() => router.push('/leads')}>
               View All
             </Button>
           </div>

@@ -53,7 +53,7 @@ export default function AddReminderModal({ onReminderAdded }: AddReminderModalPr
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'same-origin',
+        credentials: 'include',
         body: JSON.stringify(formData),
       });
 
@@ -97,11 +97,12 @@ export default function AddReminderModal({ onReminderAdded }: AddReminderModalPr
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]" aria-describedby="add-reminder-desc">
         <DialogHeader>
           <DialogTitle>Create New Reminder</DialogTitle>
         </DialogHeader>
-        
+        <p id="add-reminder-desc" className="sr-only">Create a reminder to follow up with leads at the specified date and time.</p>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="title">Title *</Label>

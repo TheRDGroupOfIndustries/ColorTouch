@@ -123,7 +123,7 @@ const Page = () => {
       setActivities(followUpLeads);
       // Also fetch reminders and compute stats for FOLLOW_UP reminders
       try {
-        const remRes = await fetch('/api/reminders?timeframe=all', { cache: 'no-store' });
+        const remRes = await fetch('/api/reminders?timeframe=all', { cache: 'no-store', credentials: 'include' });
         if (remRes.ok) {
           const remData = await remRes.json();
           const grouped = remData.groupedReminders || {};
