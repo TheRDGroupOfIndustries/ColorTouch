@@ -178,7 +178,7 @@ const Page = () => {
         return;
       }
 
-      // Update the lead tag to indicate completion via API
+      // Update the lead status to indicate completion via API
       console.log('Attempting to complete activity:', activity);
       console.log('Using lead ID:', activity.leadId);
       const response = await fetch(`/api/leads/${activity.leadId}`, {
@@ -195,7 +195,8 @@ const Page = () => {
           tag: 'QUALIFIED', // Mark as qualified when completed
           source: activity.source || '',
           notes: activity.notes || '',
-          duration: activity.duration || 0
+          duration: activity.duration || 0,
+          status: 'CONVERTED' // Update status to remove from follow-up list
         }),
       });
 

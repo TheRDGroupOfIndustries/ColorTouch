@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { Tag } from "@prisma/client";
+import { Tag, LeadStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
@@ -12,6 +12,7 @@ interface leaduupdate {
   source: string;
   notes: string;
   duration: number;
+  status?: LeadStatus; // Add optional status field
 }
 
 export async function PUT(
