@@ -3,13 +3,13 @@ import { cookies } from "next/headers";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import ExcelJS from "exceljs";
-import { PrismaClient, Tag } from "@prisma/client";
+import { Tag } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { verifyJwt } from "@/lib/jwt";
 import { auth } from "@/lib/auth";
 import { sendLeadCreated } from "@/lib/zapier";
+import prisma from "@/lib/prisma";
 
-const prisma = new PrismaClient();
 export const runtime = "nodejs";
 
 // Define type for Excel rows
@@ -100,12 +100,19 @@ export async function POST(req: NextRequest) {
           { status: 404 }
         );
       }
-    } catch (dbErr) {
-      // Database error — provide a clearer message for transient DB termination (E57P01)
-      console.error("Database unavailable for user check — allowing upload to proceed:", dbErr);
-      // If DB is unavailable, skip user existence check and proceed with upload
-      // The foreign key constraint will be handled at insert time. If the DB connection
-      // was forcibly terminated (E57P01), advise the client to retry later.
+    } catch (dbErr: any) {
+      console.error("Database error during user check:", dbErr);
+      // Provide specific error handling for database connectivity issues
+      if (dbErr.code === 'P1001' || dbErr.message?.includes('Connection')) {
+        return NextResponse.json({
+          success: false,
+          error: "Database connection failed during user verification.",
+          details: "Cannot verify user permissions. Please check your database connection and try again.",
+          code: dbErr.code || 'DB_CONNECTION_ERROR'
+        }, { status: 503 });
+      }
+      // For other database errors, allow upload to proceed and handle at insert time
+      console.log("Allowing upload to proceed despite user check failure");
     }
 
     // --- 2️⃣ Handle file upload ---
@@ -369,20 +376,59 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // --- 5️⃣ Bulk insert using Prisma ---
+    // --- 5️⃣ Bulk insert using Prisma with retry mechanism ---
     let created: any;
-    try {
-      created = await prisma.lead.createMany({
-        data: finalLeadsToInsert,
-        skipDuplicates: false // We handle duplicates manually above
-      });
-    } catch (dbErr) {
-      console.error("Database unavailable for bulk insert:", dbErr);
-      return NextResponse.json({
-        success: false,
-        error: "Database is currently unavailable. Please try uploading leads later when the database connection is restored.",
-        details: "The database server appears to be unreachable. This may be a temporary connectivity issue."
-      }, { status: 503 });
+    const maxRetries = 3;
+    let lastError: any;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Test database connectivity first
+        await prisma.$queryRaw`SELECT 1`;
+        
+        created = await prisma.lead.createMany({
+          data: finalLeadsToInsert,
+          skipDuplicates: false // We handle duplicates manually above
+        });
+        
+        // If successful, break out of retry loop
+        break;
+        
+      } catch (dbErr: any) {
+        lastError = dbErr;
+        console.error(`Database error during bulk insert (attempt ${attempt}/${maxRetries}):`, dbErr);
+        
+        // If this is the last attempt or a non-retryable error, fail
+        if (attempt === maxRetries || (dbErr.code && !['P1001', 'P1008', 'P1017'].includes(dbErr.code))) {
+          // Provide more specific error messages based on error type
+          let errorMessage = "Database is currently unavailable. Please try uploading leads later when the database connection is restored.";
+          let errorDetails = "The database server appears to be unreachable. This may be a temporary connectivity issue.";
+          
+          if (dbErr.code === 'P1001') {
+            errorMessage = "Unable to connect to the database server.";
+            errorDetails = "Please check your database connection settings and try again.";
+          } else if (dbErr.code === 'P2002') {
+            errorMessage = "Duplicate data constraint violation.";
+            errorDetails = "Some of the leads you're trying to upload already exist in the system.";
+          } else if (dbErr.message?.includes('Connection')) {
+            errorMessage = "Database connection failed.";
+            errorDetails = "The application cannot connect to the database. Please try again in a few moments.";
+          }
+          
+          return NextResponse.json({
+            success: false,
+            error: errorMessage,
+            details: errorDetails,
+            code: dbErr.code || 'DB_ERROR',
+            attempts: attempt
+          }, { status: 503 });
+        }
+        
+        // Wait before retrying (exponential backoff)
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+        }
+      }
     }
 
     const duplicatesSkipped = leadsToInsert.length - finalLeadsToInsert.length;
