@@ -44,10 +44,16 @@ export async function POST(req: NextRequest) {
     const userId = user.id as string;
 
     // Store token in a way that can include provider info
-    // For Twilio, we'll store "accountSid:authToken:phoneNumber:twilio" format
-    const tokenToStore = body.provider === 'twilio' && body.secret 
-      ? `${body.token}:${body.secret}:${body.phoneNumber || ''}:twilio`
-      : body.token;
+    // For Twilio: "accountSid:authToken:phoneNumber:twilio" format
+    // For WhatsApp Business API: "accessToken:phoneNumberId:whatsapp-business-api" format
+    // For others: just the token
+    let tokenToStore = body.token;
+    
+    if (body.provider === 'twilio' && body.secret) {
+      tokenToStore = `${body.token}:${body.secret}:${body.phoneNumber || ''}:twilio`;
+    } else if (body.provider === 'whatsapp-business-api' && body.secret) {
+      tokenToStore = `${body.token}:${body.secret}:whatsapp-business-api`;
+    }
 
     const savedToken = await prisma.whatsappToken.upsert({
       where: { userId },

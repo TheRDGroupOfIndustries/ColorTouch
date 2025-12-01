@@ -3,13 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "next dev --turbo",
+    "dev:clean": "npm run clean && next dev --turbo",
+    "build": "next build --turbo",
     "start": "next start",
     "lint": "eslint",
     "seed:admin": "node prisma/seed.js",
     "db:push": "npx prisma db push",
-    "db:seed": "npx prisma db seed"
+    "db:seed": "npx prisma db seed",
+    "clean": "rimraf .next && npx prisma generate",
+    "db:test": "node scripts/test-db-connection.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

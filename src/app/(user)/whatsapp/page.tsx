@@ -38,8 +38,7 @@ type CampaignStatus = "ACTIVE" | "PAUSED";
 export default function WhatsAppPage() {
   const router = useRouter();
   const [campaigns, setCampaigns] = useState<UICampaign[]>([]);
-  // Make page static/non-functional by default: don't auto-load campaigns
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [popup, setPopup] = useState<"view" | "edit" | null>(null);
   const [selectedCampaign, setSelectedCampaign] = useState<UICampaign | null>(
     null
@@ -77,9 +76,10 @@ export default function WhatsAppPage() {
     }
   };
 
-  // NOTE: Campaigns page is intentionally static/non-functional in this environment.
-  // The original `fetchCampaigns()` call has been disabled to avoid any API/database
-  // interactions. If you want to re-enable, restore the call to `fetchCampaigns()`.
+  // Auto-load campaigns when component mounts
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
 
   const closePopup = () => {
     setPopup(null);
@@ -92,17 +92,79 @@ export default function WhatsAppPage() {
   };
 
   // --- Update campaign status in DB ---
-  // Disabled: prevent any status updates against the backend
-  const updateStatus = async (_campaignId: string, _status: CampaignStatus) => {
-    toast.error("Campaign actions are disabled in this environment.");
-    return null;
+  const updateStatus = async (campaignId: string, status: CampaignStatus) => {
+    try {
+      const res = await fetch("/api/campaigns/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaignId, status }),
+      });
+
+      if (!res.ok) throw new Error("Failed to update status");
+      
+      const data = await res.json();
+      toast.success(`Campaign ${status.toLowerCase()} successfully!`);
+      return data;
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("Failed to update campaign status");
+      return null;
+    }
   };
 
-  // --- Handle all actions ---
-  // All actions are disabled — short-circuit and show a message instead of calling backend
-  const handleAction = async (_action: string, _campaignId: string) => {
-    toast.error("Campaign actions are disabled in this environment.");
-    return;
+  const handleSendCampaign = async (campaignId: string) => {
+    try {
+      if (!confirm("Are you sure you want to send this campaign to all leads?")) return;
+      
+      setLoading(true);
+      const res = await fetch("/api/send-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaignId }),
+      });
+
+      if (!res.ok) throw new Error("Failed to send campaign");
+      
+      const data = await res.json();
+      if (data.sentCount === 0) {
+        toast.error("No messages were sent. Please check your leads have valid phone numbers.");
+      } else {
+        toast.success(`Campaign sent to ${data.sentCount} of ${data.totalLeads} leads successfully!`);
+        if (data.errorCount > 0) {
+          toast.error(`Failed to send to ${data.errorCount} leads. Check logs for details.`);
+        }
+      }
+    } catch (error) {
+      console.error("Error sending campaign:", error);
+      toast.error("Failed to send campaign");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAction = async (action: string, campaignId: string) => {
+    try {
+      if (action === "DELETE") {
+        if (!confirm("Are you sure you want to delete this campaign?")) return;
+        
+        const res = await fetch(`/api/campaigns/${campaignId}`, {
+          method: "DELETE",
+        });
+        
+        if (!res.ok) throw new Error("Failed to delete campaign");
+        
+        toast.success("Campaign deleted successfully!");
+        fetchCampaigns(); // Refresh list
+      } else {
+        const result = await updateStatus(campaignId, action as CampaignStatus);
+        if (result) {
+          fetchCampaigns(); // Refresh list
+        }
+      }
+    } catch (error) {
+      console.error("Error handling action:", error);
+      toast.error(`Failed to ${action.toLowerCase()} campaign`);
+    }
   };
 
   // --- Stats ---
@@ -166,9 +228,8 @@ export default function WhatsAppPage() {
           </p>
         </div>
         <Button
-          onClick={() => toast.error("Campaign creation is disabled.")}
+          onClick={() => router.push("/Campaigns")}
           className="bg-success hover:bg-success/90 text-white"
-          disabled
         >
           <Plus className="w-4 h-4 mr-2" />
           Create Campaign
@@ -221,9 +282,8 @@ export default function WhatsAppPage() {
               Create your first WhatsApp campaign to get started
             </p>
             <Button
-              onClick={() => toast.error("Campaign creation is disabled.")}
+              onClick={() => router.push("/Campaigns")}
               className="bg-success hover:bg-success/90"
-              disabled
             >
               <Plus className="w-4 h-4 mr-2" />
               Create Your First Campaign
@@ -298,8 +358,7 @@ export default function WhatsAppPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => toast.error("Viewing campaigns is disabled.")}
-                      disabled
+                      onClick={() => openModal("view", campaign)}
                     >
                       <Eye className="w-5 text-info hover:text-info/80" />
                     </Button>
@@ -307,8 +366,7 @@ export default function WhatsAppPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => toast.error("Editing campaigns is disabled.")}
-                      disabled
+                      onClick={() => openModal("edit", campaign)}
                     >
                       <Edit className="w-5 text-warning hover:text-warning/80" />
                     </Button>
@@ -341,6 +399,12 @@ export default function WhatsAppPage() {
                             <Pause className="w-4 mr-2" /> Pause Campaign
                           </DropdownMenuItem>
                         )}
+
+                        <DropdownMenuItem
+                          onClick={() => handleSendCampaign(campaign.id)}
+                        >
+                          <MessageCircle className="w-4 mr-2" /> Send Messages
+                        </DropdownMenuItem>
 
                         <DropdownMenuItem
                           className="text-red-600 focus:bg-destructive/10"
