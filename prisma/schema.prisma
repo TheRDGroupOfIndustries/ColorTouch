@@ -30,6 +30,11 @@ model Lead {
   email     String?    @unique
   phone     String?    @db.VarChar(20)
   company   String?
+  leadsCreatedDate DateTime?
+  leadsUpdatedDates DateTime?
+  enquiryDate DateTime?
+  bookingDate DateTime?
+  checkInDates DateTime?
   amount    Decimal?  @db.Decimal(12, 2)
   source    String?
   notes     String?

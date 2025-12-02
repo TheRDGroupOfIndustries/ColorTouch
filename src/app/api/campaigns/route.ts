@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) { {
+export async function GET(req: NextRequest) {
   try {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
     if (!token || !token.userId) {
@@ -71,5 +71,4 @@ export async function GET(req: NextRequest) { {
     console.error("Campaigns API error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-}
 }

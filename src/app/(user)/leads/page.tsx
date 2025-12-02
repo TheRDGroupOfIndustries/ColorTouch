@@ -46,6 +46,13 @@ interface Lead {
   status: string;
   value: string;
   created: string;
+  createdAt?: string;
+  updatedAt?: string;
+  leadsCreatedDate?: string;
+  leadsUpdatedDates?: string;
+  enquiryDate?: string;
+  bookingDate?: string;
+  checkInDates?: string;
   avatar?: string;
   notes?: string;
   duration?: number;
@@ -120,20 +127,34 @@ export default function LeadsPage() {
     }
 
     // Create CSV content
-    const headers = ["name", "email", "phone", "company", "notes", "source", "tag", "duration", "amount"];
+    const headers = ["name", "email", "phone", "company", "notes", "source", "tag", "duration", "amount", "leadsCreatedDate", "leadsUpdatedDates", "enquiryDate", "bookingDate", "checkInDates"];
     const csvContent = [
       headers.join(","),
-      ...filteredLeads.map(lead => [
-        `"${lead.name || ""}"`,
-        `"${lead.email || ""}"`,
-        `"${lead.phone || ""}"`,
-        `"${lead.company || ""}"`,
-        `"${lead.notes || ""}"`,
-        `"${lead.source || ""}"`,
-        `"${lead.tag || ""}"`,
-        lead.duration || 0,
-        lead.amount || 0
-      ].join(","))
+      ...filteredLeads.map(lead => {
+        const meta = parseMetaDatesFromNotes(lead.notes);
+        const createdVal = lead.leadsCreatedDate || lead.createdAt || '';
+        const updatedVal = lead.leadsUpdatedDates || lead.updatedAt || '';
+        const enquiryVal = lead.enquiryDate || meta.enquiryDate || '';
+        const bookingVal = lead.bookingDate || meta.bookingDate || '';
+        const checkInVal = lead.checkInDates || meta.checkInDates || '';
+
+        return [
+          `"${lead.name || ""}"`,
+          `"${lead.email || ""}"`,
+          `"${lead.phone || ""}"`,
+          `"${lead.company || ""}"`,
+          `"${lead.notes || ""}"`,
+          `"${lead.source || ""}"`,
+          `"${lead.tag || ""}"`,
+          lead.duration || 0,
+          lead.amount || 0,
+          `"${createdVal}"`,
+          `"${updatedVal}"`,
+          `"${enquiryVal}"`,
+          `"${bookingVal}"`,
+          `"${checkInVal}"`
+        ].join(",");
+      })
     ].join("\\n");
 
     // Create download
@@ -221,6 +242,8 @@ export default function LeadsPage() {
     setPopup(action);
   };
 
+
+
   // 🧮 Stats
   const stats = useMemo(() => {
     const totalLeads = leads.length;
@@ -289,7 +312,7 @@ export default function LeadsPage() {
 
   // ✅ UI (unchanged)
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 overflow-hidden max-w-full">
       <Toaster />
 
       {/* Header */}
@@ -421,8 +444,9 @@ export default function LeadsPage() {
             No leads found
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="relative">
+            <div className="overflow-x-auto overflow-y-visible">
+              <table className="w-full min-w-[1600px]">
               <thead className="border-b border-border">
                 <tr>
                   {[
@@ -433,15 +457,22 @@ export default function LeadsPage() {
                     "Source",
                     "Tag",
                     "Status",
-                    "Actions",
+                    "Created",
+                    "Updated",
+                    "Enquiry",
+                    "Booking",
+                    "Check-in",
                   ].map((h) => (
                     <th
                       key={h}
-                      className="text-left p-4 text-sm font-medium text-muted-foreground"
+                      className={`text-left p-4 text-sm font-medium text-muted-foreground ${h === 'Actions' ? 'sticky right-0 bg-background border-l border-border z-20' : ''} min-w-[140px]`}
                     >
                       {h}
                     </th>
                   ))}
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground sticky right-0 bg-background border-l border-border min-w-[140px]">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -523,7 +554,32 @@ export default function LeadsPage() {
                         </SelectContent>
                       </Select>
                     </td>
-                    <td className="p-4 flex gap-1">
+                    <td className="p-4 min-w-[100px]">
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(lead.leadsCreatedDate || lead.createdAt || lead.created || new Date()).toLocaleDateString()}
+                      </div>
+                    </td>
+                    <td className="p-4 min-w-[100px]">
+                      <div className="text-xs text-muted-foreground">
+                        {lead.leadsUpdatedDates ? new Date(lead.leadsUpdatedDates).toLocaleDateString() : (lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString() : '-')}
+                      </div>
+                    </td>
+                    <td className="p-4 min-w-[100px]">
+                      <div className="text-xs text-muted-foreground">
+                        {lead.enquiryDate ? new Date(lead.enquiryDate).toLocaleDateString() : '-'}
+                      </div>
+                    </td>
+                    <td className="p-4 min-w-[100px]">
+                      <div className="text-xs text-muted-foreground">
+                        {lead.bookingDate ? new Date(lead.bookingDate).toLocaleDateString() : '-'}
+                      </div>
+                    </td>
+                    <td className="p-4 min-w-[100px]">
+                      <div className="text-xs text-muted-foreground">
+                        {lead.checkInDates ? new Date(lead.checkInDates).toLocaleDateString() : '-'}
+                      </div>
+                    </td>
+                    <td className="p-4 flex gap-1 sticky right-0 bg-background border-l border-border">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -553,6 +609,7 @@ export default function LeadsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </Card>

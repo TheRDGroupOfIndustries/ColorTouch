@@ -362,12 +362,12 @@ export default function Employees() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${employee.role === "ADMIN" ? "bg-red-600 text-white" : "bg-gray-700 text-white"}`}>
+                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border-2 backdrop-blur-md ${employee.role === "ADMIN" ? "bg-red-500/30 border-red-400/50 text-red-100" : "bg-blue-500/30 border-blue-400/50 text-blue-100"}`}>
                         {employee.role}
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${employee.subscription === "PREMIUM" ? "bg-amber-400 text-black" : "bg-gray-800 text-white"}`}>
+                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border-2 backdrop-blur-md ${employee.subscription === "PREMIUM" ? "bg-green-500/30 border-green-400/50 text-green-100" : "bg-black/40 border-gray-600/50 text-gray-200"}`}>
                         {employee.subscription}
                       </span>
                     </td>
@@ -450,7 +450,7 @@ export default function Employees() {
                 <div>
                   <label className="text-sm text-muted-foreground">Role</label>
                   <div className="mt-1">
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${viewEmployee.role === "ADMIN" ? "bg-red-600 text-white" : "bg-gray-700 text-white"}`}>
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border-2 backdrop-blur-md ${viewEmployee.role === "ADMIN" ? "bg-red-500/30 border-red-400/50 text-red-100" : "bg-blue-500/30 border-blue-400/50 text-blue-100"}`}>
                       {viewEmployee.role}
                     </span>
                   </div>
@@ -458,7 +458,7 @@ export default function Employees() {
                 <div>
                   <label className="text-sm text-muted-foreground">Subscription</label>
                   <div className="mt-1">
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${viewEmployee.subscription === "PREMIUM" ? "bg-amber-400 text-black" : "bg-gray-800 text-white"}`}>
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border-2 backdrop-blur-md ${viewEmployee.subscription === "PREMIUM" ? "bg-green-500/30 border-green-400/50 text-green-100" : "bg-black/40 border-gray-600/50 text-gray-200"}`}>
                       {viewEmployee.subscription}
                     </span>
                   </div>

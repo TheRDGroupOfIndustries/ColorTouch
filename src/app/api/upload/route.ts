@@ -23,6 +23,11 @@ type LeadRow = {
   // amount/value fields from CSV/Excel (may include currency symbols)
   amount?: string;
   tag?: Tag;
+  leadsCreatedDate?: string;
+  leadsUpdatedDates?: string;
+  enquiryDate?: string;
+  bookingDate?: string;
+  checkInDates?: string;
 };
 
 // Map incoming (possibly non-enum) tag values to valid Tag enum values.
@@ -185,6 +190,12 @@ export async function POST(req: NextRequest) {
             else if (header.includes('company')) rowData.company = value;
             else if (header.includes('source')) rowData.source = value;
             else if (header.includes('note')) rowData.notes = value;
+            // Support CSVs that include date columns from user uploads
+            else if (header.includes('leads created') || header.includes('leads created date') || header.includes('created date')) rowData['leadsCreatedDate'] = value;
+            else if (header.includes('leads updated') || header.includes('leads updated dates') || header.includes('updated date')) rowData['leadsUpdatedDates'] = value;
+            else if (header.includes('enquiry')) rowData['enquiryDate'] = value;
+            else if (header.includes('booking')) rowData['bookingDate'] = value;
+            else if (header.includes('check in') || header.includes('check-in')) rowData['checkInDates'] = value;
             else if (header.includes('amount') || header.includes('value') || header.includes('price') || header.includes('revenue')) {
               rowData.amount = value;
             }
@@ -249,6 +260,12 @@ export async function POST(req: NextRequest) {
             else if (header.includes('company')) rowData.company = value;
             else if (header.includes('source')) rowData.source = value;
             else if (header.includes('note')) rowData.notes = value;
+            // Support additional date columns
+            else if (header.includes('leads created') || header.includes('leads created date') || header.includes('created date')) rowData['leadsCreatedDate'] = value;
+            else if (header.includes('leads updated') || header.includes('leads updated dates') || header.includes('updated date')) rowData['leadsUpdatedDates'] = value;
+            else if (header.includes('enquiry')) rowData['enquiryDate'] = value;
+            else if (header.includes('booking')) rowData['bookingDate'] = value;
+            else if (header.includes('check in') || header.includes('check-in')) rowData['checkInDates'] = value;
             else if (header.includes('amount') || header.includes('value') || header.includes('price') || header.includes('revenue')) {
               rowData.amount = value;
             }
@@ -286,19 +303,47 @@ export async function POST(req: NextRequest) {
         const name = String(row.name || "").trim().substring(0, 255); // Limit to 255 chars
         if (!name) return null;
 
-        return {
+        // Extract optional date fields
+        const createdAt = row['leadsCreatedDate'] ? new Date(String(row['leadsCreatedDate'])) : undefined;
+        const updatedAt = row['leadsUpdatedDates'] ? new Date(String(row['leadsUpdatedDates'])) : undefined;
+        const enquiryDate = row['enquiryDate'] ? String(row['enquiryDate']).trim() : undefined;
+        const bookingDate = row['bookingDate'] ? String(row['bookingDate']).trim() : undefined;
+        const checkInDates = row['checkInDates'] ? String(row['checkInDates']).trim() : undefined;
+
+        const notesField = row.notes ? String(row.notes).trim().substring(0, 1000) : null;
+
+        const insertObj: any = {
           name,
           email: row.email ? String(row.email).trim().substring(0, 255) : null,
-          phone: row.phone ? String(row.phone).trim().substring(0, 20) : null, // Phone max 20 chars
+          phone: row.phone ? String(row.phone).trim().substring(0, 20) : null,
           company: row.company ? String(row.company).trim().substring(0, 255) : null,
           source: row.source ? String(row.source).trim().substring(0, 50) : null,
-          notes: row.notes ? String(row.notes).trim().substring(0, 1000) : null, // Notes limited
-          // Normalize amount: strip currency symbols and commas, keep two decimals
+          notes: notesField,
           amount: row.amount ? String(parseFloat(String(row.amount).replace(/[^0-9.-]+/g, '') || '0').toFixed(2)) : null,
           tag: row.tag || Tag.DISQUALIFIED,
           duration: 0,
           userId: effectiveUserId!,
         };
+
+        // Persist CSV date columns into their own DB fields (optional)
+        if (createdAt && !isNaN(createdAt.getTime())) insertObj.leadsCreatedDate = createdAt;
+        if (updatedAt && !isNaN(updatedAt.getTime())) insertObj.leadsUpdatedDates = updatedAt;
+
+        // Parse enquiry/booking/checkin date strings into Date objects where possible
+        if (enquiryDate) {
+          const d = new Date(enquiryDate);
+          if (!isNaN(d.getTime())) insertObj.enquiryDate = d;
+        }
+        if (bookingDate) {
+          const d = new Date(bookingDate);
+          if (!isNaN(d.getTime())) insertObj.bookingDate = d;
+        }
+        if (checkInDates) {
+          const d = new Date(checkInDates);
+          if (!isNaN(d.getTime())) insertObj.checkInDates = d;
+        }
+
+        return insertObj;
       })
       .filter((r): r is NonNullable<typeof r> => r !== null);
 

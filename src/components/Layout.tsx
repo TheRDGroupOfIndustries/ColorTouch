@@ -179,7 +179,7 @@ export default function Layout({ children }: LayoutProps) {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto">{children}</main>
+          <main className="flex-1 overflow-hidden">{children}</main>
         </div>
       </div>
     );
@@ -202,7 +202,7 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-background flex w-full">
       {/* Gemini-style Sidebar - Smooth transitions */}
-      <aside className={`fixed left-0 top-0 h-screen bg-sidebar border-r border-border/50 flex flex-col z-40 transition-all duration-300 ease-in-out ${
+      <aside className={`fixed left-0 top-0 h-screen bg-sidebar border-r border-border flex flex-col z-50 transition-all duration-300 ease-in-out ${
         isCollapsed ? "w-16" : "w-72"
       }`}>
         {/* Header with ColorTouch symbol when expanded */}
@@ -270,8 +270,8 @@ export default function Layout({ children }: LayoutProps) {
           })}
         </nav>
 
-        {/* Upgrade Section - Only show when expanded */}
-        {!isCollapsed && (
+        {/* Upgrade Section - Only show when expanded, NOT premium, and NOT admin */}
+        {!isCollapsed && subscription !== "PREMIUM" && session?.user?.role !== "ADMIN" && (
           <div className="p-4 m-3 bg-card rounded-xl border border-border">
             <div className="flex items-center gap-2 mb-2 text-primary">
               <Cloud className="w-4 h-4" />
@@ -288,7 +288,7 @@ export default function Layout({ children }: LayoutProps) {
       </aside>
 
       {/* Main Content - Dynamic Offset based on Sidebar Width */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
+      <div className={`flex-1 flex flex-col transition-all duration-300 ease-in-out overflow-hidden ${
         isCollapsed ? "ml-16" : "ml-72"
       }`}>
         {/* Top Bar */}
@@ -307,7 +307,7 @@ export default function Layout({ children }: LayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto">{children}</main>
+          <main className="flex-1 overflow-hidden">{children}</main>
       </div>
     </div>
   );

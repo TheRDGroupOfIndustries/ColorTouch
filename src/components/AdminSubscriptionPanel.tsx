@@ -218,12 +218,12 @@ const AdminSubscriptionPanel: React.FC = () => {
                         </div>
                       </td>
                       <td className="p-4">
-                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${user.role === "ADMIN" ? "bg-red-600 text-white" : "bg-gray-700 text-white"}`}>
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border-2 backdrop-blur-md ${user.role === "ADMIN" ? "bg-red-500/30 border-red-400/50 text-red-100" : "bg-blue-500/30 border-blue-400/50 text-blue-100"}`}>
                           {user.role}
                         </span>
                       </td>
                       <td className="p-4">
-                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${user.subscription === "PREMIUM" ? "bg-amber-400 text-black" : "bg-gray-800 text-white"}`}>
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border-2 backdrop-blur-md ${user.subscription === "PREMIUM" ? "bg-green-500/30 border-green-400/50 text-green-100" : "bg-black/40 border-gray-600/50 text-gray-200"}`}>
                           {user.subscription}
                         </span>
                       </td>

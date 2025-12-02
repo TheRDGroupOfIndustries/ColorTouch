@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import { CampaignType, MessageType, Priority } from "@prisma/client";
+import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -7,6 +8,15 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Authentication check
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token || !token.userId) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const { id } = await context.params;
     const leads = await prisma.whatsappCampaign.findUnique({
       where: { id: id },
@@ -41,6 +51,15 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Authentication check
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token || !token.userId) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const { id } = await context.params;
 
     const campaign = await prisma.whatsappCampaign.findMany({
@@ -70,6 +89,15 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Authentication check
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token || !token.userId) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const { id } = await context.params;
 
     // 🟢 Validate
