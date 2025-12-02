@@ -131,12 +131,11 @@ export default function LeadsPage() {
     const csvContent = [
       headers.join(","),
       ...filteredLeads.map(lead => {
-        const meta = parseMetaDatesFromNotes(lead.notes);
         const createdVal = lead.leadsCreatedDate || lead.createdAt || '';
         const updatedVal = lead.leadsUpdatedDates || lead.updatedAt || '';
-        const enquiryVal = lead.enquiryDate || meta.enquiryDate || '';
-        const bookingVal = lead.bookingDate || meta.bookingDate || '';
-        const checkInVal = lead.checkInDates || meta.checkInDates || '';
+        const enquiryVal = lead.enquiryDate || '';
+        const bookingVal = lead.bookingDate || '';
+        const checkInVal = lead.checkInDates || '';
 
         return [
           `"${lead.name || ""}"`,
