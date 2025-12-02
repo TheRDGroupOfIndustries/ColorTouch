@@ -110,8 +110,8 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-        <div className="bg-zinc-900 rounded-xl p-8 flex flex-col items-center justify-center shadow-xl border border-zinc-700">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+        <div className="bg-black text-white rounded-xl p-8 flex flex-col items-center justify-center shadow-xl border border-gray-800">
           <Loader2 className="w-6 h-6 animate-spin text-zinc-200 mb-3" />
           <p className="text-sm text-zinc-400">Loading lead data...</p>
         </div>
@@ -120,11 +120,11 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-      <div className="relative bg-gradient-to-b from-zinc-900 via-zinc-950 to-black text-zinc-100 rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.6)] w-full max-w-2xl border border-zinc-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div className="relative bg-black text-zinc-100 rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.6)] w-full max-w-2xl border border-zinc-800">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-gradient-to-r from-zinc-800/60 to-transparent">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900">
           <div className="flex items-center gap-2">
             <UserPen className="w-5 h-5 text-zinc-300" />
             <h2 className="text-xl font-semibold tracking-tight text-white">Edit Lead</h2>
@@ -249,7 +249,7 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 p-5 border-t border-zinc-800 bg-gradient-to-r from-transparent to-zinc-900/60">
+        <div className="flex justify-end gap-3 p-5 border-t border-zinc-800 bg-zinc-900">
           <Button
             variant="outline"
             onClick={onClose}

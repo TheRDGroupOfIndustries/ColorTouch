@@ -13,7 +13,6 @@ import {
   CheckCircle,
   Flame,
 } from "lucide-react";
-import { FaGoogle, FaFacebook } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -64,9 +63,41 @@ const getSourceIcon = (source: string) => {
   return icons[source] || "•";
 };
 
+const getCompanyLogo = (company: string) => {
+  const firstLetter = company.charAt(0).toUpperCase();
+  const colors = {
+    'A': 'bg-blue-600',
+    'B': 'bg-green-600',
+    'C': 'bg-purple-600',
+    'D': 'bg-red-600',
+    'E': 'bg-yellow-600',
+    'F': 'bg-indigo-600',
+    'G': 'bg-pink-600',
+    'H': 'bg-gray-600',
+    'I': 'bg-blue-500',
+    'J': 'bg-green-500',
+    'K': 'bg-purple-500',
+    'L': 'bg-red-500',
+    'M': 'bg-yellow-500',
+    'N': 'bg-indigo-500',
+    'O': 'bg-pink-500',
+    'P': 'bg-gray-500',
+    'Q': 'bg-blue-700',
+    'R': 'bg-green-700',
+    'S': 'bg-purple-700',
+    'T': 'bg-red-700',
+    'U': 'bg-yellow-700',
+    'V': 'bg-indigo-700',
+    'W': 'bg-pink-700',
+    'X': 'bg-gray-700',
+    'Y': 'bg-blue-800',
+    'Z': 'bg-green-800',
+  };
+  return colors[firstLetter as keyof typeof colors] || 'bg-gray-600';
+};
+
 export default function LeadsPage() {
   const router = useRouter();
-  const [hovered, setHovered] = useState<string | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -274,26 +305,6 @@ export default function LeadsPage() {
 
         <div className="flex gap-2">
           <Button
-            variant="outline"
-            className="border-primary text-primary hover:bg-primary/10"
-            onMouseEnter={() => setHovered("facebook")}
-            onMouseLeave={() => setHovered(null)}
-          >
-            <FaFacebook className="mr-2 text-[#0866ff]" />
-            {hovered === "facebook" ? "Coming Soon" : "Import from Meta"}
-          </Button>
-
-          <Button
-            variant="outline"
-            className="border-primary text-primary hover:bg-primary/10"
-            onMouseEnter={() => setHovered("google")}
-            onMouseLeave={() => setHovered(null)}
-          >
-            <FaGoogle className="mr-2" />
-            {hovered === "google" ? "Coming Soon" : "Import from Google"}
-          </Button>
-
-          <Button
             onClick={() => router.push("/leadform")}
             variant="outline"
             className="border-success text-success hover:bg-success/10"
@@ -355,7 +366,7 @@ export default function LeadsPage() {
           <SelectTrigger className="w-48 bg-card border-border">
             <SelectValue placeholder="Filter by Status" />
           </SelectTrigger>
-          <SelectContent className="border-gray-800 bg-gradient-to-b from-black/95 to-black/85 text-white">
+          <SelectContent className="border-gray-800 bg-black text-white">
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="PENDING">Pending</SelectItem>
             <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
@@ -367,7 +378,7 @@ export default function LeadsPage() {
           <SelectTrigger className="w-48 bg-card border-border">
             <SelectValue placeholder="Filter by Tag" />
           </SelectTrigger>
-          <SelectContent className="border-gray-800 bg-gradient-to-b from-black/95 to-black/85 text-white">
+          <SelectContent className="border-gray-800 bg-black text-white">
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="hot">Hot</SelectItem>
             <SelectItem value="warm">Warm</SelectItem>
@@ -416,11 +427,11 @@ export default function LeadsPage() {
                 <tr>
                   {[
                     "Lead",
-                    "Contact",
+                    "Email",
+                    "Phone",
+                    "Company",
                     "Source",
-                    // "Stage",
                     "Tag",
-                    // "Value",
                     "Status",
                     "Actions",
                   ].map((h) => (
@@ -455,18 +466,23 @@ export default function LeadsPage() {
                           <div className="font-medium text-foreground">
                             {lead.name}
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {lead.company}
-                          </div>
                         </div>
                       </div>
                     </td>
                     <td className="p-4">
-                      <div className="text-sm text-foreground">
-                        {lead.email}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {lead.phone}
+                      <div className="text-sm text-foreground">{lead.email}</div>
+                    </td>
+                    <td className="p-4">
+                      <div className="text-sm text-muted-foreground">{lead.phone}</div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-semibold text-sm ${getCompanyLogo(lead.company)}`}>
+                          {lead.company.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="text-sm text-foreground">
+                          {lead.company}
+                        </div>
                       </div>
                     </td>
                     <td className="p-4 flex items-center gap-2">
@@ -496,7 +512,7 @@ export default function LeadsPage() {
                         <SelectTrigger className="w-[140px] h-8 text-sm bg-background border-border text-foreground">
                           <SelectValue placeholder="Status" className="text-foreground" />
                         </SelectTrigger>
-                        <SelectContent className="border-gray-800 bg-gradient-to-b from-black/95 to-black/85 text-white">
+                        <SelectContent className="border-gray-800 bg-black text-white">
                           <SelectGroup>
                             {/* <SelectLabel>Lead Status</SelectLabel> */}
                             <SelectItem value="PENDING" className="text-white">Pending</SelectItem>

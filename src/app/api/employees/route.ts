@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
+import { hashPassword } from "@/lib/hash";
 
 export async function GET(req: NextRequest) {
   try {
@@ -94,6 +95,83 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(
       { success: false, error: error.message || "Failed to fetch employees" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await auth();
+    const user = session?.user;
+    
+    if (!user || !user.id) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+    
+    // Only admins can create employees
+    if (user.role !== "ADMIN") {
+      return NextResponse.json(
+        { success: false, error: "Access denied. Admin role required." },
+        { status: 403 }
+      );
+    }
+    
+    const { name, email, password, role, subscription } = await req.json();
+    
+    if (!name || !email || !password) {
+      return NextResponse.json(
+        { success: false, error: "Name, email, and password are required" },
+        { status: 400 }
+      );
+    }
+    
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+    
+    if (existingUser) {
+      return NextResponse.json(
+        { success: false, error: "A user with this email already exists" },
+        { status: 400 }
+      );
+    }
+    
+    // Hash password and create user
+    const hashedPassword = await hashPassword(password);
+    
+    const newEmployee = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: role || "EMPLOYEE",
+        subscription: subscription || "FREE"
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        subscription: true,
+        createdAt: true
+      }
+    });
+    
+    return NextResponse.json({
+      success: true,
+      employee: newEmployee,
+      message: "Employee created successfully"
+    });
+    
+  } catch (error: any) {
+    console.error("Create employee error:", error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to create employee" },
       { status: 500 }
     );
   }

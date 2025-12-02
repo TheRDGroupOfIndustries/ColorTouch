@@ -148,7 +148,7 @@ export default function LeadsModal({
   if ((popup !== "add") && !lead) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
       <div className="bg-black text-white rounded-xl w-full max-w-lg shadow-xl animate-in fade-in slide-in-from-bottom duration-200">
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-gray-700">

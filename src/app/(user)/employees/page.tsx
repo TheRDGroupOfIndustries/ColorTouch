@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import AddEmployeeModal from "@/components/AddEmployeeModal";
 import toast, { Toaster } from "react-hot-toast";
 
 interface Employee {
@@ -64,7 +64,8 @@ export default function Employees() {
   const [viewEmployee, setViewEmployee] = useState<Employee | null>(null);
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: "", email: "", role: "" });
+  const [editForm, setEditForm] = useState({ name: "", email: "", role: "", subscription: "" });
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Redirect non-admin users
   useEffect(() => {
@@ -147,7 +148,8 @@ export default function Employees() {
     setEditForm({
       name: employee.name || "",
       email: employee.email || "",
-      role: employee.role || "EMPLOYEE"
+      role: employee.role || "EMPLOYEE",
+      subscription: employee.subscription || "FREE"
     });
   };
 
@@ -212,7 +214,10 @@ export default function Employees() {
             Manage team members and their access levels
           </p>
         </div>
-        <Button className="bg-primary text-primary-foreground">
+        <Button 
+          onClick={() => setShowAddModal(true)}
+          className="bg-primary text-primary-foreground"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Add Employee
         </Button>
@@ -357,17 +362,14 @@ export default function Employees() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <Badge 
-                        variant={employee.role === "ADMIN" ? "destructive" : "secondary"}
-                        className="text-xs font-medium"
-                      >
+                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${employee.role === "ADMIN" ? "bg-red-600 text-white" : "bg-gray-700 text-white"}`}>
                         {employee.role}
-                      </Badge>
+                      </span>
                     </td>
                     <td className="p-4">
-                      <Badge variant={employee.subscription === "PREMIUM" ? "default" : "outline"}>
+                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${employee.subscription === "PREMIUM" ? "bg-amber-400 text-black" : "bg-gray-800 text-white"}`}>
                         {employee.subscription}
-                      </Badge>
+                      </span>
                     </td>
                     <td className="p-4 text-foreground">
                       {employee._count?.leads || 0}
@@ -414,10 +416,10 @@ export default function Employees() {
 
       {/* View Employee Modal */}
       {viewEmployee && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-card p-6 rounded-lg max-w-md w-full mx-4 border border-border shadow-2xl">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-black text-white p-6 rounded-lg max-w-md w-full mx-4 border border-gray-800 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-foreground">Employee Details</h3>
+              <h3 className="text-lg font-semibold text-white">Employee Details</h3>
               <Button
                 variant="ghost"
                 size="sm"
@@ -448,17 +450,17 @@ export default function Employees() {
                 <div>
                   <label className="text-sm text-muted-foreground">Role</label>
                   <div className="mt-1">
-                    <Badge variant={viewEmployee.role === "ADMIN" ? "destructive" : "secondary"}>
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${viewEmployee.role === "ADMIN" ? "bg-red-600 text-white" : "bg-gray-700 text-white"}`}>
                       {viewEmployee.role}
-                    </Badge>
+                    </span>
                   </div>
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">Subscription</label>
                   <div className="mt-1">
-                    <Badge variant={viewEmployee.subscription === "PREMIUM" ? "default" : "outline"}>
+                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${viewEmployee.subscription === "PREMIUM" ? "bg-amber-400 text-black" : "bg-gray-800 text-white"}`}>
                       {viewEmployee.subscription}
-                    </Badge>
+                    </span>
                   </div>
                 </div>
                 <div>
@@ -489,8 +491,8 @@ export default function Employees() {
 
       {/* Edit Employee Modal */}
       {editEmployee && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-card p-6 rounded-lg max-w-md w-full mx-4 border border-border shadow-2xl">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-black text-white p-6 rounded-lg max-w-md w-full mx-4 border border-gray-800 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-foreground">Edit Employee</h3>
               <Button
@@ -531,6 +533,17 @@ export default function Employees() {
                   <option value="ADMIN" className="bg-black text-white">Admin</option>
                 </select>
               </div>
+              <div>
+                <label className="text-sm text-muted-foreground block mb-1">Subscription</label>
+                <select
+                  value={editForm.subscription}
+                  onChange={(e) => setEditForm({...editForm, subscription: e.target.value})}
+                  className="w-full p-2 bg-black border border-border rounded-md text-white"
+                >
+                  <option value="FREE" className="bg-black text-white">Free</option>
+                  <option value="PREMIUM" className="bg-black text-white">Premium</option>
+                </select>
+              </div>
               <div className="flex gap-3 pt-4">
                 <Button
                   onClick={() => setEditEmployee(null)}
@@ -551,6 +564,13 @@ export default function Employees() {
           </div>
         </div>
       )}
+      
+      {/* Add Employee Modal */}
+      <AddEmployeeModal 
+        open={showAddModal} 
+        close={() => setShowAddModal(false)}
+        onCreated={fetchEmployees}
+      />
     </div>
   );
 }

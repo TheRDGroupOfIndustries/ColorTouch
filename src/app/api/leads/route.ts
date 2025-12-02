@@ -96,8 +96,19 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json(created);
-    } catch (dbErr) {
-      console.error("Database unavailable for lead creation:", dbErr);
+    } catch (dbErr: any) {
+      console.error("Database error for lead creation:", dbErr);
+      
+      // Handle unique constraint violation (duplicate email)
+      if (dbErr.code === 'P2002' && dbErr.meta?.target?.includes('email')) {
+        return NextResponse.json({
+          success: false,
+          error: "A lead with this email address already exists. Please use a different email or update the existing lead.",
+          code: "DUPLICATE_EMAIL"
+        }, { status: 409 });
+      }
+      
+      // Handle other database errors
       return NextResponse.json({
         success: false,
         error: "Database is currently unavailable. Please try creating the lead later when the database connection is restored.",
