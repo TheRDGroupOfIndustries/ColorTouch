@@ -23,23 +23,47 @@ export async function GET(req: NextRequest) {
     let leads: any[] = [];
     
     try {
+      const selectFields = {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        company: true,
+        amount: true,
+        source: true,
+        notes: true,
+        tag: true,
+        status: true,
+        duration: true,
+        userId: true,
+        createdAt: true,
+        updatedAt: true,
+        leadsCreatedDate: true,
+        leadsUpdatedDates: true,
+        enquiryDate: true,
+        bookingDate: true,
+        checkInDates: true,
+      };
+
       if (userRole === "ADMIN") {
         // Admin sees ALL leads from all users
         leads = await prisma.lead.findMany({
-          orderBy: { createdAt: "desc" },
-          include: {
+          select: {
+            ...selectFields,
             user: {
               select: {
                 name: true,
                 email: true
               }
             }
-          }
+          },
+          orderBy: { createdAt: "desc" },
         });
       } else {
         // Employee sees only their own leads
         leads = await prisma.lead.findMany({
           where: { userId: userId },
+          select: selectFields,
           orderBy: { createdAt: "desc" },
         });
       }
@@ -49,17 +73,24 @@ export async function GET(req: NextRequest) {
       leads = [];
     }
 
-    // Ensure dates are properly serialized with type-safe access
-    const serializedLeads = leads.map(lead => ({
-      ...lead,
-      createdAt: lead.createdAt ? lead.createdAt.toISOString() : null,
-      updatedAt: lead.updatedAt ? lead.updatedAt.toISOString() : null,
-      leadsCreatedDate: (lead as any).leadsCreatedDate ? (lead as any).leadsCreatedDate.toISOString() : null,
-      leadsUpdatedDates: (lead as any).leadsUpdatedDates ? (lead as any).leadsUpdatedDates.toISOString() : null,
-      enquiryDate: (lead as any).enquiryDate ? (lead as any).enquiryDate.toISOString() : null,
-      bookingDate: (lead as any).bookingDate ? (lead as any).bookingDate.toISOString() : null,
-      checkInDates: (lead as any).checkInDates ? (lead as any).checkInDates.toISOString() : null,
-    }));
+    // Ensure dates are properly serialized
+    const serializedLeads = leads.map(lead => {
+      const serializedLead: any = { ...lead };
+      
+      // Handle standard timestamps
+      serializedLead.createdAt = lead.createdAt ? lead.createdAt.toISOString() : null;
+      serializedLead.updatedAt = lead.updatedAt ? lead.updatedAt.toISOString() : null;
+      
+      // Handle custom date fields with explicit checks
+      const leadAny = lead as any;
+      serializedLead.leadsCreatedDate = leadAny.leadsCreatedDate && leadAny.leadsCreatedDate instanceof Date ? leadAny.leadsCreatedDate.toISOString() : null;
+      serializedLead.leadsUpdatedDates = leadAny.leadsUpdatedDates && leadAny.leadsUpdatedDates instanceof Date ? leadAny.leadsUpdatedDates.toISOString() : null;
+      serializedLead.enquiryDate = leadAny.enquiryDate && leadAny.enquiryDate instanceof Date ? leadAny.enquiryDate.toISOString() : null;
+      serializedLead.bookingDate = leadAny.bookingDate && leadAny.bookingDate instanceof Date ? leadAny.bookingDate.toISOString() : null;
+      serializedLead.checkInDates = leadAny.checkInDates && leadAny.checkInDates instanceof Date ? leadAny.checkInDates.toISOString() : null;
+      
+      return serializedLead;
+    });
 
     return NextResponse.json(serializedLeads);
   } catch (error: any) {
@@ -107,17 +138,20 @@ export async function POST(req: NextRequest) {
         console.error("Failed to notify integrations:", notifyErr);
       }
 
-      // Serialize dates for consistent response with type-safe access
-      const serializedLead = {
-        ...created,
-        createdAt: created.createdAt ? created.createdAt.toISOString() : null,
-        updatedAt: created.updatedAt ? created.updatedAt.toISOString() : null,
-        leadsCreatedDate: (created as any).leadsCreatedDate ? (created as any).leadsCreatedDate.toISOString() : null,
-        leadsUpdatedDates: (created as any).leadsUpdatedDates ? (created as any).leadsUpdatedDates.toISOString() : null,
-        enquiryDate: (created as any).enquiryDate ? (created as any).enquiryDate.toISOString() : null,
-        bookingDate: (created as any).bookingDate ? (created as any).bookingDate.toISOString() : null,
-        checkInDates: (created as any).checkInDates ? (created as any).checkInDates.toISOString() : null,
-      };
+      // Serialize dates for consistent response
+      const serializedLead: any = { ...created };
+      
+      // Handle standard timestamps
+      serializedLead.createdAt = created.createdAt ? created.createdAt.toISOString() : null;
+      serializedLead.updatedAt = created.updatedAt ? created.updatedAt.toISOString() : null;
+      
+      // Handle custom date fields with explicit checks
+      const createdAny = created as any;
+      serializedLead.leadsCreatedDate = createdAny.leadsCreatedDate && createdAny.leadsCreatedDate instanceof Date ? createdAny.leadsCreatedDate.toISOString() : null;
+      serializedLead.leadsUpdatedDates = createdAny.leadsUpdatedDates && createdAny.leadsUpdatedDates instanceof Date ? createdAny.leadsUpdatedDates.toISOString() : null;
+      serializedLead.enquiryDate = createdAny.enquiryDate && createdAny.enquiryDate instanceof Date ? createdAny.enquiryDate.toISOString() : null;
+      serializedLead.bookingDate = createdAny.bookingDate && createdAny.bookingDate instanceof Date ? createdAny.bookingDate.toISOString() : null;
+      serializedLead.checkInDates = createdAny.checkInDates && createdAny.checkInDates instanceof Date ? createdAny.checkInDates.toISOString() : null;
 
       return NextResponse.json(serializedLead);
     } catch (dbErr: any) {
