@@ -49,16 +49,16 @@ export async function GET(req: NextRequest) {
       leads = [];
     }
 
-    // Ensure dates are properly serialized
+    // Ensure dates are properly serialized with type-safe access
     const serializedLeads = leads.map(lead => ({
       ...lead,
       createdAt: lead.createdAt ? lead.createdAt.toISOString() : null,
       updatedAt: lead.updatedAt ? lead.updatedAt.toISOString() : null,
-      leadsCreatedDate: lead.leadsCreatedDate ? lead.leadsCreatedDate.toISOString() : null,
-      leadsUpdatedDates: lead.leadsUpdatedDates ? lead.leadsUpdatedDates.toISOString() : null,
-      enquiryDate: lead.enquiryDate ? lead.enquiryDate.toISOString() : null,
-      bookingDate: lead.bookingDate ? lead.bookingDate.toISOString() : null,
-      checkInDates: lead.checkInDates ? lead.checkInDates.toISOString() : null,
+      leadsCreatedDate: (lead as any).leadsCreatedDate ? (lead as any).leadsCreatedDate.toISOString() : null,
+      leadsUpdatedDates: (lead as any).leadsUpdatedDates ? (lead as any).leadsUpdatedDates.toISOString() : null,
+      enquiryDate: (lead as any).enquiryDate ? (lead as any).enquiryDate.toISOString() : null,
+      bookingDate: (lead as any).bookingDate ? (lead as any).bookingDate.toISOString() : null,
+      checkInDates: (lead as any).checkInDates ? (lead as any).checkInDates.toISOString() : null,
     }));
 
     return NextResponse.json(serializedLeads);
@@ -107,16 +107,16 @@ export async function POST(req: NextRequest) {
         console.error("Failed to notify integrations:", notifyErr);
       }
 
-      // Serialize dates for consistent response
+      // Serialize dates for consistent response with type-safe access
       const serializedLead = {
         ...created,
         createdAt: created.createdAt ? created.createdAt.toISOString() : null,
         updatedAt: created.updatedAt ? created.updatedAt.toISOString() : null,
-        leadsCreatedDate: created.leadsCreatedDate ? created.leadsCreatedDate.toISOString() : null,
-        leadsUpdatedDates: created.leadsUpdatedDates ? created.leadsUpdatedDates.toISOString() : null,
-        enquiryDate: created.enquiryDate ? created.enquiryDate.toISOString() : null,
-        bookingDate: created.bookingDate ? created.bookingDate.toISOString() : null,
-        checkInDates: created.checkInDates ? created.checkInDates.toISOString() : null,
+        leadsCreatedDate: (created as any).leadsCreatedDate ? (created as any).leadsCreatedDate.toISOString() : null,
+        leadsUpdatedDates: (created as any).leadsUpdatedDates ? (created as any).leadsUpdatedDates.toISOString() : null,
+        enquiryDate: (created as any).enquiryDate ? (created as any).enquiryDate.toISOString() : null,
+        bookingDate: (created as any).bookingDate ? (created as any).bookingDate.toISOString() : null,
+        checkInDates: (created as any).checkInDates ? (created as any).checkInDates.toISOString() : null,
       };
 
       return NextResponse.json(serializedLead);
