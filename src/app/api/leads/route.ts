@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
         leads = await withRetry(() => prisma.lead.findMany({
           select: {
             ...selectFields,
-            user: {
+            User: {
               select: {
                 name: true,
                 email: true

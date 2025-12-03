@@ -35,8 +35,8 @@ export async function GET(req: NextRequest) {
         updatedAt: true,
         _count: {
           select: {
-            leads: true,
-            campaigns: true
+            Lead: true,
+            WhatsappCampaign: true
           }
         }
       },

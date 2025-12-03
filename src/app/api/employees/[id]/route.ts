@@ -253,8 +253,8 @@ export async function GET(
           updatedAt: true,
           _count: {
             select: {
-              leads: true,
-              campaigns: true
+              Lead: true,
+              WhatsappCampaign: true
             }
           }
         }

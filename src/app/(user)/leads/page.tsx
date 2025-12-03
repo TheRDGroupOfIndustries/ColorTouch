@@ -128,33 +128,31 @@ export default function LeadsPage() {
 
     // Create CSV content
     const headers = ["name", "email", "phone", "company", "notes", "source", "tag", "duration", "amount", "leadsCreatedDate", "leadsUpdatedDates", "enquiryDate", "bookingDate", "checkInDates"];
-    const csvContent = [
-      headers.join(","),
-      ...filteredLeads.map(lead => {
-        const createdVal = lead.leadsCreatedDate || lead.createdAt || '';
-        const updatedVal = lead.leadsUpdatedDates || lead.updatedAt || '';
-        const enquiryVal = lead.enquiryDate || '';
-        const bookingVal = lead.bookingDate || '';
-        const checkInVal = lead.checkInDates || '';
+    const rows = filteredLeads.map(lead => {
+      const createdVal = lead.leadsCreatedDate || lead.createdAt || '';
+      const updatedVal = lead.leadsUpdatedDates || lead.updatedAt || '';
+      const enquiryVal = lead.enquiryDate || '';
+      const bookingVal = lead.bookingDate || '';
+      const checkInVal = lead.checkInDates || '';
 
-        return [
-          `"${lead.name || ""}"`,
-          `"${lead.email || ""}"`,
-          `"${lead.phone || ""}"`,
-          `"${lead.company || ""}"`,
-          `"${lead.notes || ""}"`,
-          `"${lead.source || ""}"`,
-          `"${lead.tag || ""}"`,
-          lead.duration || 0,
-          lead.amount || 0,
-          `"${createdVal}"`,
-          `"${updatedVal}"`,
-          `"${enquiryVal}"`,
-          `"${bookingVal}"`,
-          `"${checkInVal}"`
-        ].join(",");
-      })
-    ].join("\\n");
+      return [
+        `"${(lead.name || "").replace(/"/g, '""')}"`,
+        `"${(lead.email || "").replace(/"/g, '""')}"`,
+        `"${(lead.phone || "").replace(/"/g, '""')}"`,
+        `"${(lead.company || "").replace(/"/g, '""')}"`,
+        `"${(lead.notes || "").replace(/"/g, '""')}"`,
+        `"${(lead.source || "").replace(/"/g, '""')}"`,
+        `"${(lead.tag || "").replace(/"/g, '""')}"`,
+        lead.duration || 0,
+        lead.amount || 0,
+        `"${createdVal}"`,
+        `"${updatedVal}"`,
+        `"${enquiryVal}"`,
+        `"${bookingVal}"`,
+        `"${checkInVal}"`
+      ].join(",");
+    });
+    const csvContent = [headers.join(","), ...rows].join("\n");
 
     // Create download
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -266,7 +264,9 @@ export default function LeadsPage() {
     oneWeekAgo.setDate(now.getDate() - 7);
 
     const newThisWeek = leads.filter((lead) => {
-      const createdDate = new Date(lead.created);
+      const dateStr = lead.createdAt || lead.leadsCreatedDate || lead.created;
+      if (!dateStr) return false;
+      const createdDate = new Date(dateStr);
       return createdDate >= oneWeekAgo && createdDate <= now;
     }).length;
 

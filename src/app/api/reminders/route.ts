@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
         leadId: leadId || null
       },
       include: {
-        lead: {
+        Lead: {
           select: {
             id: true,
             name: true,
@@ -150,7 +150,7 @@ export async function GET(req: NextRequest) {
       reminders = await prisma.reminder.findMany({
         where: whereConditions,
         include: {
-          lead: {
+          Lead: {
             select: {
               id: true,
               name: true,

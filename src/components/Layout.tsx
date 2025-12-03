@@ -112,6 +112,14 @@ export default function Layout({ children }: LayoutProps) {
       try {
         const user = session?.user as any;
         if (!user || !user.id) return;
+        
+        // Skip API call for env-admin fallback (admin logged in via environment credentials)
+        if (user.id === "env-admin") {
+          // Admin users have full access, set PREMIUM subscription
+          setSubscription("PREMIUM");
+          return;
+        }
+        
         const res = await fetch(`/api/auth/user/${user.id}`);
         if (!res.ok) return;
         const data = await res.json();

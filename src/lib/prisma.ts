@@ -1,31 +1,46 @@
 import { PrismaClient } from "@prisma/client";
 
+// Configure for Neon serverless (optional, only if package available)
+try {
+  const { neonConfig } = require('@neondatabase/serverless');
+  if (typeof globalThis.fetch !== 'undefined') {
+    neonConfig.fetchConnectionCache = true;
+  }
+} catch {
+  // @neondatabase/serverless not installed, continue without it
+}
 
 const globalForPrisma = global as unknown as { prisma?: PrismaClient };
+
+// Build connection URL with Neon-optimized settings
+const getDatabaseUrl = () => {
+  const baseUrl = process.env.DATABASE_URL || '';
+  // Add connection parameters optimized for Neon serverless
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}connect_timeout=60&pool_timeout=60&connection_limit=10`;
+};
 
 const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["query", "info", "warn", "error"] : ["error"],
-    // Add connection timeout settings for production
-    ...(process.env.NODE_ENV === "production" && {
-      datasources: {
-        db: {
-          url: process.env.DATABASE_URL + "?connection_limit=10&pool_timeout=20&connect_timeout=30",
-        },
+    datasources: {
+      db: {
+        url: getDatabaseUrl(),
       },
-    }),
+    },
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-// Database operation wrapper with retry logic
+// Enhanced database operation wrapper with retry logic for Neon cold starts
 export async function withRetry<T>(
   operation: () => Promise<T>,
-  maxRetries: number = 3,
-  delay: number = 1000
+  maxRetries: number = 5,
+  initialDelay: number = 2000
 ): Promise<T> {
   let lastError: any;
+  let delay = initialDelay;
   
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -33,20 +48,46 @@ export async function withRetry<T>(
     } catch (error: any) {
       lastError = error;
       
-      // Don't retry for certain error types
+      // Don't retry for certain error types (data errors, not connection errors)
       if (error.code === 'P2002' || error.code === 'P2025') {
         throw error;
       }
       
+      // Check if it's a connection/timeout error worth retrying
+      const isConnectionError = 
+        error.message?.includes('connect') ||
+        error.message?.includes('timeout') ||
+        error.message?.includes('ECONNREFUSED') ||
+        error.message?.includes('connection') ||
+        error.code === 'P1001' || // Can't reach database server
+        error.code === 'P1002' || // Database server timed out
+        error.code === 'P1008' || // Operations timed out
+        error.code === 'P1017';   // Server closed connection
+      
+      if (!isConnectionError) {
+        throw error;
+      }
+      
       if (i < maxRetries - 1) {
-        console.log(`Database operation failed, retrying in ${delay}ms... (attempt ${i + 1}/${maxRetries})`);
+        console.log(`Database connection failed (Neon cold start?), retrying in ${delay}ms... (attempt ${i + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2; // Exponential backoff
+        delay = Math.min(delay * 1.5, 10000); // Gradual backoff, max 10s
       }
     }
   }
   
   throw lastError;
+}
+
+// Warm up the database connection (call on app init or before critical operations)
+export async function warmupConnection(): Promise<boolean> {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    return true;
+  } catch (error) {
+    console.warn('Database warmup failed:', error);
+    return false;
+  }
 }
 
 export default prisma;

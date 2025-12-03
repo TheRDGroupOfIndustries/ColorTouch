@@ -47,34 +47,34 @@ interface Activity {
 // Lead is an alias of Activity, so they are structurally the same
 interface Lead extends Activity {}
 
-const stats = [
+const statsConfig = [
   {
     title: "Urgent",
     subtitle: "Overdue Follow-ups",
-    value: "8",
     icon: AlertCircle,
     color: "bg-destructive",
+    filterKey: "urgent",
   },
   {
     title: "Today",
     subtitle: "Due Today",
-    value: "15",
     icon: Clock,
     color: "bg-warning",
+    filterKey: "today",
   },
   {
     title: "This Week",
     subtitle: "Scheduled",
-    value: "42",
     icon: CalendarIcon,
     color: "bg-info",
+    filterKey: "thisWeek",
   },
   {
     title: "Completed",
-    value: "127",
-    change: "+18%",
+    subtitle: "Total Completed",
     icon: CheckCircle,
     color: "bg-success",
+    filterKey: "completed",
   },
 ];
 
@@ -98,6 +98,13 @@ const Page = () => {
     thisWeek: 0,
     completed: 0,
   });
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [quickFilter, setQuickFilter] = useState<string | null>(null);
+  const [metricFilter, setMetricFilter] = useState<string | null>(null);
   const [popup, setPopup] = useState<null | "view" | "edit">(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
@@ -112,49 +119,66 @@ const Page = () => {
       const leads = Array.isArray(data) ? data : data.leads || [];
       
       // Filter only FOLLOW_UP leads and transform to Activity format
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(todayStart);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      
       const followUpLeads = leads
         .filter((lead: any) => lead.status === 'FOLLOW_UP')
-        .map((lead: any, index: number) => ({
-          id: parseInt(lead.id.slice(-6), 16) || index + 1, // Display ID
-          leadId: lead.id, // Original lead ID for API calls
-          name: lead.name,
-          email: lead.email,
-          phone: lead.phone,
-          company: lead.company || 'Unknown Company',
-          tag: lead.tag,
-          source: lead.source,
-          notes: lead.notes || '',
-          duration: lead.duration || 0,
-          type: 'Follow-Up',
-          priority: lead.tag === 'HOT' ? 'High' : lead.tag === 'WARM' ? 'Medium' : 'Low',
-          scheduled: new Date(lead.createdAt).toLocaleDateString(),
-          time: new Date(lead.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-          status: 'Pending' as const,
-          avatar: lead.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase(),
-        }));
+        .map((lead: any, index: number) => {
+          const createdDate = new Date(lead.createdAt);
+          const isOverdue = createdDate < todayStart;
+          const isToday = createdDate >= todayStart && createdDate < new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+          
+          return {
+            id: parseInt(lead.id.slice(-6), 16) || index + 1, // Display ID
+            leadId: lead.id, // Original lead ID for API calls
+            name: lead.name,
+            email: lead.email,
+            phone: lead.phone,
+            company: lead.company || 'Unknown Company',
+            tag: lead.tag,
+            source: lead.source,
+            notes: lead.notes || '',
+            duration: lead.duration || 0,
+            type: 'Follow-Up',
+            priority: lead.tag === 'HOT' ? 'High' as const : lead.tag === 'WARM' ? 'Medium' as const : 'Low' as const,
+            scheduled: new Date(lead.createdAt).toLocaleDateString(),
+            time: new Date(lead.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            status: isOverdue ? 'Overdue' as const : 'Pending' as const,
+            avatar: lead.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase(),
+            createdAt: createdDate,
+          };
+        });
       
       setActivities(followUpLeads);
-      // Also fetch reminders and compute stats for FOLLOW_UP reminders
+      
+      // Calculate stats from the activities
+      const urgent = followUpLeads.filter((a: any) => a.status === 'Overdue').length;
+      const today = followUpLeads.filter((a: any) => {
+        const d = new Date(a.createdAt);
+        return d >= todayStart && d < new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+      }).length;
+      const thisWeek = followUpLeads.filter((a: any) => {
+        const d = new Date(a.createdAt);
+        return d >= weekStart;
+      }).length;
+      
+      // For completed, we'll fetch from reminders API
       try {
-        const remRes = await fetch('/api/reminders?timeframe=all', { cache: 'no-store', credentials: 'include' });
+        const remRes = await fetch('/api/reminders?status=completed', { cache: 'no-store', credentials: 'include' });
         if (remRes.ok) {
           const remData = await remRes.json();
-          const grouped = remData.groupedReminders || {};
-
-          const filterFollow = (arr: any[] = []) =>
-            arr.filter((r: any) => r.reminderType === 'FOLLOW_UP');
-
-          const urgent = filterFollow(grouped.overdue || []).length;
-          const today = filterFollow(grouped.today || []).length;
-          const thisWeek = filterFollow(grouped.thisWeek || []).length;
-          const completed = filterFollow(grouped.completed || []).length;
-
+          const reminders = remData.reminders || [];
+          const completed = reminders.filter((r: any) => r.reminderType === 'FOLLOW_UP').length;
           setStatsCounts({ urgent, today, thisWeek, completed });
         } else {
-          console.warn('Failed to fetch reminders for stats');
+          setStatsCounts({ urgent, today, thisWeek, completed: 0 });
         }
       } catch (remErr) {
-        console.error('Error fetching reminders:', remErr);
+        console.error('Error fetching completed reminders:', remErr);
+        setStatsCounts({ urgent, today, thisWeek, completed: 0 });
       }
     } catch (error) {
       console.error('Error fetching follow-up leads:', error);
@@ -250,6 +274,95 @@ const Page = () => {
   // FIX 3: Moved closePopup to the correct scope (inside Page component)
   const closePopup = () => setPopup(null);
 
+  // Get date boundaries for filtering
+  const getDateBoundaries = () => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    const weekStart = new Date(todayStart);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+    return { todayStart, todayEnd, weekStart };
+  };
+
+  // Filter activities based on search, priority, type, status, quick filters, and metric filters
+  const filteredActivities = React.useMemo(() => {
+    const { todayStart, todayEnd, weekStart } = getDateBoundaries();
+    
+    return activities.filter((activity) => {
+      // Search filter
+      const searchMatch = searchQuery === "" || 
+        activity.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        activity.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (activity.email && activity.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (activity.phone && activity.phone.includes(searchQuery));
+      
+      // Priority filter
+      const priorityMatch = priorityFilter === "all" || 
+        activity.priority.toLowerCase() === priorityFilter.toLowerCase();
+      
+      // Type filter
+      const typeMatch = typeFilter === "all" || 
+        activity.type.toLowerCase().includes(typeFilter.toLowerCase());
+      
+      // Status filter
+      const statusMatch = statusFilter === "all" || 
+        activity.status.toLowerCase() === statusFilter.toLowerCase();
+      
+      // Quick filters
+      let quickMatch = true;
+      if (quickFilter === "overdue") {
+        quickMatch = activity.status === "Overdue";
+      } else if (quickFilter === "high") {
+        quickMatch = activity.priority === "High";
+      } else if (quickFilter === "calls") {
+        quickMatch = activity.type.toLowerCase().includes("call");
+      }
+      
+      // Metric card filters
+      let metricMatch = true;
+      if (metricFilter) {
+        const activityDate = (activity as any).createdAt ? new Date((activity as any).createdAt) : new Date(activity.scheduled);
+        
+        if (metricFilter === "urgent") {
+          metricMatch = activity.status === "Overdue";
+        } else if (metricFilter === "today") {
+          metricMatch = activityDate >= todayStart && activityDate < todayEnd;
+        } else if (metricFilter === "thisWeek") {
+          metricMatch = activityDate >= weekStart;
+        } else if (metricFilter === "completed") {
+          metricMatch = activity.status === "Completed";
+        }
+      }
+      
+      return searchMatch && priorityMatch && typeMatch && statusMatch && quickMatch && metricMatch;
+    });
+  }, [activities, searchQuery, priorityFilter, typeFilter, statusFilter, quickFilter, metricFilter]);
+
+  // Handle metric card click
+  const handleMetricClick = (filterKey: string) => {
+    if (metricFilter === filterKey) {
+      setMetricFilter(null); // Toggle off if same filter clicked
+    } else {
+      setMetricFilter(filterKey);
+      // Clear other filters when metric is clicked
+      setQuickFilter(null);
+    }
+  };
+
+  // Handle quick filter click
+  const handleQuickFilter = (value: string) => {
+    if (value === "clear") {
+      setQuickFilter(null);
+      setMetricFilter(null);
+      setPriorityFilter("all");
+      setTypeFilter("all");
+      setStatusFilter("all");
+      setSearchQuery("");
+    } else {
+      setQuickFilter(quickFilter === value ? null : value);
+    }
+  };
+
   return (
     <div>
       <div className="p-6 space-y-6">
@@ -270,16 +383,22 @@ const Page = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat) => {
-            // pick dynamic values when available
-            let value = stat.value;
-            if (stat.title === 'Urgent') value = String(statsCounts.urgent ?? stat.value);
-            if (stat.title === 'Today') value = String(statsCounts.today ?? stat.value);
-            if (stat.title === 'This Week') value = String(statsCounts.thisWeek ?? stat.value);
-            if (stat.title === 'Completed') value = String(statsCounts.completed ?? stat.value);
+          {statsConfig.map((stat) => {
+            // pick dynamic values
+            let value = 0;
+            if (stat.filterKey === 'urgent') value = statsCounts.urgent;
+            if (stat.filterKey === 'today') value = statsCounts.today;
+            if (stat.filterKey === 'thisWeek') value = statsCounts.thisWeek;
+            if (stat.filterKey === 'completed') value = statsCounts.completed;
+
+            const isActive = metricFilter === stat.filterKey;
 
             return (
-              <Card key={stat.title} className="p-6 bg-card border-border">
+              <Card 
+                key={stat.title} 
+                className={`p-6 bg-card border-border cursor-pointer transition-all hover:border-primary/50 ${isActive ? 'ring-2 ring-primary border-primary' : ''}`}
+                onClick={() => handleMetricClick(stat.filterKey)}
+              >
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">
@@ -289,11 +408,6 @@ const Page = () => {
                       <p className="text-xs text-muted-foreground">
                         {stat.subtitle}
                       </p>
-                    )}
-                    {stat.change && (
-                      <span className="text-sm font-medium text-success">
-                        {stat.change}
-                      </span>
                     )}
                   </div>
                   <div
@@ -327,10 +441,12 @@ const Page = () => {
             <Input
               placeholder="Search leads or companies..."
               className="pl-10 bg-card border-border"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          <Select defaultValue="all">
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
             <SelectTrigger className="w-48 bg-card border-border">
               <SelectValue placeholder="All Priorities" />
             </SelectTrigger>
@@ -342,7 +458,7 @@ const Page = () => {
             </SelectContent>
           </Select>
 
-          <Select defaultValue="all">
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-48 bg-card border-border">
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
@@ -354,7 +470,7 @@ const Page = () => {
             </SelectContent>
           </Select>
 
-          <Select defaultValue="all">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-48 bg-card border-border">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
@@ -375,13 +491,14 @@ const Page = () => {
               key={filter.value}
               variant={filter.variant}
               size="sm"
-              className={
+              onClick={() => handleQuickFilter(filter.value)}
+              className={`${
                 filter.variant === "destructive"
                   ? "bg-destructive/20 text-destructive hover:bg-destructive/30"
                   : filter.variant === "ghost"
                   ? ""
                   : "bg-warning/20 text-warning hover:bg-warning/30"
-              }
+              } ${quickFilter === filter.value ? "ring-2 ring-white/50" : ""}`}
             >
               {filter.label}
             </Button>
@@ -395,7 +512,7 @@ const Page = () => {
               Follow-Up Activities
             </h3>
             <span className="text-sm text-muted-foreground">
-              {activities.length} activities
+              {filteredActivities.length} activities
             </span>
           </div>
 
@@ -430,14 +547,16 @@ const Page = () => {
                       Loading follow-up leads...
                     </td>
                   </tr>
-                ) : activities.length === 0 ? (
+                ) : filteredActivities.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                      No follow-up leads found. Leads with "FOLLOW_UP" status will appear here.
+                      {activities.length === 0 
+                        ? "No follow-up leads found. Leads with \"FOLLOW_UP\" status will appear here."
+                        : "No activities match your filters."}
                     </td>
                   </tr>
                 ) : (
-                  activities.map((activity) => (
+                  filteredActivities.map((activity) => (
                     <tr
                       key={activity.id}
                       className="border-b border-border hover:bg-secondary/50"

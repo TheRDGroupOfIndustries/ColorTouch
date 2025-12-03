@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
         },
         take: limit,
         include: {
-          user: {
+          User: {
             select: {
               name: true,
               email: true
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
         status: lead.status,
         createdAt: lead.createdAt.toISOString(),
         updatedAt: lead.updatedAt.toISOString(),
-        assignedTo: lead.user?.name || 'Unassigned',
+        assignedTo: lead.User?.name || 'Unassigned',
         // Zapier-specific meta
         zapier_meta: {
           id: lead.id,

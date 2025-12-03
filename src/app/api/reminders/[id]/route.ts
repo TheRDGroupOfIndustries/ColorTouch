@@ -27,7 +27,7 @@ export async function GET(
         userId 
       },
       include: {
-        lead: {
+        Lead: {
           select: {
             id: true,
             name: true,
@@ -107,7 +107,7 @@ export async function PUT(
         updatedAt: new Date()
       },
       include: {
-        lead: {
+        Lead: {
           select: {
             id: true,
             name: true,
