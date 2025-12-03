@@ -49,7 +49,19 @@ export async function GET(req: NextRequest) {
       leads = [];
     }
 
-    return NextResponse.json(leads);
+    // Ensure dates are properly serialized
+    const serializedLeads = leads.map(lead => ({
+      ...lead,
+      createdAt: lead.createdAt ? lead.createdAt.toISOString() : null,
+      updatedAt: lead.updatedAt ? lead.updatedAt.toISOString() : null,
+      leadsCreatedDate: lead.leadsCreatedDate ? lead.leadsCreatedDate.toISOString() : null,
+      leadsUpdatedDates: lead.leadsUpdatedDates ? lead.leadsUpdatedDates.toISOString() : null,
+      enquiryDate: lead.enquiryDate ? lead.enquiryDate.toISOString() : null,
+      bookingDate: lead.bookingDate ? lead.bookingDate.toISOString() : null,
+      checkInDates: lead.checkInDates ? lead.checkInDates.toISOString() : null,
+    }));
+
+    return NextResponse.json(serializedLeads);
   } catch (error: any) {
     console.error("Leads API error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -95,7 +107,19 @@ export async function POST(req: NextRequest) {
         console.error("Failed to notify integrations:", notifyErr);
       }
 
-      return NextResponse.json(created);
+      // Serialize dates for consistent response
+      const serializedLead = {
+        ...created,
+        createdAt: created.createdAt ? created.createdAt.toISOString() : null,
+        updatedAt: created.updatedAt ? created.updatedAt.toISOString() : null,
+        leadsCreatedDate: created.leadsCreatedDate ? created.leadsCreatedDate.toISOString() : null,
+        leadsUpdatedDates: created.leadsUpdatedDates ? created.leadsUpdatedDates.toISOString() : null,
+        enquiryDate: created.enquiryDate ? created.enquiryDate.toISOString() : null,
+        bookingDate: created.bookingDate ? created.bookingDate.toISOString() : null,
+        checkInDates: created.checkInDates ? created.checkInDates.toISOString() : null,
+      };
+
+      return NextResponse.json(serializedLead);
     } catch (dbErr: any) {
       console.error("Database error for lead creation:", dbErr);
       

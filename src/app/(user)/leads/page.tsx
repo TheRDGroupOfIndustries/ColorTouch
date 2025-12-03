@@ -469,7 +469,7 @@ export default function LeadsPage() {
                       {h}
                     </th>
                   ))}
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground sticky right-0 bg-background border-l border-border min-w-[140px]">
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground min-w-[140px]">
                     Actions
                   </th>
                 </tr>
@@ -555,30 +555,80 @@ export default function LeadsPage() {
                     </td>
                     <td className="p-4 min-w-[100px]">
                       <div className="text-xs text-muted-foreground">
-                        {new Date(lead.leadsCreatedDate || lead.createdAt || lead.created || new Date()).toLocaleDateString()}
+                        {(() => {
+                          if (lead.leadsCreatedDate) {
+                            try {
+                              return new Date(lead.leadsCreatedDate).toLocaleDateString();
+                            } catch {
+                              return lead.leadsCreatedDate;
+                            }
+                          }
+                          if (lead.createdAt) {
+                            try {
+                              return new Date(lead.createdAt).toLocaleDateString();
+                            } catch {
+                              return lead.createdAt;
+                            }
+                          }
+                          return '-';
+                        })()}
                       </div>
                     </td>
                     <td className="p-4 min-w-[100px]">
                       <div className="text-xs text-muted-foreground">
-                        {lead.leadsUpdatedDates ? new Date(lead.leadsUpdatedDates).toLocaleDateString() : (lead.updatedAt ? new Date(lead.updatedAt).toLocaleDateString() : '-')}
+                        {(() => {
+                          if (lead.leadsUpdatedDates) {
+                            try {
+                              return new Date(lead.leadsUpdatedDates).toLocaleDateString();
+                            } catch {
+                              return lead.leadsUpdatedDates;
+                            }
+                          }
+                          if (lead.updatedAt) {
+                            try {
+                              return new Date(lead.updatedAt).toLocaleDateString();
+                            } catch {
+                              return lead.updatedAt;
+                            }
+                          }
+                          return '-';
+                        })()}
                       </div>
                     </td>
                     <td className="p-4 min-w-[100px]">
                       <div className="text-xs text-muted-foreground">
-                        {lead.enquiryDate ? new Date(lead.enquiryDate).toLocaleDateString() : '-'}
+                        {lead.enquiryDate ? (() => {
+                          try {
+                            return new Date(lead.enquiryDate).toLocaleDateString();
+                          } catch {
+                            return lead.enquiryDate;
+                          }
+                        })() : '-'}
                       </div>
                     </td>
                     <td className="p-4 min-w-[100px]">
                       <div className="text-xs text-muted-foreground">
-                        {lead.bookingDate ? new Date(lead.bookingDate).toLocaleDateString() : '-'}
+                        {lead.bookingDate ? (() => {
+                          try {
+                            return new Date(lead.bookingDate).toLocaleDateString();
+                          } catch {
+                            return lead.bookingDate;
+                          }
+                        })() : '-'}
                       </div>
                     </td>
                     <td className="p-4 min-w-[100px]">
                       <div className="text-xs text-muted-foreground">
-                        {lead.checkInDates ? new Date(lead.checkInDates).toLocaleDateString() : '-'}
+                        {lead.checkInDates ? (() => {
+                          try {
+                            return new Date(lead.checkInDates).toLocaleDateString();
+                          } catch {
+                            return lead.checkInDates;
+                          }
+                        })() : '-'}
                       </div>
                     </td>
-                    <td className="p-4 flex gap-1 sticky right-0 bg-background border-l border-border">
+                    <td className="p-4 flex gap-1">
                       <Button
                         variant="ghost"
                         size="sm"
