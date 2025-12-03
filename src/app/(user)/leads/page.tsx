@@ -173,13 +173,28 @@ export default function LeadsPage() {
   const fetchLeads = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/leads", { cache: "no-store" });
-      if (!res.ok) throw new Error(await res.text());
+      setError(null);
+      const res = await fetch("/api/leads", { 
+        cache: "no-store",
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `HTTP ${res.status}`);
+      }
       const data = await res.json();
       console.log("Fetch leads response:", data);
-      setLeads(Array.isArray(data) ? data : data.leads || []);
+      const leadsArray = Array.isArray(data) ? data : (data.leads || []);
+      setLeads(leadsArray);
+      console.log(`Loaded ${leadsArray.length} leads successfully`);
     } catch (err: any) {
+      console.error("Failed to fetch leads:", err);
       setError(err.message || "Failed to fetch leads");
+      setLeads([]); // Clear leads on error
     } finally {
       setLoading(false);
     }

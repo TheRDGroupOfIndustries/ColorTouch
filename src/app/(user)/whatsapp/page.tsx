@@ -47,7 +47,14 @@ export default function WhatsAppPage() {
   // --- Fetch all campaigns from DB ---
   const fetchCampaigns = async () => {
     try {
-      const res = await fetch("/api/campaigns", { cache: "no-store", credentials: "same-origin" });
+      const res = await fetch("/api/campaigns", { 
+        cache: "no-store", 
+        credentials: "include",
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Content-Type': 'application/json'
+        }
+      });
       if (!res.ok) {
         if (res.status === 401) {
           toast.error("Session expired. Please log in.");

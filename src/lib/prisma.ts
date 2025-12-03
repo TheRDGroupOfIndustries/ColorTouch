@@ -6,7 +6,15 @@ const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "info", "warn", "error"] : [],
+    log: process.env.NODE_ENV === "development" ? ["query", "info", "warn", "error"] : ["error"],
+    // Add connection timeout settings for production
+    ...(process.env.NODE_ENV === "production" && {
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL + "?connection_limit=10&pool_timeout=20&connect_timeout=30",
+        },
+      },
+    }),
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

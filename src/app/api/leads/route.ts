@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import prisma, { withRetry } from "@/lib/prisma";
 import { sendLeadCreated } from "@/lib/zapier";
 import { sendToGoogleSheets } from "@/app/api/integrations/google-sheets/route";
 import { Tag } from "@prisma/client";
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 
       if (userRole === "ADMIN") {
         // Admin sees ALL leads from all users
-        leads = await prisma.lead.findMany({
+        leads = await withRetry(() => prisma.lead.findMany({
           select: {
             ...selectFields,
             user: {
@@ -58,14 +58,14 @@ export async function GET(req: NextRequest) {
             }
           },
           orderBy: { createdAt: "desc" },
-        });
+        }));
       } else {
         // Employee sees only their own leads
-        leads = await prisma.lead.findMany({
+        leads = await withRetry(() => prisma.lead.findMany({
           where: { userId: userId },
           select: selectFields,
           orderBy: { createdAt: "desc" },
-        });
+        }));
       }
     } catch (dbErr) {
       console.error("Database unavailable for leads — returning empty list:", dbErr);
@@ -126,9 +126,9 @@ export async function POST(req: NextRequest) {
     const userId = user.id as string;
 
     try {
-      const created = await prisma.lead.create({
+      const created = await withRetry(() => prisma.lead.create({
         data: { ...body, userId: userId },
-      });
+      }));
 
       // Fire-and-forget: notify integrations of the newly created lead
       try {
