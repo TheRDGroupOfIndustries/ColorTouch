@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { CampaignType, MessageType, Priority, User } from "@prisma/client";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 interface CampaignCreate {
@@ -16,17 +16,17 @@ interface CampaignCreate {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as CampaignCreate;
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const session = await auth();
 
-    if (!token || !token.userId) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const userId = token.userId as string;
+    const userId = session.user.id;
+    const body = (await req.json()) as CampaignCreate;
 
     const created = await prisma.whatsappCampaign.create({
        data: {
@@ -44,14 +44,16 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (!token || !token.userId) {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
-    const userId = token.userId as string;
+    
+    const userId = session.user.id;
 
     let campaigns: any[] = [];
     

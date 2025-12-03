@@ -306,9 +306,9 @@ export default function LeadsPage() {
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       const matchesSearch =
-        lead.name.toLowerCase().includes(search.toLowerCase()) ||
-        lead.email.toLowerCase().includes(search.toLowerCase()) ||
-        lead.company.toLowerCase().includes(search.toLowerCase());
+        (lead.name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (lead.email || '').toLowerCase().includes(search.toLowerCase()) ||
+        (lead.company || '').toLowerCase().includes(search.toLowerCase());
 
       const matchesStatus =
         selectedStatus && selectedStatus !== "all"

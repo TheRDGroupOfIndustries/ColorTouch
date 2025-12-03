@@ -56,12 +56,15 @@ export default function WhatsAppPage() {
         }
       });
       if (!res.ok) {
-        if (res.status === 401) {
-          toast.error("Session expired. Please log in.");
-          router.push("/login");
+        if (res.status === 401 || res.status === 403) {
+          console.warn("Authentication failed for campaigns, status:", res.status);
+          toast.error("Session expired. Please log in again.");
+          setTimeout(() => router.push("/login"), 1500);
           return;
         }
-        throw new Error("Failed to fetch campaigns");
+        const errorText = await res.text();
+        console.error("Campaigns fetch error:", errorText);
+        throw new Error(errorText || "Failed to fetch campaigns");
       }
       const data = await res.json();
 
