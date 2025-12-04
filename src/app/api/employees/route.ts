@@ -44,13 +44,11 @@ export async function GET(req: NextRequest) {
     });
     
     // Calculate stats
-    const stats = {
-      total: employees.length,
-      admins: employees.filter(emp => emp.role === 'ADMIN').length,
-      employees: employees.filter(emp => emp.role === 'EMPLOYEE').length,
-      premium: employees.filter(emp => emp.subscription === 'PREMIUM').length,
-      free: employees.filter(emp => emp.subscription === 'FREE').length,
-    };
+    const totalUsers = employees.length;
+    const premiumUsers = employees.filter(emp => emp.subscription === 'PREMIUM').length;
+    const freeUsers = employees.filter(emp => emp.subscription === 'FREE').length;
+    const adminUsers = employees.filter(emp => emp.role === 'ADMIN').length;
+    const conversionRate = totalUsers > 0 ? ((premiumUsers / totalUsers) * 100).toFixed(1) : "0";
     
     // Calculate activity metrics
     const now = new Date();
@@ -62,12 +60,22 @@ export async function GET(req: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      employees,
+      employees: employees.map(emp => ({
+        ...emp,
+        _count: {
+          leads: emp._count?.Lead || 0,
+          campaigns: emp._count?.WhatsappCampaign || 0
+        }
+      })),
       stats: {
-        ...stats,
+        totalUsers,
+        premiumUsers,
+        freeUsers,
+        adminUsers,
+        conversionRate,
         recentlyActive,
-        activePercentage: employees.length > 0 ? 
-          (recentlyActive / employees.length * 100).toFixed(1) : 0
+        activePercentage: totalUsers > 0 ? 
+          (recentlyActive / totalUsers * 100).toFixed(1) : "0"
       }
     });
     
@@ -81,13 +89,13 @@ export async function GET(req: NextRequest) {
         success: true,
         employees: [],
         stats: {
-          total: 0,
-          admins: 0,
-          employees: 0,
-          premium: 0,
-          free: 0,
+          totalUsers: 0,
+          premiumUsers: 0,
+          freeUsers: 0,
+          adminUsers: 0,
+          conversionRate: "0",
           recentlyActive: 0,
-          activePercentage: 0
+          activePercentage: "0"
         },
         warning: 'Database unreachable. Showing empty results.'
       });
@@ -144,13 +152,17 @@ export async function POST(req: NextRequest) {
     // Hash password and create user
     const hashedPassword = await hashPassword(password);
     
+    // Determine subscription: ADMINs are automatically PREMIUM
+    const finalRole = role || "EMPLOYEE";
+    const finalSubscription = finalRole === "ADMIN" ? "PREMIUM" : (subscription || "FREE");
+    
     const newEmployee = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        role: role || "EMPLOYEE",
-        subscription: subscription || "FREE"
+        role: finalRole,
+        subscription: finalSubscription
       },
       select: {
         id: true,

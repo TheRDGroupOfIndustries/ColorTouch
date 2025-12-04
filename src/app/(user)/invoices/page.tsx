@@ -2,14 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   FileText,
   Download,
-  Search,
   Filter,
   Calendar,
   DollarSign,
@@ -17,18 +15,16 @@ import {
   XCircle,
   Clock,
   CreditCard,
-  Receipt,
-  TrendingUp,
   AlertCircle,
   Eye,
   RefreshCw,
+  ShoppingCart,
+  Hash,
 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -52,6 +48,12 @@ interface Payment {
   failureReason?: string;
   createdAt: string;
   updatedAt: string;
+  User?: {
+    id: string;
+    name: string;
+    email: string;
+    subscription?: string;
+  };
 }
 
 export default function InvoicePage() {
@@ -90,9 +92,6 @@ export default function InvoicePage() {
     completed: payments.filter((p) => p.status === "COMPLETED").length,
     pending: payments.filter((p) => p.status === "PENDING").length,
     failed: payments.filter((p) => p.status === "FAILED").length,
-    totalAmount: payments
-      .filter((p) => p.status === "COMPLETED")
-      .reduce((sum, p) => sum + Number(p.amount), 0),
   };
 
   // Filter payments
@@ -100,65 +99,88 @@ export default function InvoicePage() {
     const matchesSearch =
       payment.orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       payment.razorpayPaymentId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.receipt?.toLowerCase().includes(searchQuery.toLowerCase());
+      payment.User?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      payment.User?.email?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "all" || payment.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const formatCurrency = (amount: number, currency: string = "INR") => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: currency,
-    }).format(amount);
+  const formatDate = (dateString: string) => {
+    const d = new Date(dateString);
+    return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}/${d.getFullYear()}`;
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const calculateGST = (amount: number) => {
+    return Math.round(amount * 0.06);
+  };
+
+  const getBasePrice = (amount: number) => {
+    return amount - calculateGST(amount);
+  };
+
+  const getExpiryDate = (paidAt: string | undefined, createdAt: string) => {
+    const baseDate = paidAt ? new Date(paidAt) : new Date(createdAt);
+    const expiryDate = new Date(baseDate);
+    expiryDate.setDate(expiryDate.getDate() + 30);
+    return formatDate(expiryDate.toISOString());
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "COMPLETED":
         return (
-          <Badge className="bg-green-500/30 border-2 border-green-400/50 text-green-100">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Completed
-          </Badge>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+            <CheckCircle className="w-3 h-3" />
+            Confirmed
+          </span>
         );
       case "PENDING":
         return (
-          <Badge className="bg-yellow-500/30 border-2 border-yellow-400/50 text-yellow-100">
-            <Clock className="w-3 h-3 mr-1" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+            <Clock className="w-3 h-3" />
             Pending
-          </Badge>
+          </span>
         );
       case "FAILED":
         return (
-          <Badge className="bg-red-500/30 border-2 border-red-400/50 text-red-100">
-            <XCircle className="w-3 h-3 mr-1" />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">
+            <XCircle className="w-3 h-3" />
             Failed
-          </Badge>
-        );
-      case "REFUNDED":
-        return (
-          <Badge className="bg-purple-500/30 border-2 border-purple-400/50 text-purple-100">
-            <RefreshCw className="w-3 h-3 mr-1" />
-            Refunded
-          </Badge>
+          </span>
         );
       default:
         return (
-          <Badge className="bg-gray-500/30 border-2 border-gray-400/50 text-gray-100">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400 border border-gray-500/30">
             {status}
-          </Badge>
+          </span>
         );
     }
+  };
+
+  const getPaymentMethodBadge = (method: string | undefined) => {
+    const methodName = method?.toLowerCase() || "razorpay";
+    if (methodName.includes("upi")) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+          <CreditCard className="w-3 h-3" />
+          Upi
+        </span>
+      );
+    }
+    if (methodName.includes("netbanking")) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+          <CreditCard className="w-3 h-3" />
+          Netbanking
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+        <CreditCard className="w-3 h-3" />
+        Upi
+      </span>
+    );
   };
 
   const handleViewDetails = (payment: Payment) => {
@@ -167,39 +189,47 @@ export default function InvoicePage() {
   };
 
   const handleDownloadInvoice = (payment: Payment) => {
-    // Create a simple invoice download
+    const basePrice = getBasePrice(Number(payment.amount));
+    const gst = calculateGST(Number(payment.amount));
+    
     const invoiceContent = `
 INVOICE
-=======
+═══════════════════════════════════════════════════════════════
 
-Invoice Number: INV-${payment.orderId}
+Invoice Number: INV-${payment.orderId.slice(0, 12).toUpperCase()}
 Date: ${formatDate(payment.createdAt)}
-${payment.paidAt ? `Payment Date: ${formatDate(payment.paidAt)}` : ""}
 
-Customer: ${session?.user?.name || "N/A"}
-Email: ${session?.user?.email || "N/A"}
+CUSTOMER DETAILS
+───────────────────────────────────────────────────────────────
+Name: ${payment.User?.name || session?.user?.name || "N/A"}
+Email: ${payment.User?.email || session?.user?.email || "N/A"}
 
--------------------------------------------
-Description                     Amount
--------------------------------------------
-Premium Subscription            ${formatCurrency(Number(payment.amount), payment.currency)}
--------------------------------------------
-Total:                          ${formatCurrency(Number(payment.amount), payment.currency)}
--------------------------------------------
+ORDER DETAILS
+───────────────────────────────────────────────────────────────
+Description                              Amount
+───────────────────────────────────────────────────────────────
+Premium Subscription (PLUS)              ₹${basePrice}
+GST (6%)                                 ₹${gst}
+───────────────────────────────────────────────────────────────
+TOTAL                                    ₹${payment.amount}
 
-Payment Status: ${payment.status}
-${payment.razorpayPaymentId ? `Transaction ID: ${payment.razorpayPaymentId}` : ""}
-${payment.paymentMethod ? `Payment Method: ${payment.paymentMethod}` : ""}
+PAYMENT INFORMATION
+───────────────────────────────────────────────────────────────
+Status: ${payment.status}
+Method: ${payment.paymentMethod || "Razorpay"}
+Transaction ID: ${payment.razorpayPaymentId || "N/A"}
+Subscription Expiry: ${getExpiryDate(payment.paidAt, payment.createdAt)}
 
-Thank you for your business!
-ColorTouch CRM
+═══════════════════════════════════════════════════════════════
+                    Thank you for your business!
+                         ColorTouch CRM
     `.trim();
 
     const blob = new Blob([invoiceContent], { type: "text/plain" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `invoice-${payment.orderId}.txt`;
+    a.download = `invoice-${payment.orderId.slice(0, 8)}.txt`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -209,7 +239,7 @@ ColorTouch CRM
   if (!session) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Card className="bg-black/80 border border-white/10 p-8 text-center">
+        <Card className="bg-card border-border p-8 text-center">
           <AlertCircle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-white mb-2">Authentication Required</h2>
           <p className="text-gray-400">Please sign in to view your invoices.</p>
@@ -220,123 +250,101 @@ ColorTouch CRM
 
   return (
     <div className="min-h-screen p-6 md:p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-full mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-blue-500/20 border border-blue-400/30">
-              <Receipt className="w-6 h-6 text-blue-400" />
-            </div>
-            <h1 className="text-3xl font-bold text-white">Invoices & Billing</h1>
-          </div>
-          <p className="text-gray-400 mt-2">
-            View and manage your payment history and invoices
-          </p>
+          <h1 className="text-3xl font-bold text-white">Subscription</h1>
+          <p className="text-gray-400 mt-1">Manage your subscription</p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="bg-black/80 border border-white/10">
+          <Card className="bg-card border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">Total Transactions</p>
-                  <p className="text-2xl font-bold text-white mt-1">{stats.total}</p>
+                  <p className="text-2xl font-bold text-white">{stats.total}</p>
+                  <p className="text-sm text-gray-400 mt-1">Total Orders</p>
+                  <p className="text-xs text-gray-500">All subscription orders placed</p>
                 </div>
-                <div className="p-3 rounded-full bg-blue-500/20 border border-blue-400/30">
-                  <FileText className="w-6 h-6 text-blue-400" />
-                </div>
+                <ShoppingCart className="w-6 h-6 text-gray-400" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-black/80 border border-white/10">
+          <Card className="bg-card border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">Total Revenue</p>
-                  <p className="text-2xl font-bold text-white mt-1">
-                    {formatCurrency(stats.totalAmount)}
-                  </p>
+                  <p className="text-2xl font-bold text-white">{stats.completed}</p>
+                  <p className="text-sm text-gray-400 mt-1">Completed Orders</p>
+                  <p className="text-xs text-gray-500">Successfully processed</p>
                 </div>
-                <div className="p-3 rounded-full bg-green-500/20 border border-green-400/30">
-                  <TrendingUp className="w-6 h-6 text-green-400" />
-                </div>
+                <CheckCircle className="w-6 h-6 text-gray-400" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-black/80 border border-white/10">
+          <Card className="bg-card border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">Successful</p>
-                  <p className="text-2xl font-bold text-white mt-1">{stats.completed}</p>
+                  <p className="text-2xl font-bold text-white">{stats.pending}</p>
+                  <p className="text-sm text-gray-400 mt-1">Pending Orders</p>
+                  <p className="text-xs text-gray-500">Awaiting confirmation</p>
                 </div>
-                <div className="p-3 rounded-full bg-emerald-500/20 border border-emerald-400/30">
-                  <CheckCircle className="w-6 h-6 text-emerald-400" />
-                </div>
+                <Clock className="w-6 h-6 text-gray-400" />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-black/80 border border-white/10">
+          <Card className="bg-card border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-400">Pending</p>
-                  <p className="text-2xl font-bold text-white mt-1">{stats.pending}</p>
+                  <p className="text-2xl font-bold text-white">{stats.failed}</p>
+                  <p className="text-sm text-gray-400 mt-1">Failed Orders</p>
+                  <p className="text-xs text-gray-500">Failed to process</p>
                 </div>
-                <div className="p-3 rounded-full bg-yellow-500/20 border border-yellow-400/30">
-                  <Clock className="w-6 h-6 text-yellow-400" />
-                </div>
+                <XCircle className="w-6 h-6 text-gray-400" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Filters */}
-        <Card className="bg-black/80 border border-white/10 mb-6">
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Search by order ID, transaction ID, or receipt..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-black/40 border-gray-700 text-white placeholder:text-gray-500"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48 bg-black/40 border-gray-700 text-white">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent className="bg-black border-gray-700">
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="FAILED">Failed</SelectItem>
-                  <SelectItem value="REFUNDED">Refunded</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <Input
+            placeholder="Search name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1 bg-card border-border text-white placeholder:text-gray-500"
+          />
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-48 bg-card border-border text-white">
+              <SelectValue placeholder="Subscription Status" />
+            </SelectTrigger>
+            <SelectContent className="bg-black border-gray-700">
+              <SelectItem value="all">Subscription Status</SelectItem>
+              <SelectItem value="COMPLETED">Confirmed</SelectItem>
+              <SelectItem value="PENDING">Pending</SelectItem>
+              <SelectItem value="FAILED">Failed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" className="border-border text-gray-400">
+            <Filter className="w-4 h-4 mr-2" />
+            View
+          </Button>
+        </div>
 
-        {/* Invoices Table */}
-        <Card className="bg-black/80 border border-white/10">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <CreditCard className="w-5 h-5" />
-              Payment History
+        {/* Table */}
+        <Card className="bg-card border-border">
+          <CardHeader className="border-b border-border py-4">
+            <CardTitle className="text-white text-base">
+              Total Item: {filteredPayments.length}
             </CardTitle>
-            <CardDescription className="text-gray-400">
-              All your transactions and invoices
-            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <RefreshCw className="w-8 h-8 text-gray-400 animate-spin" />
@@ -346,65 +354,60 @@ ColorTouch CRM
                 <FileText className="w-12 h-12 text-gray-600 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-white mb-2">No invoices found</h3>
                 <p className="text-gray-400">
-                  {payments.length === 0
-                    ? "You haven't made any payments yet."
-                    : "No invoices match your search criteria."}
+                  {payments.length === 0 ? "No payments yet." : "No matching results."}
                 </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[1400px]">
                   <thead>
-                    <tr className="border-b border-gray-700">
-                      <th className="text-left p-4 text-sm font-medium text-gray-400">Invoice</th>
-                      <th className="text-left p-4 text-sm font-medium text-gray-400">Date</th>
-                      <th className="text-left p-4 text-sm font-medium text-gray-400">Amount</th>
-                      <th className="text-left p-4 text-sm font-medium text-gray-400">Status</th>
-                      <th className="text-left p-4 text-sm font-medium text-gray-400">Method</th>
-                      <th className="text-right p-4 text-sm font-medium text-gray-400">Actions</th>
+                    <tr className="border-b border-border">
+                      <th className="text-left p-4 text-sm font-medium text-gray-400">Name</th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-400">Price</th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-400">Paid</th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-400">GST</th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-400">User Name</th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-400">User Email</th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-400">Order ID</th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-400">Subscription Status</th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-400">Payment</th>
+                      <th className="text-left p-4 text-sm font-medium text-gray-400">Expires</th>
+                      <th className="text-right p-4 text-sm font-medium text-gray-400"></th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredPayments.map((payment) => (
-                      <tr
-                        key={payment.id}
-                        className="border-b border-gray-800 hover:bg-white/5 transition-colors"
-                      >
+                      <tr key={payment.id} className="border-b border-border hover:bg-secondary/30">
                         <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-blue-500/20 border border-blue-400/30">
-                              <FileText className="w-4 h-4 text-blue-400" />
-                            </div>
-                            <div>
-                              <div className="font-medium text-white">
-                                INV-{payment.orderId.slice(0, 8).toUpperCase()}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {payment.razorpayPaymentId || "Processing..."}
-                              </div>
-                            </div>
-                          </div>
+                          <span className="text-white font-medium">PLUS</span>
                         </td>
                         <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm text-gray-300">
-                              {formatDate(payment.createdAt)}
-                            </span>
-                          </div>
+                          <span className="text-green-400">₹ {getBasePrice(Number(payment.amount))}</span>
                         </td>
                         <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="w-4 h-4 text-green-400" />
-                            <span className="font-semibold text-white">
-                              {formatCurrency(Number(payment.amount), payment.currency)}
-                            </span>
-                          </div>
+                          <span className="text-green-400">₹ {payment.amount}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-white">6%</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-white">{payment.User?.name || session?.user?.name || "N/A"}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-gray-400">{payment.User?.email || session?.user?.email || "N/A"}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-gray-400 font-mono text-sm flex items-center gap-1">
+                            <Hash className="w-3 h-3" />
+                            {payment.orderId.slice(0, 22)}
+                          </span>
                         </td>
                         <td className="p-4">{getStatusBadge(payment.status)}</td>
+                        <td className="p-4">{getPaymentMethodBadge(payment.paymentMethod)}</td>
                         <td className="p-4">
-                          <span className="text-sm text-gray-400">
-                            {payment.paymentMethod || "Razorpay"}
+                          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-600 text-sm text-white">
+                            <Calendar className="w-4 h-4" />
+                            {payment.status === "COMPLETED" ? getExpiryDate(payment.paidAt, payment.createdAt) : "-"}
                           </span>
                         </td>
                         <td className="p-4">
@@ -412,7 +415,7 @@ ColorTouch CRM
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="text-gray-400 hover:text-white hover:bg-white/10"
+                              className="text-gray-400 hover:text-white h-8 w-8 p-0"
                               onClick={() => handleViewDetails(payment)}
                             >
                               <Eye className="w-4 h-4" />
@@ -421,7 +424,7 @@ ColorTouch CRM
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="text-gray-400 hover:text-white hover:bg-white/10"
+                                className="text-gray-400 hover:text-white h-8 w-8 p-0"
                                 onClick={() => handleDownloadInvoice(payment)}
                               >
                                 <Download className="w-4 h-4" />
@@ -436,112 +439,118 @@ ColorTouch CRM
               </div>
             )}
           </CardContent>
+
+          <div className="p-4 border-t border-border flex items-center justify-between">
+            <span className="text-sm text-gray-400">Selected - 0 of {filteredPayments.length}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Page 1 of 1</span>
+              <Select defaultValue="10">
+                <SelectTrigger className="w-16 bg-card border-border text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-black border-gray-700">
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </Card>
 
-        {/* Payment Details Dialog */}
+        {/* Details Dialog */}
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent className="bg-black border border-gray-700 max-w-lg">
+          <DialogContent className="bg-zinc-900 border border-gray-700 max-w-lg">
             <DialogHeader>
-              <DialogTitle className="text-white flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-blue-400" />
-                Invoice Details
-              </DialogTitle>
-              <DialogDescription className="text-gray-400">
-                Complete transaction information
-              </DialogDescription>
+              <div className="flex items-center gap-2 mb-4">
+                {getStatusBadge(selectedPayment?.status || "")}
+                {getPaymentMethodBadge(selectedPayment?.paymentMethod)}
+              </div>
             </DialogHeader>
             {selectedPayment && (
-              <div className="space-y-6 mt-4">
-                {/* Invoice Header */}
-                <div className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10">
-                  <div>
-                    <p className="text-sm text-gray-400">Invoice Number</p>
-                    <p className="text-lg font-semibold text-white">
-                      INV-{selectedPayment.orderId.slice(0, 8).toUpperCase()}
-                    </p>
-                  </div>
-                  {getStatusBadge(selectedPayment.status)}
-                </div>
-
-                {/* Amount */}
-                <div className="p-4 rounded-lg bg-green-500/10 border border-green-400/20">
-                  <p className="text-sm text-gray-400 mb-1">Amount</p>
-                  <p className="text-3xl font-bold text-green-400">
-                    {formatCurrency(Number(selectedPayment.amount), selectedPayment.currency)}
-                  </p>
-                </div>
-
-                {/* Details Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                    <p className="text-xs text-gray-500">Created At</p>
-                    <p className="text-sm text-white">{formatDate(selectedPayment.createdAt)}</p>
-                  </div>
-                  {selectedPayment.paidAt && (
-                    <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                      <p className="text-xs text-gray-500">Paid At</p>
-                      <p className="text-sm text-white">{formatDate(selectedPayment.paidAt)}</p>
+              <div className="space-y-6">
+                <Card className="bg-card border-border">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-white text-sm">👤 User Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">User Name</p>
+                      <p className="text-white">{selectedPayment.User?.name || session?.user?.name}</p>
                     </div>
-                  )}
-                  <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                    <p className="text-xs text-gray-500">Payment Method</p>
-                    <p className="text-sm text-white">
-                      {selectedPayment.paymentMethod || "Razorpay"}
-                    </p>
-                  </div>
-                  <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                    <p className="text-xs text-gray-500">Currency</p>
-                    <p className="text-sm text-white">{selectedPayment.currency}</p>
-                  </div>
-                </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Email</p>
+                      <p className="text-white">{selectedPayment.User?.email || session?.user?.email}</p>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                {/* Transaction IDs */}
-                {(selectedPayment.razorpayOrderId || selectedPayment.razorpayPaymentId) && (
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-gray-300">Transaction Details</p>
-                    {selectedPayment.razorpayOrderId && (
-                      <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                        <p className="text-xs text-gray-500">Razorpay Order ID</p>
-                        <p className="text-sm text-white font-mono break-all">
-                          {selectedPayment.razorpayOrderId}
+                <Card className="bg-card border-border">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-white text-sm flex items-center gap-2">
+                      <Hash className="w-4 h-4" /> Order Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between">
+                      <div>
+                        <p className="text-xs text-gray-500">Order ID</p>
+                        <p className="text-white font-mono text-sm">{selectedPayment.orderId}</p>
+                      </div>
+                      {getStatusBadge(selectedPayment.status)}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Payment Method</p>
+                        <p className="text-white">{selectedPayment.paymentMethod || "upi"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Subscription Expiry</p>
+                        <p className="text-white flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {selectedPayment.status === "COMPLETED" ? getExpiryDate(selectedPayment.paidAt, selectedPayment.createdAt) : "N/A"}
                         </p>
                       </div>
-                    )}
-                    {selectedPayment.razorpayPaymentId && (
-                      <div className="p-3 rounded-lg bg-white/5 border border-white/10">
-                        <p className="text-xs text-gray-500">Transaction ID</p>
-                        <p className="text-sm text-white font-mono break-all">
-                          {selectedPayment.razorpayPaymentId}
-                        </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-card border-border">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-white text-sm flex items-center gap-2">
+                      <DollarSign className="w-4 h-4" /> Pricing Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Base Price</p>
+                        <p className="text-white">₹{getBasePrice(Number(selectedPayment.amount))}</p>
                       </div>
-                    )}
-                  </div>
-                )}
+                      <div>
+                        <p className="text-xs text-gray-500">Amount Paid</p>
+                        <p className="text-green-400">₹{selectedPayment.amount}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">GST (6%)</p>
+                        <p className="text-white">₹{calculateGST(Number(selectedPayment.amount))}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Cross Price</p>
+                        <p className="text-white">₹500</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-                {/* Failure Reason */}
-                {selectedPayment.status === "FAILED" && selectedPayment.failureReason && (
-                  <div className="p-4 rounded-lg bg-red-500/10 border border-red-400/20">
-                    <p className="text-sm text-red-400 font-medium mb-1">Failure Reason</p>
-                    <p className="text-sm text-red-300">{selectedPayment.failureReason}</p>
-                  </div>
-                )}
-
-                {/* Actions */}
                 <div className="flex gap-3 pt-4 border-t border-gray-700">
-                  <Button
-                    variant="outline"
-                    className="flex-1 border-gray-600 text-gray-300 hover:bg-white/10"
-                    onClick={() => setShowDetails(false)}
-                  >
+                  <Button variant="outline" className="flex-1 border-gray-600" onClick={() => setShowDetails(false)}>
                     Close
                   </Button>
                   {selectedPayment.status === "COMPLETED" && (
-                    <Button
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={() => handleDownloadInvoice(selectedPayment)}
-                    >
+                    <Button className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={() => handleDownloadInvoice(selectedPayment)}>
                       <Download className="w-4 h-4 mr-2" />
-                      Download Invoice
+                      Download
                     </Button>
                   )}
                 </div>

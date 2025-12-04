@@ -112,14 +112,20 @@ export default function LeadsUploader() {
               <ul className="list-inside list-disc space-y-1 text-gray-400 text-sm text-muted-foreground">
                 <li><code>name</code> – Full name of the lead (required)</li>
                 <li><code>email</code> – Valid email address (optional)</li>
-                <li><code>phone</code> – Numeric only (optional)</li>
+                <li><code>phone</code> – Phone number (optional)</li>
                 <li><code>company</code> – Company or organization (optional)</li>
                 <li><code>notes</code> – Any additional remarks (optional)</li>
-                <li><code>source</code> – Must match one of the accepted sources below</li>
-                <li><code>tag</code> – Must match one of the accepted tags below</li>
-                <li><code>duration</code> – Positive integer (days or duration)</li>
+                <li><code>source</code> – Lead source (optional)</li>
+                <li><code>tag</code> – Lead tag/status (optional)</li>
+                <li><code>duration</code> – Positive integer in days (optional)</li>
+                <li><code>amount</code> – Deal amount/value (optional)</li>
+                <li><code>Leads created date</code> – Date lead was created (optional)</li>
+                <li><code>Leads updated dates</code> – Date lead was updated (optional)</li>
+                <li><code>Enquiry date</code> – Date of enquiry (optional)</li>
+                <li><code>Booking date</code> – Date of booking (optional)</li>
+                <li><code>Check in dates</code> – Check-in date (optional)</li>
               </ul>
-              <p className="text-xs text-muted-foreground text-gray-400">Column headers are <strong>case-sensitive</strong>.</p>
+              <p className="text-xs text-muted-foreground text-gray-400">Column headers are <strong>case-sensitive</strong>. Date format: YYYY-MM-DD</p>
             </div>
 
             <hr className="h-px bg-border" />

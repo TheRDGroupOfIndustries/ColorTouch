@@ -27,12 +27,17 @@ export async function POST(req: NextRequest) {
     }
 
     const hashedPassword = await hashPassword(body.password);
+    
+    // Determine subscription: ADMINs are automatically PREMIUM
+    const subscription = body.role === "ADMIN" ? "PREMIUM" : "FREE";
+    
     const user = await prisma.user.create({
       data: {
         name: body.name,
         email: body.email,
         password: hashedPassword,
         role: body.role,
+        subscription: subscription,
       },
     });
 

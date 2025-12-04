@@ -43,7 +43,7 @@ interface LayoutProps {
 }
 
 const navigation = [
-  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Employees", href: "/employees", icon: UsersRound },
   { name: "Lead Management", href: "/leads", icon: Users },
   { name: "WhatsApp Campaigns", href: "/whatsapp", icon: MessageCircle },
@@ -55,7 +55,6 @@ const navigation = [
 ];
 
 const settingsNav = [
-  { name: "Settings", href: "/settings", icon: Settings },
   { name: "Support", href: "/support", icon: Bell },
 ];
 

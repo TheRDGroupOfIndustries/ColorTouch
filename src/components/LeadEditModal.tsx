@@ -12,6 +12,7 @@ interface LeadFormData {
   phone: string;
   company: string;
   tag: string;
+  status: string;
   source: string;
   notes?: string;
   duration?: number;
@@ -24,6 +25,12 @@ interface LeadsEditModalProps {
 }
 
 const TAG_OPTIONS = ["HOT", "WARM", "COLD", "QUALIFIED", "DISQUALIFIED"];
+const STATUS_OPTIONS = [
+  { value: "PENDING", label: "Pending" },
+  { value: "FOLLOW_UP", label: "Follow Up" },
+  { value: "CONVERTED", label: "Converted" },
+  { value: "REJECTED", label: "Rejected" },
+];
 
 const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
   leadId,
@@ -36,6 +43,7 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
     phone: "",
     company: "",
     tag: "DISQUALIFIED",
+    status: "PENDING",
     source: "",
     notes: "",
     duration: 0,
@@ -44,6 +52,7 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tagOpen, setTagOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
 
   // ✅ Fetch lead details
   const fetchLead = async () => {
@@ -60,6 +69,7 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
         phone: lead.phone || "",
         company: lead.company || "",
         tag: lead.tag || "DISQUALIFIED",
+        status: lead.status || "PENDING",
         source: lead.source || "",
         notes: lead.notes || "",
         duration: lead.duration || 0,
@@ -210,6 +220,47 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
                       }`}
                     >
                       {tag}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ✅ Status Dropdown */}
+            <div className="relative">
+              <label className="text-sm text-zinc-400">Status</label>
+              <button
+                type="button"
+                onClick={() => setStatusOpen(!statusOpen)}
+                className="w-full flex justify-between items-center bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md px-3 py-2 text-sm hover:bg-zinc-800"
+              >
+                {STATUS_OPTIONS.find(s => s.value === formData.status)?.label || "Select Status"}
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${statusOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+              {statusOpen && (
+                <div className="absolute left-0 mt-1 w-full rounded-md border border-zinc-700 bg-zinc-900 shadow-lg z-50">
+                  {STATUS_OPTIONS.map((status) => (
+                    <button
+                      key={status.value}
+                      onClick={() => {
+                        handleChange("status", status.value);
+                        setStatusOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-800 ${
+                        formData.status === status.value ? "text-white font-semibold bg-zinc-800" : "text-zinc-200"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${
+                          status.value === 'PENDING' ? 'bg-blue-400' :
+                          status.value === 'FOLLOW_UP' ? 'bg-orange-400' :
+                          status.value === 'CONVERTED' ? 'bg-green-400' :
+                          'bg-red-400'
+                        }`}></span>
+                        {status.label}
+                      </span>
                     </button>
                   ))}
                 </div>

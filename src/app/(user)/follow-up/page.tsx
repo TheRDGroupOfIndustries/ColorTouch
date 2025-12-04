@@ -112,10 +112,10 @@ const statsConfig = [
 const initialActivities: Activity[] = [];
 
 const quickFilters = [
-  { label: "Overdue", value: "overdue", variant: "destructive" as const },
-  { label: "High Priority", value: "high", variant: "default" as const },
-  { label: "Calls Due", value: "calls", variant: "default" as const },
-  { label: "Clear All", value: "clear", variant: "ghost" as const },
+  { label: "Overdue", value: "overdue", color: "text-red-400 border-red-500/50 hover:bg-red-500/20" },
+  { label: "High Priority", value: "high", color: "text-amber-400 border-amber-500/50 hover:bg-amber-500/20" },
+  { label: "Calls Due", value: "calls", color: "text-blue-400 border-blue-500/50 hover:bg-blue-500/20" },
+  { label: "Clear All", value: "clear", color: "text-gray-400 border-gray-500/50 hover:bg-gray-500/20" },
 ];
 
 const activityToLead = (activity: Activity): Lead => activity as Lead;
@@ -772,25 +772,23 @@ const Page = () => {
         </div>
 
         {/* Quick Filters */}
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">Quick filters:</span>
-          {quickFilters.map((filter) => (
-            <Button
-              key={filter.value}
-              variant={filter.variant}
-              size="sm"
-              onClick={() => handleQuickFilter(filter.value)}
-              className={`${
-                filter.variant === "destructive"
-                  ? "bg-destructive/20 text-destructive hover:bg-destructive/30"
-                  : filter.variant === "ghost"
-                  ? ""
-                  : "bg-warning/20 text-warning hover:bg-warning/30"
-              } ${quickFilter === filter.value ? "ring-2 ring-white/50" : ""}`}
-            >
-              {filter.label}
-            </Button>
-          ))}
+        <div className="flex items-center gap-4 flex-wrap">
+          <span className="text-sm text-muted-foreground font-medium">Quick filters:</span>
+          <div className="flex items-center gap-2">
+            {quickFilters.map((filter) => (
+              <button
+                key={filter.value}
+                onClick={() => handleQuickFilter(filter.value)}
+                className={`px-4 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 ${filter.color} ${
+                  quickFilter === filter.value 
+                    ? "ring-2 ring-white/30 bg-white/10" 
+                    : "bg-transparent"
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Activities Table */}

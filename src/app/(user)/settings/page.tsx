@@ -178,7 +178,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-6 space-y-8 max-w-4xl mx-auto">
+    <div className="p-6 md:p-8 space-y-8 w-full">
       <Toaster position="top-right" />
 
       {/* Header */}
@@ -190,51 +190,51 @@ export default function SettingsPage() {
       </div>
 
       {/* Profile Section */}
-      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Profile</h2>
           <p className="text-sm text-muted-foreground">Profile settings</p>
         </div>
 
         <Card className="bg-card border-border p-6">
-          <div className="space-y-6">
+          <div className="space-y-0">
             {/* Avatar Row */}
-            <div className="flex items-center justify-between py-3 border-b border-border">
-              <span className="text-muted-foreground">Avatar</span>
-              <Avatar className="w-12 h-12 bg-gray-800">
-                <AvatarFallback className="bg-gray-800 text-white font-semibold text-lg">
+            <div className="flex items-center justify-between py-4 border-b border-border">
+              <span className="text-muted-foreground font-medium">Avatar</span>
+              <Avatar className="w-12 h-12 bg-zinc-800 border border-zinc-700">
+                <AvatarFallback className="bg-zinc-800 text-white font-semibold text-lg">
                   {profile?.name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
             </div>
 
             {/* Name Row */}
-            <div className="flex items-center justify-between py-3 border-b border-border">
-              <span className="text-muted-foreground">Name</span>
-              <span className="text-foreground font-medium">{profile?.name || "User"}</span>
+            <div className="flex items-center justify-between py-4 border-b border-border">
+              <span className="text-muted-foreground font-medium">Name</span>
+              <span className="text-foreground">{profile?.name || "User"}</span>
             </div>
 
             {/* Email Row */}
-            <div className="flex items-center justify-between py-3 border-b border-border">
-              <span className="text-muted-foreground">Email</span>
+            <div className="flex items-center justify-between py-4 border-b border-border">
+              <span className="text-amber-500 font-medium">Email</span>
               <span className="text-foreground">{profile?.email || "N/A"}</span>
             </div>
 
             {/* User Type Row */}
-            <div className="flex items-center justify-between py-3 border-b border-border">
-              <span className="text-muted-foreground">User Type</span>
+            <div className="flex items-center justify-between py-4 border-b border-border">
+              <span className="text-muted-foreground font-medium">User Type</span>
               <span className="text-foreground">{profile?.role || "User"}</span>
             </div>
 
             {/* ID Row */}
-            <div className="flex items-center justify-between py-3 border-b border-border">
-              <span className="text-muted-foreground">ID</span>
+            <div className="flex items-center justify-between py-4 border-b border-border">
+              <span className="text-muted-foreground font-medium">ID</span>
               <span className="text-foreground font-mono text-sm">{profile?.id || "N/A"}</span>
             </div>
 
             {/* Verified Row */}
-            <div className="flex items-center justify-between py-3">
-              <span className="text-muted-foreground">Verified</span>
+            <div className="flex items-center justify-between py-4">
+              <span className="text-amber-500 font-medium">Verified</span>
               <span className="text-foreground">{profile?.verified ? "Yes" : "No"}</span>
             </div>
           </div>
@@ -242,7 +242,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Security Section */}
-      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Security</h2>
           <p className="text-sm text-muted-foreground">Security settings</p>
@@ -360,7 +360,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Account Section - Delete */}
-      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Account</h2>
           <p className="text-sm text-muted-foreground">Account settings</p>

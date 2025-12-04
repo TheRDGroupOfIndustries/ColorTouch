@@ -2,7 +2,23 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Users, UserPlus, X } from "lucide-react";
+import { 
+  Search, 
+  Users, 
+  UserPlus, 
+  X, 
+  LayoutDashboard,
+  MessageCircle,
+  FileText,
+  DollarSign,
+  Receipt,
+  Link as LinkIcon,
+  Microchip,
+  Settings,
+  User,
+  HelpCircle,
+  Building2
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface Lead {
@@ -20,11 +36,29 @@ interface Employee {
 }
 
 interface SearchResult {
-  type: "lead" | "employee";
+  type: "lead" | "employee" | "page";
   id: string;
   name: string;
   subtitle: string;
+  href?: string;
+  icon?: any;
 }
+
+// Pages that can be searched
+const searchablePages = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, keywords: ["dashboard", "overview", "home", "main"] },
+  { name: "Employees", href: "/employees", icon: UserPlus, keywords: ["employees", "team", "staff", "users", "members"] },
+  { name: "Lead Management", href: "/leads", icon: Users, keywords: ["leads", "lead", "management", "contacts", "prospects"] },
+  { name: "WhatsApp Campaigns", href: "/whatsapp", icon: MessageCircle, keywords: ["whatsapp", "campaigns", "messages", "messaging", "chat"] },
+  { name: "Lead Follow-up", href: "/follow-up", icon: FileText, keywords: ["follow-up", "followup", "reminders", "tasks", "activities"] },
+  { name: "Payments", href: "/payments", icon: DollarSign, keywords: ["payments", "billing", "subscription", "pay", "money"] },
+  { name: "Invoices", href: "/invoices", icon: Receipt, keywords: ["invoices", "invoice", "bills", "receipts", "orders"] },
+  { name: "Integrations", href: "/integrations", icon: LinkIcon, keywords: ["integrations", "connect", "api", "zapier", "google"] },
+  { name: "Automation", href: "/automation", icon: Microchip, keywords: ["automation", "automate", "workflows", "rules"] },
+  { name: "Settings", href: "/settings", icon: Settings, keywords: ["settings", "preferences", "configuration", "account", "password"] },
+  { name: "Profile", href: "/profile", icon: User, keywords: ["profile", "my profile", "account", "user", "me"] },
+  { name: "Support", href: "/support", icon: HelpCircle, keywords: ["support", "help", "contact", "assistance", "faq"] },
+];
 
 export default function GlobalSearch() {
   const router = useRouter();
@@ -49,6 +83,7 @@ export default function GlobalSearch() {
   useEffect(() => {
     if (query.length < 2) {
       setResults([]);
+      setIsOpen(false);
       return;
     }
 
@@ -56,6 +91,24 @@ export default function GlobalSearch() {
       setLoading(true);
       try {
         const searchResults: SearchResult[] = [];
+        const lowerQuery = query.toLowerCase();
+
+        // Search pages first (instant, no API call)
+        const matchingPages = searchablePages.filter(page =>
+          page.name.toLowerCase().includes(lowerQuery) ||
+          page.keywords.some(keyword => keyword.includes(lowerQuery))
+        );
+
+        matchingPages.forEach(page => {
+          searchResults.push({
+            type: "page",
+            id: page.href,
+            name: page.name,
+            subtitle: `Go to ${page.name}`,
+            href: page.href,
+            icon: page.icon
+          });
+        });
 
         // Search leads
         const leadsRes = await fetch("/api/leads");
@@ -64,9 +117,9 @@ export default function GlobalSearch() {
           const leads = Array.isArray(leadsData) ? leadsData : (leadsData.leads || []);
           
           const matchingLeads = leads.filter((lead: Lead) =>
-            lead.name?.toLowerCase().includes(query.toLowerCase()) ||
-            lead.email?.toLowerCase().includes(query.toLowerCase()) ||
-            lead.company?.toLowerCase().includes(query.toLowerCase())
+            lead.name?.toLowerCase().includes(lowerQuery) ||
+            lead.email?.toLowerCase().includes(lowerQuery) ||
+            lead.company?.toLowerCase().includes(lowerQuery)
           ).slice(0, 5);
 
           matchingLeads.forEach((lead: Lead) => {
@@ -74,7 +127,8 @@ export default function GlobalSearch() {
               type: "lead",
               id: lead.id,
               name: lead.name,
-              subtitle: lead.email || lead.company || "Lead"
+              subtitle: lead.email || lead.company || "Lead",
+              icon: Building2
             });
           });
         }
@@ -86,8 +140,8 @@ export default function GlobalSearch() {
           const employees = employeesData.employees || [];
           
           const matchingEmployees = employees.filter((emp: Employee) =>
-            emp.name?.toLowerCase().includes(query.toLowerCase()) ||
-            emp.email?.toLowerCase().includes(query.toLowerCase())
+            emp.name?.toLowerCase().includes(lowerQuery) ||
+            emp.email?.toLowerCase().includes(lowerQuery)
           ).slice(0, 5);
 
           matchingEmployees.forEach((emp: Employee) => {
@@ -95,7 +149,8 @@ export default function GlobalSearch() {
               type: "employee",
               id: emp.id,
               name: emp.name,
-              subtitle: emp.email || emp.role
+              subtitle: emp.email || emp.role,
+              icon: UserPlus
             });
           });
         }
@@ -113,7 +168,9 @@ export default function GlobalSearch() {
   }, [query]);
 
   const handleResultClick = (result: SearchResult) => {
-    if (result.type === "lead") {
+    if (result.type === "page") {
+      router.push(result.href!);
+    } else if (result.type === "lead") {
       router.push(`/leads?search=${encodeURIComponent(result.name)}`);
     } else {
       router.push(`/employees?search=${encodeURIComponent(result.name)}`);
@@ -126,7 +183,7 @@ export default function GlobalSearch() {
     <div ref={wrapperRef} className="relative flex-1 max-w-2xl">
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
       <Input
-        placeholder="Search leads, employees..."
+        placeholder="Search pages, leads, employees..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => results.length > 0 && setIsOpen(true)}
@@ -147,7 +204,7 @@ export default function GlobalSearch() {
 
       {/* Search Results Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-gray-800 rounded-lg shadow-xl z-50 max-h-80 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-black border border-gray-800 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
           {loading ? (
             <div className="p-4 text-center text-muted-foreground">
               <div className="inline-flex items-center gap-2">
@@ -161,31 +218,74 @@ export default function GlobalSearch() {
             </div>
           ) : (
             <div className="py-2">
-              {results.map((result, index) => (
+              {/* Group: Pages */}
+              {results.some(r => r.type === "page") && (
+                <div className="px-3 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide">Pages</div>
+              )}
+              {results.filter(r => r.type === "page").map((result, index) => {
+                const IconComponent = result.icon;
+                return (
+                  <button
+                    key={`${result.type}-${result.id}-${index}`}
+                    onClick={() => handleResultClick(result)}
+                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-800 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-green-500/20 text-green-400">
+                      {IconComponent && <IconComponent className="w-4 h-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-white truncate">{result.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">{result.subtitle}</div>
+                    </div>
+                    <span className="text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+                      Page
+                    </span>
+                  </button>
+                );
+              })}
+
+              {/* Group: Leads */}
+              {results.some(r => r.type === "lead") && (
+                <div className="px-3 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide mt-2">Leads</div>
+              )}
+              {results.filter(r => r.type === "lead").map((result, index) => (
                 <button
                   key={`${result.type}-${result.id}-${index}`}
                   onClick={() => handleResultClick(result)}
                   className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-800 transition-colors text-left"
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    result.type === "lead" ? "bg-blue-500/20 text-blue-400" : "bg-purple-500/20 text-purple-400"
-                  }`}>
-                    {result.type === "lead" ? (
-                      <Users className="w-4 h-4" />
-                    ) : (
-                      <UserPlus className="w-4 h-4" />
-                    )}
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-blue-500/20 text-blue-400">
+                    <Users className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-white truncate">{result.name}</div>
                     <div className="text-xs text-muted-foreground truncate">{result.subtitle}</div>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    result.type === "lead" 
-                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" 
-                      : "bg-purple-500/20 text-purple-400 border border-purple-500/30"
-                  }`}>
-                    {result.type === "lead" ? "Lead" : "Employee"}
+                  <span className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                    Lead
+                  </span>
+                </button>
+              ))}
+
+              {/* Group: Employees */}
+              {results.some(r => r.type === "employee") && (
+                <div className="px-3 py-1.5 text-xs font-medium text-gray-500 uppercase tracking-wide mt-2">Employees</div>
+              )}
+              {results.filter(r => r.type === "employee").map((result, index) => (
+                <button
+                  key={`${result.type}-${result.id}-${index}`}
+                  onClick={() => handleResultClick(result)}
+                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-800 transition-colors text-left"
+                >
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-purple-500/20 text-purple-400">
+                    <UserPlus className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-white truncate">{result.name}</div>
+                    <div className="text-xs text-muted-foreground truncate">{result.subtitle}</div>
+                  </div>
+                  <span className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                    Employee
                   </span>
                 </button>
               ))}

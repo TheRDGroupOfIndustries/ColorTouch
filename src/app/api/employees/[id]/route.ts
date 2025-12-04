@@ -96,6 +96,11 @@ export async function PUT(
           );
         }
         updateData.role = body.role;
+        
+        // Auto-set PREMIUM subscription for ADMIN role
+        if (body.role === "ADMIN") {
+          updateData.subscription = "PREMIUM";
+        }
       }
 
       if (body.subscription !== undefined) {

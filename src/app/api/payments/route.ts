@@ -13,14 +13,26 @@ export async function GET() {
       );
     }
 
-    // Temporary fix for TypeScript issue - the Payment model exists but TS cache may be stale
+    const isAdmin = session.user.role === "ADMIN";
+
+    // Admin sees all payments, regular users see only their own
     const payments = await (prisma as any).payment.findMany({
-      where: {
+      where: isAdmin ? {} : {
         userId: session.user.id,
       },
       orderBy: {
         createdAt: "desc",
       },
+      include: {
+        User: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            subscription: true,
+          }
+        }
+      }
     });
 
     return NextResponse.json({

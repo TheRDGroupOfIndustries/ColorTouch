@@ -12,12 +12,15 @@ try {
 
 const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 
-// Build connection URL with Neon-optimized settings
+// Build connection URL with Neon-optimized settings for scale
 const getDatabaseUrl = () => {
   const baseUrl = process.env.DATABASE_URL || '';
-  // Add connection parameters optimized for Neon serverless
+  // Add connection parameters optimized for Neon serverless at scale
+  // connection_limit: max connections per instance (Neon handles pooling)
+  // pool_timeout: time to wait for connection from pool
+  // connect_timeout: time to establish new connection
   const separator = baseUrl.includes('?') ? '&' : '?';
-  return `${baseUrl}${separator}connect_timeout=60&pool_timeout=60&connection_limit=10`;
+  return `${baseUrl}${separator}connect_timeout=30&pool_timeout=30&connection_limit=25&pgbouncer=true`;
 };
 
 const prisma =
