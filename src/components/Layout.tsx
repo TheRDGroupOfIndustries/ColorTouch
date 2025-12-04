@@ -21,6 +21,8 @@ import {
   ChevronLeft,
   ChevronDown,
   LogOut,
+  DollarSign,
+  Receipt,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -34,20 +36,27 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useSession, signOut } from "next-auth/react";
 import AuthButton from "./AuthButton";
+import GlobalSearch from "./GlobalSearch";
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Employees", href: "/employees", icon: UsersRound },
   { name: "Lead Management", href: "/leads", icon: Users },
   { name: "WhatsApp Campaigns", href: "/whatsapp", icon: MessageCircle },
-  { name: "Leads Follow-Up", href: "/follow-up", icon: FileText },
-  { name: "Payments", href: "/payments", icon: CreditCard },
-  { name: "Employees", href: "/employees", icon: UsersRound },
+  { name: "Lead Follow-up", href: "/follow-up", icon: FileText },
+  { name: "Payments", href: "/payments", icon: DollarSign },
+  { name: "Invoices", href: "/invoices", icon: Receipt },
   { name: "Integrations", href: "/integrations", icon: LinkIcon },
   { name: "Automation", href: "/automation", icon: Microchip },
+];
+
+const settingsNav = [
+  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Support", href: "/support", icon: Bell },
 ];
 
 interface UserDropdownProps {
@@ -199,9 +208,9 @@ export default function Layout({ children }: LayoutProps) {
       return session?.user?.role === "ADMIN";
     }
 
-    // Payments page should be visible only to EMPLOYEE role
-    if (item.name === "Payments") {
-      return session?.user?.role === "EMPLOYEE";
+    // Invoice & Payments page - visible to both admin and employees
+    if (item.name === "Invoice & Payments") {
+      return session?.user?.role === "ADMIN" || session?.user?.role === "EMPLOYEE";
     }
 
     return true;
@@ -227,7 +236,7 @@ export default function Layout({ children }: LayoutProps) {
                   <div className="w-6 h-0.5 bg-foreground rounded"></div>
                 </div>
               </div>
-              <h1 className="text-base font-bold text-foreground">ColorTouch CRM</h1>
+              <h1 className="text-base font-bold text-foreground">ColorTouch</h1>
             </div>
           )}
           
@@ -240,6 +249,13 @@ export default function Layout({ children }: LayoutProps) {
             <Menu className="h-5 w-5" />
           </Button>
         </div>
+
+        {/* Platform Section Label */}
+        {!isCollapsed && (
+          <div className="px-4 py-2">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Platform</span>
+          </div>
+        )}
 
         {/* Gemini-style Navigation */}
         <nav className="flex-1 px-2 py-2 space-y-1">
@@ -276,6 +292,47 @@ export default function Layout({ children }: LayoutProps) {
               </Link>
             );
           })}
+
+          {/* Settings Section Divider */}
+          {!isCollapsed && (
+            <div className="px-3 py-4">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Settings</span>
+            </div>
+          )}
+
+          {/* Settings Navigation */}
+          {settingsNav.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`flex items-center gap-4 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 ease-in-out group ${
+                  isActive
+                    ? "bg-gray-700/80 text-white shadow-sm"
+                    : "text-sidebar-foreground hover:bg-gray-700/50 hover:text-white"
+                } ${
+                  isCollapsed ? "justify-center w-12 h-12 mx-auto" : "mx-1"
+                }`}
+                title={isCollapsed ? item.name : ""}
+              >
+                <item.icon className={`flex-shrink-0 transition-all duration-200 ${
+                  isCollapsed ? "w-6 h-6" : "w-5 h-5"
+                }`} />
+                
+                {!isCollapsed && (
+                  <span className="transition-opacity duration-200">{item.name}</span>
+                )}
+                
+                {isCollapsed && (
+                  <div className="absolute left-full ml-3 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                    {item.name}
+                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-800 rotate-45"></div>
+                  </div>
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Upgrade Section - Only show when expanded, NOT premium, and NOT admin */}
@@ -301,13 +358,7 @@ export default function Layout({ children }: LayoutProps) {
       }`}>
         {/* Top Bar */}
         <header className="h-16 border-b border-border bg-background flex items-center justify-between px-6">
-          <div className="flex-1 max-w-2xl relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Search leads, campaigns..."
-              className="pl-10 bg-card border-border"
-            />
-          </div>
+          <GlobalSearch />
 
           <div className="flex items-center gap-4">
             <UserDropdown session={session} />

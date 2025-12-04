@@ -7,6 +7,7 @@ interface UpdateEmployeeRequest {
   name?: string;
   email?: string;
   role?: string;
+  subscription?: string;
   password?: string;
 }
 
@@ -88,13 +89,23 @@ export async function PUT(
       }
 
       if (body.role !== undefined) {
-        if (!["ADMIN", "EMPLOYEE"].includes(body.role)) {
+        if (!["ADMIN", "EMPLOYEE", "USER"].includes(body.role)) {
           return NextResponse.json(
-            { success: false, error: "Invalid role. Must be ADMIN or EMPLOYEE" },
+            { success: false, error: "Invalid role. Must be ADMIN, EMPLOYEE, or USER" },
             { status: 400 }
           );
         }
         updateData.role = body.role;
+      }
+
+      if (body.subscription !== undefined) {
+        if (!["FREE", "PREMIUM"].includes(body.subscription)) {
+          return NextResponse.json(
+            { success: false, error: "Invalid subscription. Must be FREE or PREMIUM" },
+            { status: 400 }
+          );
+        }
+        updateData.subscription = body.subscription;
       }
 
       if (body.password !== undefined && body.password.trim()) {
