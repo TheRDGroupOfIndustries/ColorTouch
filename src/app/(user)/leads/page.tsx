@@ -12,6 +12,9 @@ import {
   UserPlus,
   CheckCircle,
   Flame,
+  Clock,
+  Building2,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -66,8 +69,50 @@ const getSourceIcon = (source: string) => {
     Website: "🌐",
     Referral: "👥",
     Instagram: "📷",
+    "Social Media": "📱",
+    Marketing: "📣",
+    Event: "🎫",
   };
-  return icons[source] || "•";
+  return icons[source] || "👤";
+};
+
+// Get source badge styling based on source type
+const getSourceBadgeStyle = (source: string) => {
+  const styles: { [key: string]: string } = {
+    "Social Media": "bg-pink-500/20 text-pink-400 border border-pink-500/30",
+    "Referral": "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+    "Marketing": "bg-purple-500/20 text-purple-400 border border-purple-500/30",
+    "Event": "bg-orange-500/20 text-orange-400 border border-orange-500/30",
+    "Facebook": "bg-blue-600/20 text-blue-400 border border-blue-500/30",
+    "Google": "bg-red-500/20 text-red-400 border border-red-500/30",
+    "Website": "bg-green-500/20 text-green-400 border border-green-500/30",
+    "Instagram": "bg-pink-600/20 text-pink-400 border border-pink-500/30",
+  };
+  return styles[source] || "bg-gray-500/20 text-gray-400 border border-gray-500/30";
+};
+
+// Get tag badge styling
+const getTagBadgeStyle = (tag: string) => {
+  const styles: { [key: string]: string } = {
+    "HOT": "bg-red-500/20 text-red-400 border border-red-500/30",
+    "WARM": "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30",
+    "COLD": "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30",
+    "QUALIFIED": "bg-green-500/20 text-green-400 border border-green-500/30",
+    "DISQUALIFIED": "bg-gray-500/20 text-gray-400 border border-gray-500/30",
+  };
+  return styles[tag.toUpperCase()] || "bg-gray-500/20 text-gray-400 border border-gray-500/30";
+};
+
+// Get status badge styling
+const getStatusBadgeStyle = (status: string) => {
+  const styles: { [key: string]: string } = {
+    "PENDING": "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+    "FOLLOW_UP": "bg-orange-500/20 text-orange-400 border border-orange-500/30",
+    "CONVERTED": "bg-green-500/20 text-green-400 border border-green-500/30",
+    "REJECTED": "bg-red-500/20 text-red-400 border border-red-500/30",
+    "Created": "bg-green-500/20 text-green-400 border border-green-500/30",
+  };
+  return styles[status] || "bg-gray-500/20 text-gray-400 border border-gray-500/30";
 };
 
 const getCompanyLogo = (company: string) => {
@@ -460,7 +505,7 @@ export default function LeadsPage() {
         ) : (
           <div className="relative">
             <div className="overflow-x-auto overflow-y-visible">
-              <table className="w-full min-w-[1600px]">
+              <table className="w-full min-w-[2200px]">
               <thead className="border-b border-border">
                 <tr>
                   {[
@@ -471,6 +516,9 @@ export default function LeadsPage() {
                     "Source",
                     "Tag",
                     "Status",
+                    "Duration",
+                    "Amount",
+                    "Notes",
                     "Created",
                     "Updated",
                     "Enquiry",
@@ -479,12 +527,12 @@ export default function LeadsPage() {
                   ].map((h) => (
                     <th
                       key={h}
-                      className={`text-left p-4 text-sm font-medium text-muted-foreground ${h === 'Actions' ? 'sticky right-0 bg-background border-l border-border z-20' : ''} min-w-[140px]`}
+                      className={`text-left p-4 text-sm font-medium text-muted-foreground ${h === 'Actions' ? 'sticky right-0 bg-background border-l border-border z-20' : ''} min-w-[120px]`}
                     >
                       {h}
                     </th>
                   ))}
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground min-w-[140px]">
+                  <th className="text-left p-4 text-sm font-medium text-muted-foreground min-w-[100px]">
                     Actions
                   </th>
                 </tr>
@@ -495,179 +543,195 @@ export default function LeadsPage() {
                     key={lead.id}
                     className="border-b border-border hover:bg-secondary/50"
                   >
+                    {/* Lead Name Column */}
                     <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10 bg-info">
-                          <AvatarFallback className="bg-info text-white font-semibold">
-                            {lead.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .slice(0, 2)
-                              .toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium text-foreground">
-                            {lead.name}
-                          </div>
-                        </div>
+                      <span className="text-sm text-foreground">{lead.name}</span>
+                    </td>
+                    
+                    {/* Email Column */}
+                    <td className="p-4">
+                      <span className="text-sm text-muted-foreground">{lead.email || '-'}</span>
+                    </td>
+                    
+                    {/* Phone Column */}
+                    <td className="p-4">
+                      <span className="text-sm text-muted-foreground">{lead.phone || '-'}</span>
+                    </td>
+                    
+                    {/* Company Column */}
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-foreground">{lead.company || '-'}</span>
                       </div>
                     </td>
+                    
+                    {/* Source Column */}
                     <td className="p-4">
-                      <div className="text-sm text-foreground">{lead.email}</div>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getSourceBadgeStyle(lead.source)}`}>
+                        <span>{getSourceIcon(lead.source)}</span>
+                        <span>{lead.source || '-'}</span>
+                      </span>
                     </td>
+                    
+                    {/* Tag Column */}
                     <td className="p-4">
-                      <div className="text-sm text-muted-foreground">{lead.phone}</div>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getTagBadgeStyle(lead.tag)}`}>
+                        {lead.tag === 'HOT' && <span>🔥</span>}
+                        {lead.tag === 'WARM' && <span>☀️</span>}
+                        {lead.tag === 'COLD' && <span>❄️</span>}
+                        {lead.tag === 'QUALIFIED' && <span>✓</span>}
+                        {lead.tag === 'DISQUALIFIED' && <span>⊘</span>}
+                        <span>{lead.tag}</span>
+                      </span>
                     </td>
+                    
+                    {/* Status Column */}
                     <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-white font-semibold text-sm ${getCompanyLogo(lead.company)}`}>
-                          {lead.company.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="text-sm text-foreground">
-                          {lead.company}
-                        </div>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadgeStyle(lead.status)}`}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                        <span>{lead.status === 'FOLLOW_UP' ? 'Follow Up' : lead.status === 'PENDING' ? 'Created' : lead.status}</span>
+                      </span>
+                    </td>
+                    
+                    {/* Duration Column */}
+                    <td className="p-4">
+                      <span className="text-sm text-muted-foreground">{lead.duration || 0} days</span>
+                    </td>
+                    
+                    {/* Amount Column */}
+                    <td className="p-4">
+                      <span className="text-sm text-green-400 font-medium">₹{lead.amount?.toLocaleString() || '0'}</span>
+                    </td>
+                    
+                    {/* Notes Column */}
+                    <td className="p-4">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground max-w-[200px]">
+                        <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate">{lead.notes || 'No notes'}</span>
                       </div>
                     </td>
-                    <td className="p-4 flex items-center gap-2">
-                      <span className="text-lg">
-                        {getSourceIcon(lead.source)}
-                      </span>
-                      <span className="text-sm text-foreground">
-                        {lead.source}
-                      </span>
-                    </td>
-                    {/* <td className="p-4">
-                      <Badge variant="secondary">{lead.stage}</Badge>
-                    </td> */}
+                    
+                    {/* Created Date Column */}
                     <td className="p-4">
-                      <Badge variant="secondary">{lead.tag}</Badge>
-                    </td>
-                    {/* <td className="p-4 font-semibold text-foreground">
-                      {lead.value}
-                    </td> */}
-                    <td className="p-4">
-                      <Select
-                        value={lead.status}
-                        onValueChange={(newStatus: string) =>
-                          handleUpdateLead(lead.id, { status: newStatus })
-                        }
-                      >
-                        <SelectTrigger className="w-[140px] h-8 text-sm bg-background border-border text-foreground">
-                          <SelectValue placeholder="Status" className="text-foreground" />
-                        </SelectTrigger>
-                        <SelectContent className="border-gray-800 bg-black text-white">
-                          <SelectGroup>
-                            {/* <SelectLabel>Lead Status</SelectLabel> */}
-                            <SelectItem value="PENDING" className="text-white">Pending</SelectItem>
-                            <SelectItem value="FOLLOW_UP" className="text-white">Follow Up</SelectItem>
-                            <SelectItem value="CONVERTED" className="text-white">Converted</SelectItem>
-                            <SelectItem value="REJECTED" className="text-white">Rejected</SelectItem>
-                          </SelectGroup>
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="p-4 min-w-[100px]">
-                      <div className="text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-600 bg-transparent text-sm text-white">
+                        <Clock className="w-4 h-4" />
                         {(() => {
-                          if (lead.leadsCreatedDate) {
+                          const dateStr = lead.leadsCreatedDate || lead.createdAt;
+                          if (dateStr) {
                             try {
-                              return new Date(lead.leadsCreatedDate).toLocaleDateString();
+                              const d = new Date(dateStr);
+                              return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}/${d.getFullYear()}`;
                             } catch {
-                              return lead.leadsCreatedDate;
-                            }
-                          }
-                          if (lead.createdAt) {
-                            try {
-                              return new Date(lead.createdAt).toLocaleDateString();
-                            } catch {
-                              return lead.createdAt;
+                              return dateStr;
                             }
                           }
                           return '-';
                         })()}
-                      </div>
+                      </span>
                     </td>
-                    <td className="p-4 min-w-[100px]">
-                      <div className="text-xs text-muted-foreground">
+                    
+                    {/* Updated Date Column */}
+                    <td className="p-4">
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-600 bg-transparent text-sm text-white">
+                        <Clock className="w-4 h-4" />
                         {(() => {
-                          if (lead.leadsUpdatedDates) {
+                          const dateStr = lead.leadsUpdatedDates || lead.updatedAt;
+                          if (dateStr) {
                             try {
-                              return new Date(lead.leadsUpdatedDates).toLocaleDateString();
+                              const d = new Date(dateStr);
+                              return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}/${d.getFullYear()}`;
                             } catch {
-                              return lead.leadsUpdatedDates;
-                            }
-                          }
-                          if (lead.updatedAt) {
-                            try {
-                              return new Date(lead.updatedAt).toLocaleDateString();
-                            } catch {
-                              return lead.updatedAt;
+                              return dateStr;
                             }
                           }
                           return '-';
                         })()}
-                      </div>
+                      </span>
                     </td>
-                    <td className="p-4 min-w-[100px]">
-                      <div className="text-xs text-muted-foreground">
-                        {lead.enquiryDate ? (() => {
-                          try {
-                            return new Date(lead.enquiryDate).toLocaleDateString();
-                          } catch {
-                            return lead.enquiryDate;
+                    
+                    {/* Enquiry Date Column */}
+                    <td className="p-4">
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-600 bg-transparent text-sm text-white">
+                        <Clock className="w-4 h-4" />
+                        {(() => {
+                          if (lead.enquiryDate) {
+                            try {
+                              const d = new Date(lead.enquiryDate);
+                              return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}/${d.getFullYear()}`;
+                            } catch {
+                              return '-';
+                            }
                           }
-                        })() : '-'}
-                      </div>
+                          return '-';
+                        })()}
+                      </span>
                     </td>
-                    <td className="p-4 min-w-[100px]">
-                      <div className="text-xs text-muted-foreground">
-                        {lead.bookingDate ? (() => {
-                          try {
-                            return new Date(lead.bookingDate).toLocaleDateString();
-                          } catch {
-                            return lead.bookingDate;
+                    
+                    {/* Booking Date Column */}
+                    <td className="p-4">
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-600 bg-transparent text-sm text-white">
+                        <Clock className="w-4 h-4" />
+                        {(() => {
+                          if (lead.bookingDate) {
+                            try {
+                              const d = new Date(lead.bookingDate);
+                              return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}/${d.getFullYear()}`;
+                            } catch {
+                              return '-';
+                            }
                           }
-                        })() : '-'}
-                      </div>
+                          return '-';
+                        })()}
+                      </span>
                     </td>
-                    <td className="p-4 min-w-[100px]">
-                      <div className="text-xs text-muted-foreground">
-                        {lead.checkInDates ? (() => {
-                          try {
-                            return new Date(lead.checkInDates).toLocaleDateString();
-                          } catch {
-                            return lead.checkInDates;
+                    
+                    {/* Check-in Date Column */}
+                    <td className="p-4">
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-600 bg-transparent text-sm text-white">
+                        <Clock className="w-4 h-4" />
+                        {(() => {
+                          if (lead.checkInDates) {
+                            try {
+                              const d = new Date(lead.checkInDates);
+                              return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}/${d.getFullYear()}`;
+                            } catch {
+                              return '-';
+                            }
                           }
-                        })() : '-'}
-                      </div>
+                          return '-';
+                        })()}
+                      </span>
                     </td>
-                    <td className="p-4 flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-info hover:bg-info/10"
-                        onClick={() => openModal("view", lead)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-warning hover:bg-warning/10"
-                        onClick={() => openModal("edit", lead)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-red-500 hover:bg-red-500/10 hover:text-red-400"
-                        onClick={() => handleDeleteLead(lead.id)}
-                      >
-                        <Trash className="w-4 h-4 text-red-600" />
-                      </Button>
+                    
+                    {/* Actions Column */}
+                    <td className="p-4">
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-info hover:bg-info/10"
+                          onClick={() => openModal("view", lead)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-warning hover:bg-warning/10"
+                          onClick={() => openModal("edit", lead)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-500 hover:bg-red-500/10 hover:text-red-400"
+                          onClick={() => handleDeleteLead(lead.id)}
+                        >
+                          <Trash className="w-4 h-4 text-red-600" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -251,8 +251,8 @@ export default function Layout({ children }: LayoutProps) {
                 href={item.href}
                 className={`flex items-center gap-4 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 ease-in-out group ${
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
+                    ? "bg-gray-700/80 text-white shadow-sm"
+                    : "text-sidebar-foreground hover:bg-gray-700/50 hover:text-white"
                 } ${
                   isCollapsed ? "justify-center w-12 h-12 mx-auto" : "mx-1"
                 }`}

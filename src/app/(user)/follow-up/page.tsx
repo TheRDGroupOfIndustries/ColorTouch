@@ -9,6 +9,12 @@ import {
   CheckCircle,
   Eye,
   Edit,
+  Phone,
+  Mail,
+  Briefcase,
+  MessageSquare,
+  Trash2,
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -24,6 +30,30 @@ import {
 } from "@/components/ui/select";
 import FollowModels from "@/components/ui/FollowModels";
 import AddReminderModal from "@/components/AddReminderModal";
+
+// Reminder interface
+interface Reminder {
+  id: string;
+  title: string;
+  description?: string;
+  reminderDate: string;
+  reminderType: string;
+  priority: string;
+  isCompleted: boolean;
+  lead?: {
+    id: string;
+    name: string;
+  };
+}
+
+interface GroupedReminders {
+  overdue: Reminder[];
+  today: Reminder[];
+  tomorrow: Reminder[];
+  thisWeek: Reminder[];
+  later: Reminder[];
+  completed: Reminder[];
+}
 
 interface Activity {
   id: number;
@@ -98,6 +128,10 @@ const Page = () => {
     thisWeek: 0,
     completed: 0,
   });
+  // Reminders state
+  const [reminders, setReminders] = useState<GroupedReminders | null>(null);
+  const [reminderStats, setReminderStats] = useState<any>(null);
+  
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
@@ -109,10 +143,90 @@ const Page = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper functions for reminders
+  const getReminderIcon = (type: string): React.ReactElement => {
+    switch (type.toLowerCase()) {
+      case "call":
+        return <Phone className="w-4 h-4" />;
+      case "email":
+        return <Mail className="w-4 h-4" />;
+      case "meeting":
+        return <Briefcase className="w-4 h-4" />;
+      default:
+        return <MessageSquare className="w-4 h-4" />;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = date.getTime() - now.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+
+    if (diffHours < 24 && diffHours > -24) {
+      return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const deleteReminder = async (reminderId: string) => {
+    if (!window.confirm("Are you sure you want to delete this reminder?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/reminders/${reminderId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete reminder");
+      }
+
+      // Refresh the data
+      await fetchFollowUpLeads();
+    } catch (error: any) {
+      console.error("Error deleting reminder:", error);
+      alert(error.message || "Failed to delete reminder");
+    }
+  };
+
+  // Fetch reminders
+  const fetchReminders = async () => {
+    try {
+      const remindersRes = await fetch("/api/reminders", {
+        credentials: "include",
+      });
+
+      if (remindersRes.ok) {
+        const remindersData = await remindersRes.json();
+        if (remindersData.success && remindersData.groupedReminders) {
+          setReminders(remindersData.groupedReminders);
+          setReminderStats(remindersData.stats);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching reminders:", err);
+    }
+  };
+
   // Fetch leads with FOLLOW_UP status from database
   const fetchFollowUpLeads = async () => {
     try {
       setLoading(true);
+      
+      // Fetch reminders in parallel
+      fetchReminders();
+      
       const res = await fetch("/api/leads", { cache: "no-store" });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
@@ -433,6 +547,180 @@ const Page = () => {
             );
           })}
         </div>
+
+        {/* Upcoming Reminders Section */}
+        <Card className="p-6 bg-card border-border">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Bell className="w-5 h-5 text-primary" />
+              <div>
+                <h2 className="text-xl font-semibold text-foreground">
+                  Upcoming Reminders
+                </h2>
+                {reminderStats && (
+                  <p className="text-sm text-muted-foreground">
+                    {reminderStats.pending} pending • {reminderStats.overdue} overdue
+                  </p>
+                )}
+              </div>
+            </div>
+            <AddReminderModal onReminderAdded={fetchFollowUpLeads} />
+          </div>
+
+          <div className="space-y-3 max-h-[400px] overflow-y-auto">
+            {reminders ? (
+              <>
+                {/* Overdue */}
+                {reminders.overdue && reminders.overdue.map((reminder) => (
+                  <div
+                    key={reminder.id}
+                    className="flex items-center gap-3 p-3 border-l-4 border-red-500 bg-red-500/10 rounded-r"
+                  >
+                    <div className="text-red-600">
+                      {getReminderIcon(reminder.reminderType)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-foreground">
+                        {reminder.title}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {reminder.lead?.name} • Overdue
+                      </div>
+                    </div>
+                    <Badge variant="destructive" className="text-xs">
+                      Overdue
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 hover:bg-red-100 text-red-600 hover:text-red-700"
+                      onClick={() => deleteReminder(reminder.id)}
+                      title="Delete reminder"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+
+                {/* Today */}
+                {reminders.today && reminders.today.map((reminder) => (
+                  <div
+                    key={reminder.id}
+                    className="flex items-center gap-3 p-3 border-l-4 border-orange-500 bg-orange-500/10 rounded-r"
+                  >
+                    <div className="text-orange-600">
+                      {getReminderIcon(reminder.reminderType)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-foreground">
+                        {reminder.title}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {reminder.lead?.name} • {formatDate(reminder.reminderDate)}
+                      </div>
+                    </div>
+                    <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-xs">
+                      Today
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 hover:bg-orange-100 text-orange-600 hover:text-orange-700"
+                      onClick={() => deleteReminder(reminder.id)}
+                      title="Delete reminder"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+
+                {/* Tomorrow & This Week */}
+                {[...reminders.tomorrow || [], ...reminders.thisWeek || []].map((reminder) => (
+                  <div
+                    key={reminder.id}
+                    className="flex items-center gap-3 p-3 border-l-4 border-blue-500 bg-blue-500/10 rounded-r"
+                  >
+                    <div className="text-blue-600">
+                      {getReminderIcon(reminder.reminderType)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-foreground">
+                        {reminder.title}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {reminder.lead?.name} • {formatDate(reminder.reminderDate)}
+                      </div>
+                    </div>
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
+                      {reminder.priority}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 hover:bg-blue-100 text-blue-600 hover:text-blue-700"
+                      onClick={() => deleteReminder(reminder.id)}
+                      title="Delete reminder"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+
+                {/* Later reminders */}
+                {reminders.later && reminders.later.map((reminder) => (
+                  <div
+                    key={reminder.id}
+                    className="flex items-center gap-3 p-3 border-l-4 border-gray-500 bg-gray-500/10 rounded-r"
+                  >
+                    <div className="text-gray-600">
+                      {getReminderIcon(reminder.reminderType)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-medium text-foreground">
+                        {reminder.title}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {reminder.lead?.name} • {formatDate(reminder.reminderDate)}
+                      </div>
+                    </div>
+                    <Badge className="bg-gray-100 text-gray-800 border-gray-200 text-xs">
+                      {reminder.priority}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0 hover:bg-gray-100 text-gray-600 hover:text-gray-700"
+                      onClick={() => deleteReminder(reminder.id)}
+                      title="Delete reminder"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </>
+            ) : null}
+
+            {reminders &&
+              (reminders.overdue?.length === 0 || !reminders.overdue) &&
+              (reminders.today?.length === 0 || !reminders.today) &&
+              (reminders.tomorrow?.length === 0 || !reminders.tomorrow) &&
+              (reminders.thisWeek?.length === 0 || !reminders.thisWeek) &&
+              (reminders.later?.length === 0 || !reminders.later) && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <CalendarIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No upcoming reminders</p>
+                  <p className="text-sm">Create reminders to stay organized</p>
+                </div>
+              )}
+              
+            {!reminders && (
+              <div className="text-center py-8 text-muted-foreground">
+                <CalendarIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>Loading reminders...</p>
+              </div>
+            )}
+          </div>
+        </Card>
 
         {/* Filters */}
         <div className="flex items-center gap-4">
