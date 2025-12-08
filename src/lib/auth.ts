@@ -65,11 +65,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // 🔹 LOGIN LOGIC
         // Only admin@colortouch.app with Admin@123! gets ADMIN role
         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-          // Admin credentials - allow login even if DB is unreachable
+          // Admin credentials - create or find admin in DB
           try {
-            const user = await prisma.user.findUnique({
+            let user = await prisma.user.findUnique({
               where: { email: email as string },
             });
+
+            // If admin doesn't exist, create with hashed password
+            if (!user) {
+              const hashedPassword = await bcrypt.hash(password as string, 10);
+              user = await prisma.user.create({
+                data: {
+                  email: email as string,
+                  password: hashedPassword,
+                  name: process.env.ADMIN_NAME || "Admin",
+                  role: "ADMIN",
+                },
+              });
+            }
 
             if (user && user.password) {
               const isValidPassword = await bcrypt.compare(password as string, user.password);
@@ -78,21 +91,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                   id: user.id,
                   email: user.email,
                   name: user.name,
-                  role: "ADMIN", // Force ADMIN role for admin credentials
+                  role: "ADMIN",
                 };
               }
             }
           } catch (dbErr: any) {
-            console.error('Database unreachable during admin login, using fallback:', dbErr?.message || dbErr);
+            console.error('Database error during admin login:', dbErr?.message || dbErr);
+            throw new Error("Database unavailable for admin login");
           }
 
-          // If admin credentials but no user in DB or DB unreachable, allow admin login
-          return {
-            id: "env-admin",
-            email: email as string,
-            name: process.env.ADMIN_NAME || "Admin",
-            role: "ADMIN",
-          };
+          throw new Error("Invalid admin credentials");
         }
 
         // For all other credentials, find user and assign EMPLOYEE role

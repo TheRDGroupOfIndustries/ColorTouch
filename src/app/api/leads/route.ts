@@ -126,6 +126,42 @@ export async function POST(req: NextRequest) {
 
     const userId = user.id as string;
 
+    // Verify the user exists in the database
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, name: true },
+      });
+
+      if (!dbUser) {
+        console.error(`User with id '${userId}' not found in database. Creating user record...`);
+        // Try to create the user if they don't exist
+        try {
+          await prisma.user.create({
+            data: {
+              id: userId,
+              email: user.email || `${userId}@colortouch.app`,
+              name: user.name || "User",
+              role: user.role || "EMPLOYEE",
+            },
+          });
+          console.log(`Created user record for userId: ${userId}`);
+        } catch (createErr: any) {
+          console.error(`Failed to create user record:`, createErr);
+          return NextResponse.json(
+            { success: false, error: `User account not found and could not be created. Please try logging in again.` },
+            { status: 400 }
+          );
+        }
+      }
+    } catch (userCheckErr: any) {
+      console.error("Error checking/creating user:", userCheckErr);
+      return NextResponse.json(
+        { success: false, error: "Failed to verify user account" },
+        { status: 503 }
+      );
+    }
+
     try {
       const created = await withRetry(() => prisma.lead.create({
         data: { ...body, userId: userId },
