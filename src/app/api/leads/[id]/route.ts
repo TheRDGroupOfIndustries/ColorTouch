@@ -56,9 +56,26 @@ export async function PUT(
       }
       
       const body = (await req.json()) as leaduupdate;
+      
+      // Convert date strings to ISO-8601 DateTime format for Prisma
+      const convertDateToDateTime = (dateString: string | undefined): string | undefined => {
+        if (!dateString) return undefined;
+        // If already in ISO format, return as-is
+        if (dateString.includes('T')) return dateString;
+        // Convert YYYY-MM-DD to YYYY-MM-DDTHH:MM:SSZ
+        return `${dateString}T00:00:00Z`;
+      };
+
+      const processedData = {
+        ...body,
+        enquiryDate: convertDateToDateTime(body.enquiryDate),
+        bookingDate: convertDateToDateTime(body.bookingDate),
+        checkInDates: convertDateToDateTime(body.checkInDates),
+      };
+
       const updated = await prisma.lead.update({
         where: { id },
-        data: body,
+        data: processedData,
       });
 
       return NextResponse.json(updated);
