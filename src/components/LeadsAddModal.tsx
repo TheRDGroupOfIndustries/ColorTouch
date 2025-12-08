@@ -14,7 +14,12 @@ interface LeadFormData {
   source?: string;
   notes?: string;
   tag: string;
+  status?: string;
   duration?: number;
+  amount?: number | null;
+  enquiryDate?: string;
+  bookingDate?: string;
+  checkInDates?: string;
 }
 
 interface LeadsAddModalProps {
@@ -31,13 +36,19 @@ const LeadsAddModal: React.FC<LeadsAddModalProps> = ({ onClose, onLeadAdded }) =
     source: "",
     notes: "",
     tag: "DISQUALIFIED",
+    status: "PENDING",
     duration: 0,
+    amount: null,
+    enquiryDate: "",
+    bookingDate: "",
+    checkInDates: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [tagOpen, setTagOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
 
-  const handleChange = (field: keyof LeadFormData, value: string | number) => {
+  const handleChange = (field: keyof LeadFormData, value: string | number | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -70,11 +81,11 @@ const LeadsAddModal: React.FC<LeadsAddModalProps> = ({ onClose, onLeadAdded }) =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
-      <div className="relative bg-gradient-to-b from-zinc-900 via-zinc-950 to-black text-zinc-100 rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.6)] w-full max-w-2xl border border-zinc-800 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div className="relative bg-black text-zinc-100 rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.6)] w-full max-w-2xl border border-zinc-800 max-h-[90vh] flex flex-col">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-gradient-to-r from-zinc-800/60 to-transparent">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900 flex-shrink-0">
           <div className="flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-zinc-300" />
             <h2 className="text-xl font-semibold tracking-tight text-white">Add New Lead</h2>
@@ -84,9 +95,9 @@ const LeadsAddModal: React.FC<LeadsAddModalProps> = ({ onClose, onLeadAdded }) =
           </Button>
         </div>
 
-        {/* Body */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Side */}
+        {/* Body - Scrollable */}
+        <div className="p-6 overflow-y-auto flex-1 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-4">
             {/* Name */}
             <div>
@@ -170,6 +181,39 @@ const LeadsAddModal: React.FC<LeadsAddModalProps> = ({ onClose, onLeadAdded }) =
               )}
             </div>
 
+            {/* Status Dropdown */}
+            <div className="relative">
+              <label className="text-sm text-zinc-400">Status</label>
+              <button
+                type="button"
+                onClick={() => setStatusOpen(!statusOpen)}
+                className="w-full flex justify-between items-center bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md px-3 py-2 text-sm hover:bg-zinc-800"
+              >
+                {formData.status || "PENDING"}
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${statusOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+              {statusOpen && (
+                <div className="absolute left-0 mt-1 w-full rounded-md border border-zinc-700 bg-zinc-900 shadow-lg z-50">
+                  {["PENDING", "FOLLOW_UP", "CONVERTED", "REJECTED"].map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => {
+                        handleChange("status", status);
+                        setStatusOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-zinc-800 ${
+                        formData.status === status ? "text-white font-semibold bg-zinc-800" : "text-zinc-200"
+                      }`}
+                    >
+                      {status === "FOLLOW_UP" ? "Follow Up" : status}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Source */}
             <div>
               <label className="text-sm text-zinc-400">Source</label>
@@ -203,11 +247,57 @@ const LeadsAddModal: React.FC<LeadsAddModalProps> = ({ onClose, onLeadAdded }) =
                 placeholder="Enter additional notes..."
               />
             </div>
+
+            {/* Amount */}
+            <div>
+              <label className="text-sm text-zinc-400">Amount (₹)</label>
+              <Input
+                type="number"
+                value={formData.amount || ""}
+                onChange={(e) => handleChange("amount", e.target.value ? Number(e.target.value) : null)}
+                placeholder="0.00"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
+              />
+            </div>
+
+            {/* Enquiry Date */}
+            <div>
+              <label className="text-sm text-zinc-400">Enquiry Date</label>
+              <Input
+                type="date"
+                value={formData.enquiryDate}
+                onChange={(e) => handleChange("enquiryDate", e.target.value)}
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              />
+            </div>
+
+            {/* Booking Date */}
+            <div>
+              <label className="text-sm text-zinc-400">Booking Date</label>
+              <Input
+                type="date"
+                value={formData.bookingDate}
+                onChange={(e) => handleChange("bookingDate", e.target.value)}
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              />
+            </div>
+
+            {/* Check-In Date */}
+            <div>
+              <label className="text-sm text-zinc-400">Check-In Date</label>
+              <Input
+                type="date"
+                value={formData.checkInDates}
+                onChange={(e) => handleChange("checkInDates", e.target.value)}
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              />
+            </div>
+          </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-3 p-5 border-t border-zinc-800 bg-gradient-to-r from-transparent to-zinc-900/60">
+        {/* Footer - Fixed */}
+        <div className="flex justify-end gap-3 p-5 border-t border-zinc-800 bg-zinc-900 flex-shrink-0">
           <Button
             variant="outline"
             onClick={onClose}

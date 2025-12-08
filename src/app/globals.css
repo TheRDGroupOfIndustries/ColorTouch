@@ -105,4 +105,38 @@
   .cursor-pointer {
     cursor: pointer;
   }
+
+  /* 📅 Professional Date Input Styling */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    cursor: pointer;
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(1) brightness(1.2);
+    margin-right: 4px;
+  }
+
+  /* Firefox date input styling */
+  input[type="date"]::-moz-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(1) brightness(1.2);
+  }
+
+  /* Ensure proper contrast for dark mode */
+  input[type="date"]::placeholder {
+    color: #a1a1a1;
+  }
+
+  /* Focus styling for better UX */
+  input[type="date"]:focus {
+    outline: none;
+  }
 }
+

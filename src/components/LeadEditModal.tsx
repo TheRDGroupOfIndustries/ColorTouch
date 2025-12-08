@@ -16,6 +16,10 @@ interface LeadFormData {
   source: string;
   notes?: string;
   duration?: number;
+  amount?: number | null;
+  enquiryDate?: string;
+  bookingDate?: string;
+  checkInDates?: string;
 }
 
 interface LeadsEditModalProps {
@@ -47,6 +51,10 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
     source: "",
     notes: "",
     duration: 0,
+    amount: null,
+    enquiryDate: "",
+    bookingDate: "",
+    checkInDates: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -73,6 +81,10 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
         source: lead.source || "",
         notes: lead.notes || "",
         duration: lead.duration || 0,
+        amount: lead.amount || null,
+        enquiryDate: lead.enquiryDate ? lead.enquiryDate.split('T')[0] : "",
+        bookingDate: lead.bookingDate ? lead.bookingDate.split('T')[0] : "",
+        checkInDates: lead.checkInDates ? lead.checkInDates.split('T')[0] : "",
       });
     } catch (err: any) {
       toast.error("❌ Failed to fetch lead data");
@@ -86,7 +98,7 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
     fetchLead();
   }, [leadId]);
 
-  const handleChange = (field: keyof LeadFormData, value: string | number) => {
+  const handleChange = (field: keyof LeadFormData, value: string | number | null) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -131,10 +143,10 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-      <div className="relative bg-black text-zinc-100 rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.6)] w-full max-w-2xl border border-zinc-800">
+      <div className="relative bg-black text-zinc-100 rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.6)] w-full max-w-2xl border border-zinc-800 max-h-[90vh] flex flex-col">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900 flex-shrink-0">
           <div className="flex items-center gap-2">
             <UserPen className="w-5 h-5 text-zinc-300" />
             <h2 className="text-xl font-semibold tracking-tight text-white">Edit Lead</h2>
@@ -144,10 +156,10 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
           </Button>
         </div>
 
-        {/* Form */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Side */}
-          <div className="space-y-4">
+        {/* Form - Scrollable */}
+        <div className="p-6 overflow-y-auto flex-1 space-y-4">
+          {/* Left Side - All fields in single column on mobile, 2 columns on desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm text-zinc-400">Full Name *</label>
               <Input
@@ -296,11 +308,52 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
                 placeholder="Enter notes..."
               />
             </div>
+
+            <div>
+              <label className="text-sm text-zinc-400">Amount (₹)</label>
+              <Input
+                type="number"
+                value={formData.amount || ""}
+                onChange={(e) => handleChange("amount", e.target.value ? Number(e.target.value) : null)}
+                className="bg-zinc-900 border-zinc-700 text-zinc-100"
+                placeholder="0.00"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-zinc-400">Enquiry Date</label>
+              <Input
+                type="date"
+                value={formData.enquiryDate}
+                onChange={(e) => handleChange("enquiryDate", e.target.value)}
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-zinc-400">Booking Date</label>
+              <Input
+                type="date"
+                value={formData.bookingDate}
+                onChange={(e) => handleChange("bookingDate", e.target.value)}
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-zinc-400">Check-In Date</label>
+              <Input
+                type="date"
+                value={formData.checkInDates}
+                onChange={(e) => handleChange("checkInDates", e.target.value)}
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-end gap-3 p-5 border-t border-zinc-800 bg-zinc-900">
+        {/* Footer - Fixed */}
+        <div className="flex justify-end gap-3 p-5 border-t border-zinc-800 bg-zinc-900 flex-shrink-0">
           <Button
             variant="outline"
             onClick={onClose}
