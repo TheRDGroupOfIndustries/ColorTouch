@@ -2,7 +2,7 @@ import prisma, { withRetry } from "@/lib/prisma";
 import { sendLeadCreated } from "@/lib/zapier";
 import { sendToGoogleSheets } from "@/app/api/integrations/google-sheets/route";
 import { sendLeadNotificationEmail } from "@/lib/sendEmail";
-import { Tag } from "@prisma/client";
+import { Tag, Role } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
               id: userId,
               email: user.email || `${userId}@colortouch.app`,
               name: user.name || "User",
-              role: user.role || "EMPLOYEE",
+              role: (user.role as Role) || "EMPLOYEE" as Role,
             },
           });
           console.log(`Created user record for userId: ${userId}`);
