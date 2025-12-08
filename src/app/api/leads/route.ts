@@ -1,6 +1,7 @@
 import prisma, { withRetry } from "@/lib/prisma";
 import { sendLeadCreated } from "@/lib/zapier";
 import { sendToGoogleSheets } from "@/app/api/integrations/google-sheets/route";
+import { sendLeadNotificationEmail } from "@/lib/sendEmail";
 import { Tag } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
@@ -134,6 +135,23 @@ export async function POST(req: NextRequest) {
       try {
         void sendLeadCreated(created);
         void sendToGoogleSheets(created);
+        
+        // Send email notification to the lead
+        if (created.email && user.name) {
+          void sendLeadNotificationEmail(
+            created.email,
+            created.name,
+            user.name,
+            {
+              name: created.name,
+              email: created.email,
+              phone: created.phone || "",
+              company: created.company || "",
+              source: created.source || "",
+              notes: created.notes || "",
+            }
+          );
+        }
       } catch (notifyErr) {
         console.error("Failed to notify integrations:", notifyErr);
       }
