@@ -109,6 +109,10 @@ interface leaducreate {
   source: string;
   notes: string;
   duration: number;
+  amount?: string;
+  enquiryDate?: string;
+  bookingDate?: string;
+  checkInDates?: string;
 }
 
 export async function POST(req: NextRequest) {

@@ -12,7 +12,11 @@ interface leaduupdate {
   source: string;
   notes: string;
   duration: number;
-  status?: LeadStatus; // Add optional status field
+  status?: LeadStatus;
+  amount?: string;
+  enquiryDate?: string;
+  bookingDate?: string;
+  checkInDates?: string;
 }
 
 export async function PUT(
