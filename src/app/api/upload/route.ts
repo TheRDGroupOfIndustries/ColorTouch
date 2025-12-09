@@ -8,6 +8,7 @@ import jwt from "jsonwebtoken";
 import { verifyJwt } from "@/lib/jwt";
 import { auth } from "@/lib/auth";
 import { sendLeadCreated } from "@/lib/zapier";
+import { sendLeadNotificationEmail } from "@/lib/sendEmail";
 import prisma from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -68,6 +69,8 @@ export async function POST(req: NextRequest) {
     const userId = session.user.id;
     // Use an effectiveUserId variable we can modify when we need to map the env-admin fallback
     let effectiveUserId = userId;
+    // Resolve uploader display name/email for notifications (declare outside try block for scope)
+    let uploaderDisplayName = "Someone";
 
     // Ensure user exists to avoid foreign key violations
     try {
@@ -99,6 +102,14 @@ export async function POST(req: NextRequest) {
       }
 
       const userExists = await prisma.user.findUnique({ where: { id: effectiveUserId } });
+      // Resolve uploader display name/email for notifications
+      try {
+        const uploader = await prisma.user.findUnique({ where: { id: effectiveUserId }, select: { name: true, email: true } });
+        if (uploader) uploaderDisplayName = uploader.name || uploader.email || uploaderDisplayName;
+      } catch (uerr) {
+        console.warn("Could not resolve uploader user for notifications:", uerr);
+      }
+
       if (!userExists) {
         return NextResponse.json(
           { success: false, error: `User with id '${effectiveUserId}' does not exist. Create the user (signup) before importing leads.` },
@@ -484,21 +495,62 @@ export async function POST(req: NextRequest) {
     }
 
     // Notify Zapier for each inserted lead (use the original data since createMany doesn't return records)
+    let emailsSent = 0;
+    let emailsFailed = 0;
+    
     try {
       for (const lead of finalLeadsToInsert) {
-        // Send lead payload (non-blocking)
+        // Send lead payload to Zapier (non-blocking)
         void sendLeadCreated(lead);
+
+        // Send notification email to the lead if an email address is present
+        if (lead.email && typeof lead.email === 'string' && lead.email.trim() !== '') {
+          try {
+            console.log(`📧 Attempting to send email to: ${lead.email}`);
+            const emailSent = await sendLeadNotificationEmail(
+              lead.email,
+              lead.name || lead.email,
+              uploaderDisplayName,
+              {
+                name: lead.name || "",
+                email: lead.email || "",
+                phone: lead.phone || "",
+                company: lead.company || "",
+                source: lead.source || "",
+                notes: lead.notes || "",
+              }
+            );
+            
+            if (emailSent) {
+              emailsSent++;
+              console.log(`✅ Email sent successfully to: ${lead.email}`);
+            } else {
+              emailsFailed++;
+              console.log(`⚠️ Email failed to send to: ${lead.email}`);
+            }
+          } catch (emailErr) {
+            emailsFailed++;
+            console.error(`❌ Failed to send notification email to ${lead.email}:`, emailErr);
+          }
+        }
       }
     } catch (notifyErr) {
       console.error("Failed to notify Zapier for uploaded leads:", notifyErr);
+    }
+    
+    console.log(`📊 Email Summary: ${emailsSent} sent, ${emailsFailed} failed out of ${finalLeadsToInsert.length} leads`);
+    if (emailsFailed > 0) {
+      console.warn(`⚠️ Check EMAIL_USER and EMAIL_PASS environment variables if emails are not being sent`);
     }
 
     return NextResponse.json({
       success: true,
       imported: created.count,
       duplicatesSkipped,
+      emailsSent,
+      emailsFailed,
       filename: fileName,
-      message: `Successfully imported ${created.count} leads${duplicatesSkipped > 0 ? ` (${duplicatesSkipped} duplicates skipped)` : ''}`
+      message: `Successfully imported ${created.count} leads${duplicatesSkipped > 0 ? ` (${duplicatesSkipped} duplicates skipped)` : ''}${emailsSent > 0 ? `. ${emailsSent} email notification${emailsSent > 1 ? 's' : ''} sent` : ''}${emailsFailed > 0 ? `. ${emailsFailed} email${emailsFailed > 1 ? 's' : ''} failed to send` : ''}`
     });
   } catch (error: any) {
     console.error("❌ Upload error:", error);

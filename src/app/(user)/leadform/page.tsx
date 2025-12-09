@@ -49,7 +49,22 @@ export default function LeadsUploader() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        toast.success('✅ File uploaded successfully!', { id: 'upload' });
+        // Build success message with email notification stats
+        let successMessage = `✅ Successfully imported ${data.imported} lead${data.imported > 1 ? 's' : ''}!`;
+        
+        if (data.duplicatesSkipped > 0) {
+          successMessage += ` (${data.duplicatesSkipped} duplicate${data.duplicatesSkipped > 1 ? 's' : ''} skipped)`;
+        }
+        
+        if (data.emailsSent > 0) {
+          successMessage += ` 📧 ${data.emailsSent} email${data.emailsSent > 1 ? 's' : ''} sent.`;
+        }
+        
+        if (data.emailsFailed > 0) {
+          successMessage += ` ⚠️ ${data.emailsFailed} email${data.emailsFailed > 1 ? 's' : ''} failed.`;
+        }
+        
+        toast.success(successMessage, { id: 'upload', duration: 6000 });
         setFile(null);
         // reset input so same file can be re-uploaded
         const input = document.getElementById('leadFile') as HTMLInputElement;
