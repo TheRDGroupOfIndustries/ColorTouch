@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       data: {
         orderId: order.id,
         userId: user.id, // Use the verified user ID
-        amount: amount,
+        amount: Math.round(amount * 100), // Store in paise to match Razorpay's format
         currency: currency,
         status: "PENDING",
         razorpayOrderId: order.id,

@@ -382,7 +382,7 @@ Subscription Expiry: ${getExpiryDate(payment.paidAt, payment.createdAt)}
                           <span className="text-white font-medium">PLUS</span>
                         </td>
                         <td className="p-4">
-                          <span className="text-green-400">₹ {getBasePrice(Number(payment.amount))}</span>
+                          <span className="text-gray-400">—</span>
                         </td>
                         <td className="p-4">
                           <span className="text-green-400">₹ {payment.amount}</span>
