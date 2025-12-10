@@ -157,7 +157,8 @@ export default function LeadsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedTag, setSelectedTag] = useState<string>("all");
-  const [selectedDateRange, setSelectedDateRange] = useState<string>("all");
+  const [selectedCheckInDateRange, setSelectedCheckInDateRange] = useState<string>("all");
+  const [selectedCreatedDateRange, setSelectedCreatedDateRange] = useState<string>("all");
   const [popup, setPopup] = useState<null | "add" | "view" | "edit" | "delete">(
     null
   );
@@ -366,55 +367,58 @@ export default function LeadsPage() {
           ? lead.tag.toLowerCase() === selectedTag.toLowerCase()
           : true;
 
-      // Date range filtering
-      const matchesDateRange = (() => {
-        if (!selectedDateRange || selectedDateRange === "all") return true;
+      // Helper function to check date range
+      const checkDateRange = (dateStr: string | undefined, range: string) => {
+        // If filter is "all", show all leads
+        if (!range || range === "all") return true;
         
-        // Prioritize leadsCreatedDate (custom editable field) over createdAt (auto-generated)
-        const dateStr = lead.leadsCreatedDate || lead.createdAt || lead.created;
-        if (!dateStr) {
-          return false;
-        }
+        // If no date exists and a specific filter is selected, exclude the lead
+        if (!dateStr) return false;
         
-        const leadDate = new Date(dateStr);
-        
-        // Check if date is valid
-        if (isNaN(leadDate.getTime())) {
-          return false;
-        }
+        const date = new Date(dateStr);
+        // If date is invalid and a specific filter is selected, exclude the lead
+        if (isNaN(date.getTime())) return false;
         
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         
-        switch (selectedDateRange) {
+        switch (range) {
           case "3days":
             const threeDaysAgo = new Date(startOfToday);
             threeDaysAgo.setDate(startOfToday.getDate() - 3);
-            return leadDate >= threeDaysAgo;
+            return date >= threeDaysAgo;
           
           case "week":
             const oneWeekAgo = new Date(startOfToday);
             oneWeekAgo.setDate(startOfToday.getDate() - 7);
-            return leadDate >= oneWeekAgo;
+            return date >= oneWeekAgo;
           
           case "month":
             const oneMonthAgo = new Date(startOfToday);
             oneMonthAgo.setMonth(startOfToday.getMonth() - 1);
-            return leadDate >= oneMonthAgo;
+            return date >= oneMonthAgo;
           
           case "year":
-            const oneYearAgo = new Date(startOfToday);
-            oneYearAgo.setFullYear(startOfToday.getFullYear() - 1);
-            return leadDate >= oneYearAgo;
+            // Show leads from the previous calendar year (e.g., 2024 if current year is 2025)
+            const lastYearStart = new Date(now.getFullYear() - 1, 0, 1); // Jan 1 of last year
+            const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59); // Dec 31 of last year
+            return date >= lastYearStart && date <= lastYearEnd;
           
           default:
             return true;
         }
-      })();
+      };
 
-      return matchesSearch && matchesStatus && matchesTag && matchesDateRange;
+      // Check-In Date filter
+      const matchesCheckInDate = checkDateRange(lead.checkInDates, selectedCheckInDateRange);
+
+      // Created Date filter (prioritize leadsCreatedDate over createdAt)
+      const createdDateStr = lead.leadsCreatedDate || lead.createdAt || lead.created;
+      const matchesCreatedDate = checkDateRange(createdDateStr, selectedCreatedDateRange);
+
+      return matchesSearch && matchesStatus && matchesTag && matchesCheckInDate && matchesCreatedDate;
     });
-  }, [leads, search, selectedStatus, selectedTag, selectedDateRange]);
+  }, [leads, search, selectedStatus, selectedTag, selectedCheckInDateRange, selectedCreatedDateRange]);
 
   // ✅ UI (unchanged)
   return (
@@ -515,12 +519,24 @@ export default function LeadsPage() {
             <SelectItem value="cold">Cold</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
-          <SelectTrigger className="w-48 bg-card border-border">
-            <SelectValue placeholder="Filter by Date" />
+        <Select value={selectedCheckInDateRange} onValueChange={setSelectedCheckInDateRange}>
+          <SelectTrigger className="w-52 bg-card border-border">
+            <SelectValue placeholder="Filter by Check-In Date" />
           </SelectTrigger>
           <SelectContent className="border-gray-800 bg-black text-white">
-            <SelectItem value="all">All Time</SelectItem>
+            <SelectItem value="all">All Check-In Dates</SelectItem>
+            <SelectItem value="3days">Last 3 Days</SelectItem>
+            <SelectItem value="week">Last Week</SelectItem>
+            <SelectItem value="month">Last Month</SelectItem>
+            <SelectItem value="year">Last Year</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={selectedCreatedDateRange} onValueChange={setSelectedCreatedDateRange}>
+          <SelectTrigger className="w-52 bg-card border-border">
+            <SelectValue placeholder="Filter by Created Date" />
+          </SelectTrigger>
+          <SelectContent className="border-gray-800 bg-black text-white">
+            <SelectItem value="all">All Created Dates</SelectItem>
             <SelectItem value="3days">Last 3 Days</SelectItem>
             <SelectItem value="week">Last Week</SelectItem>
             <SelectItem value="month">Last Month</SelectItem>
@@ -635,7 +651,7 @@ export default function LeadsPage() {
                     
                     {/* Tag Column */}
                     <td className="p-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getTagBadgeStyle(lead.tag)}`}>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getTagBadgeStyle(lead.tag)}`}>
                         {lead.tag === 'HOT' && <span>🔥</span>}
                         {lead.tag === 'WARM' && <span>☀️</span>}
                         {lead.tag === 'COLD' && <span>❄️</span>}
@@ -647,7 +663,7 @@ export default function LeadsPage() {
                     
                     {/* Status Column */}
                     <td className="p-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadgeStyle(lead.status)}`}>
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${getStatusBadgeStyle(lead.status)}`}>
                         <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
                         <span>{lead.status === 'FOLLOW_UP' ? 'Follow Up' : lead.status === 'PENDING' ? 'Created' : lead.status}</span>
                       </span>

@@ -137,6 +137,7 @@ const Page = () => {
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [reminderDateFilter, setReminderDateFilter] = useState("all");
   const [quickFilter, setQuickFilter] = useState<string | null>(null);
   const [metricFilter, setMetricFilter] = useState<string | null>(null);
   const [popup, setPopup] = useState<null | "view" | "edit">(null);
@@ -160,14 +161,16 @@ const Page = () => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffMs = date.getTime() - now.getTime();
-    const diffHours = diffMs / (1000 * 60 * 60);
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
-    if (diffHours < 24 && diffHours > -24) {
-      return date.toLocaleTimeString("en-US", {
+    // Check if reminder is today
+    if (date >= todayStart && date < todayEnd) {
+      const time = date.toLocaleTimeString("en-US", {
         hour: "2-digit",
         minute: "2-digit",
       });
+      return `Today, ${time}`;
     }
 
     return date.toLocaleDateString("en-US", {
@@ -395,8 +398,41 @@ const Page = () => {
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
     const weekStart = new Date(todayStart);
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-    return { todayStart, todayEnd, weekStart };
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { todayStart, todayEnd, weekStart, monthStart };
   };
+
+  // Filter reminders based on date filter
+  const filteredReminders = React.useMemo(() => {
+    if (!reminders || reminderDateFilter === "all") {
+      return reminders;
+    }
+
+    const { todayStart, todayEnd, weekStart, monthStart } = getDateBoundaries();
+    const now = new Date();
+
+    const filterByDate = (reminder: Reminder) => {
+      const reminderDate = new Date(reminder.reminderDate);
+      
+      if (reminderDateFilter === "today") {
+        return reminderDate >= todayStart && reminderDate < todayEnd;
+      } else if (reminderDateFilter === "thisWeek") {
+        return reminderDate >= weekStart;
+      } else if (reminderDateFilter === "thisMonth") {
+        return reminderDate >= monthStart;
+      }
+      return true;
+    };
+
+    return {
+      overdue: reminders.overdue?.filter(filterByDate) || [],
+      today: reminders.today?.filter(filterByDate) || [],
+      tomorrow: reminders.tomorrow?.filter(filterByDate) || [],
+      thisWeek: reminders.thisWeek?.filter(filterByDate) || [],
+      later: reminders.later?.filter(filterByDate) || [],
+      completed: reminders.completed?.filter(filterByDate) || [],
+    };
+  }, [reminders, reminderDateFilter]);
 
   // Filter activities based on search, priority, type, status, quick filters, and metric filters
   const filteredActivities = React.useMemo(() => {
@@ -564,14 +600,27 @@ const Page = () => {
                 )}
               </div>
             </div>
-            <AddReminderModal onReminderAdded={fetchFollowUpLeads} />
+            <div className="flex items-center gap-2">
+              <Select value={reminderDateFilter} onValueChange={setReminderDateFilter}>
+                <SelectTrigger className="w-40 bg-card border-border">
+                  <SelectValue placeholder="All Time" />
+                </SelectTrigger>
+                <SelectContent className="border-gray-800 bg-black text-white">
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="today" className="text-white">Today</SelectItem>
+                  <SelectItem value="thisWeek" className="text-white">This Week</SelectItem>
+                  <SelectItem value="thisMonth" className="text-white">This Month</SelectItem>
+                </SelectContent>
+              </Select>
+              <AddReminderModal onReminderAdded={fetchFollowUpLeads} />
+            </div>
           </div>
 
           <div className="space-y-3 max-h-[400px] overflow-y-auto">
-            {reminders ? (
+            {filteredReminders ? (
               <>
                 {/* Overdue */}
-                {reminders.overdue && reminders.overdue.map((reminder) => (
+                {filteredReminders.overdue && filteredReminders.overdue.map((reminder) => (
                   <div
                     key={reminder.id}
                     className="flex items-center gap-3 p-3 border-l-4 border-red-500 bg-red-500/10 rounded-r"
@@ -603,7 +652,7 @@ const Page = () => {
                 ))}
 
                 {/* Today */}
-                {reminders.today && reminders.today.map((reminder) => (
+                {filteredReminders.today && filteredReminders.today.map((reminder) => (
                   <div
                     key={reminder.id}
                     className="flex items-center gap-3 p-3 border-l-4 border-orange-500 bg-orange-500/10 rounded-r"
@@ -635,7 +684,7 @@ const Page = () => {
                 ))}
 
                 {/* Tomorrow & This Week */}
-                {[...reminders.tomorrow || [], ...reminders.thisWeek || []].map((reminder) => (
+                {[...filteredReminders.tomorrow || [], ...filteredReminders.thisWeek || []].map((reminder) => (
                   <div
                     key={reminder.id}
                     className="flex items-center gap-3 p-3 border-l-4 border-blue-500 bg-blue-500/10 rounded-r"
@@ -667,7 +716,7 @@ const Page = () => {
                 ))}
 
                 {/* Later reminders */}
-                {reminders.later && reminders.later.map((reminder) => (
+                {filteredReminders.later && filteredReminders.later.map((reminder) => (
                   <div
                     key={reminder.id}
                     className="flex items-center gap-3 p-3 border-l-4 border-gray-500 bg-gray-500/10 rounded-r"
@@ -700,12 +749,12 @@ const Page = () => {
               </>
             ) : null}
 
-            {reminders &&
-              (reminders.overdue?.length === 0 || !reminders.overdue) &&
-              (reminders.today?.length === 0 || !reminders.today) &&
-              (reminders.tomorrow?.length === 0 || !reminders.tomorrow) &&
-              (reminders.thisWeek?.length === 0 || !reminders.thisWeek) &&
-              (reminders.later?.length === 0 || !reminders.later) && (
+            {filteredReminders &&
+              (filteredReminders.overdue?.length === 0 || !filteredReminders.overdue) &&
+              (filteredReminders.today?.length === 0 || !filteredReminders.today) &&
+              (filteredReminders.tomorrow?.length === 0 || !filteredReminders.tomorrow) &&
+              (filteredReminders.thisWeek?.length === 0 || !filteredReminders.thisWeek) &&
+              (filteredReminders.later?.length === 0 || !filteredReminders.later) && (
                 <div className="text-center py-8 text-muted-foreground">
                   <CalendarIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>No upcoming reminders</p>
@@ -713,7 +762,7 @@ const Page = () => {
                 </div>
               )}
               
-            {!reminders && (
+            {!filteredReminders && (
               <div className="text-center py-8 text-muted-foreground">
                 <CalendarIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
                 <p>Loading reminders...</p>

@@ -167,6 +167,27 @@ export async function POST(req: NextRequest) {
     }
 
     try {
+      // Check for existing leads with same email AND phone combination
+      if (body.email || body.phone) {
+        const existingLead = await prisma.lead.findFirst({
+          where: {
+            userId: userId,
+            AND: [
+              body.email ? { email: body.email } : {},
+              body.phone ? { phone: body.phone } : {}
+            ]
+          }
+        });
+
+        if (existingLead) {
+          return NextResponse.json({
+            success: false,
+            error: "A lead with this email and phone combination already exists.",
+            code: "DUPLICATE_LEAD"
+          }, { status: 409 });
+        }
+      }
+
       // Convert date strings to ISO-8601 DateTime format for Prisma
       const convertDateToDateTime = (dateString: string | undefined): string | undefined => {
         if (!dateString) return undefined;

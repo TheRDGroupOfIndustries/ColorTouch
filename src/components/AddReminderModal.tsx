@@ -113,7 +113,7 @@ export default function AddReminderModal({ onReminderAdded }: AddReminderModalPr
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="sm:max-w-[425px]" aria-describedby="add-reminder-desc">
+      <DialogContent className="sm:max-w-[425px] bg-black/95 backdrop-blur-sm" aria-describedby="add-reminder-desc">
         <DialogHeader>
           <DialogTitle>Create New Reminder</DialogTitle>
         </DialogHeader>
