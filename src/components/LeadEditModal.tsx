@@ -20,6 +20,8 @@ interface LeadFormData {
   enquiryDate?: string;
   bookingDate?: string;
   checkInDates?: string;
+  leadsCreatedDate?: string;
+  leadsUpdatedDates?: string;
 }
 
 interface LeadsEditModalProps {
@@ -55,6 +57,8 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
     enquiryDate: "",
     bookingDate: "",
     checkInDates: "",
+    leadsCreatedDate: "",
+    leadsUpdatedDates: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -85,6 +89,8 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
         enquiryDate: lead.enquiryDate ? lead.enquiryDate.split('T')[0] : "",
         bookingDate: lead.bookingDate ? lead.bookingDate.split('T')[0] : "",
         checkInDates: lead.checkInDates ? lead.checkInDates.split('T')[0] : "",
+        leadsCreatedDate: lead.leadsCreatedDate ? lead.leadsCreatedDate.split('T')[0] : "",
+        leadsUpdatedDates: lead.leadsUpdatedDates ? lead.leadsUpdatedDates.split('T')[0] : "",
       });
     } catch (err: any) {
       toast.error("❌ Failed to fetch lead data");
@@ -346,6 +352,26 @@ const LeadsEditModal: React.FC<LeadsEditModalProps> = ({
                 type="date"
                 value={formData.checkInDates}
                 onChange={(e) => handleChange("checkInDates", e.target.value)}
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-zinc-400">Created Date</label>
+              <Input
+                type="date"
+                value={formData.leadsCreatedDate}
+                onChange={(e) => handleChange("leadsCreatedDate", e.target.value)}
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-zinc-400">Updated Date</label>
+              <Input
+                type="date"
+                value={formData.leadsUpdatedDates}
+                onChange={(e) => handleChange("leadsUpdatedDates", e.target.value)}
                 className="bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-2 focus:ring-blue-500 cursor-pointer"
               />
             </div>

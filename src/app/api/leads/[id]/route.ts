@@ -17,6 +17,8 @@ interface leaduupdate {
   enquiryDate?: string;
   bookingDate?: string;
   checkInDates?: string;
+  leadsCreatedDate?: string;
+  leadsUpdatedDates?: string;
 }
 
 export async function PUT(
@@ -75,6 +77,8 @@ export async function PUT(
         enquiryDate: convertDateToDateTime(body.enquiryDate),
         bookingDate: convertDateToDateTime(body.bookingDate),
         checkInDates: convertDateToDateTime(body.checkInDates),
+        leadsCreatedDate: convertDateToDateTime((body as any).leadsCreatedDate),
+        leadsUpdatedDates: convertDateToDateTime((body as any).leadsUpdatedDates),
       };
 
       const updated = await prisma.lead.update({

@@ -155,8 +155,9 @@ export default function LeadsPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<string>("");
-  const [selectedTag, setSelectedTag] = useState<string>("");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedTag, setSelectedTag] = useState<string>("all");
+  const [selectedDateRange, setSelectedDateRange] = useState<string>("all");
   const [popup, setPopup] = useState<null | "add" | "view" | "edit" | "delete">(
     null
   );
@@ -365,9 +366,55 @@ export default function LeadsPage() {
           ? lead.tag.toLowerCase() === selectedTag.toLowerCase()
           : true;
 
-      return matchesSearch && matchesStatus && matchesTag;
+      // Date range filtering
+      const matchesDateRange = (() => {
+        if (!selectedDateRange || selectedDateRange === "all") return true;
+        
+        // Prioritize leadsCreatedDate (custom editable field) over createdAt (auto-generated)
+        const dateStr = lead.leadsCreatedDate || lead.createdAt || lead.created;
+        if (!dateStr) {
+          return false;
+        }
+        
+        const leadDate = new Date(dateStr);
+        
+        // Check if date is valid
+        if (isNaN(leadDate.getTime())) {
+          return false;
+        }
+        
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        switch (selectedDateRange) {
+          case "3days":
+            const threeDaysAgo = new Date(startOfToday);
+            threeDaysAgo.setDate(startOfToday.getDate() - 3);
+            return leadDate >= threeDaysAgo;
+          
+          case "week":
+            const oneWeekAgo = new Date(startOfToday);
+            oneWeekAgo.setDate(startOfToday.getDate() - 7);
+            return leadDate >= oneWeekAgo;
+          
+          case "month":
+            const oneMonthAgo = new Date(startOfToday);
+            oneMonthAgo.setMonth(startOfToday.getMonth() - 1);
+            return leadDate >= oneMonthAgo;
+          
+          case "year":
+            const oneYearAgo = new Date(startOfToday);
+            oneYearAgo.setFullYear(startOfToday.getFullYear() - 1);
+            return leadDate >= oneYearAgo;
+          
+          default:
+            return true;
+        }
+      })();
+
+      return matchesSearch && matchesStatus && matchesTag && matchesDateRange;
     });
-  }, [leads, search, selectedStatus, selectedTag]);
+  }, [leads, search, selectedStatus, selectedTag, selectedDateRange]);
 
   // ✅ UI (unchanged)
   return (
@@ -444,7 +491,7 @@ export default function LeadsPage() {
           />
         </div>
 
-        <Select onValueChange={setSelectedStatus}>
+        <Select value={selectedStatus} onValueChange={setSelectedStatus}>
           <SelectTrigger className="w-48 bg-card border-border">
             <SelectValue placeholder="Filter by Status" />
           </SelectTrigger>
@@ -456,7 +503,7 @@ export default function LeadsPage() {
             <SelectItem value="REJECTED">Rejected</SelectItem>
           </SelectContent>
         </Select>
-        <Select onValueChange={setSelectedTag}>
+        <Select value={selectedTag} onValueChange={setSelectedTag}>
           <SelectTrigger className="w-48 bg-card border-border">
             <SelectValue placeholder="Filter by Tag" />
           </SelectTrigger>
@@ -466,6 +513,18 @@ export default function LeadsPage() {
             <SelectItem value="warm">Warm</SelectItem>
             <SelectItem value="qualified">Qualified</SelectItem>
             <SelectItem value="cold">Cold</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
+          <SelectTrigger className="w-48 bg-card border-border">
+            <SelectValue placeholder="Filter by Date" />
+          </SelectTrigger>
+          <SelectContent className="border-gray-800 bg-black text-white">
+            <SelectItem value="all">All Time</SelectItem>
+            <SelectItem value="3days">Last 3 Days</SelectItem>
+            <SelectItem value="week">Last Week</SelectItem>
+            <SelectItem value="month">Last Month</SelectItem>
+            <SelectItem value="year">Last Year</SelectItem>
           </SelectContent>
         </Select>
       </div>
