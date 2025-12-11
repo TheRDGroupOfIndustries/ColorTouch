@@ -367,10 +367,10 @@ export default function LeadsPage() {
           ? lead.tag.toLowerCase() === selectedTag.toLowerCase()
           : true;
 
-      // Helper function to check date range
-      const checkDateRange = (dateStr: string | undefined, range: string) => {
+      // Helper function to check check-in month
+      const checkCheckInMonth = (dateStr: string | undefined, monthFilter: string) => {
         // If filter is "all", show all leads
-        if (!range || range === "all") return true;
+        if (!monthFilter || monthFilter === "all") return true;
         
         // If no date exists and a specific filter is selected, exclude the lead
         if (!dateStr) return false;
@@ -380,41 +380,113 @@ export default function LeadsPage() {
         if (isNaN(date.getTime())) return false;
         
         const now = new Date();
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const currentMonth = now.getMonth(); // 0-11
+        const currentYear = now.getFullYear();
+        const checkInMonth = date.getMonth();
+        const checkInYear = date.getFullYear();
         
-        switch (range) {
-          case "3days":
-            const threeDaysAgo = new Date(startOfToday);
-            threeDaysAgo.setDate(startOfToday.getDate() - 3);
-            return date >= threeDaysAgo;
+        switch (monthFilter) {
+          case "thisMonth":
+            return checkInMonth === currentMonth && checkInYear === currentYear;
           
-          case "week":
-            const oneWeekAgo = new Date(startOfToday);
-            oneWeekAgo.setDate(startOfToday.getDate() - 7);
-            return date >= oneWeekAgo;
+          case "nextMonth":
+            const nextMonth = (currentMonth + 1) % 12;
+            const nextMonthYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+            return checkInMonth === nextMonth && checkInYear === nextMonthYear;
           
-          case "month":
-            const oneMonthAgo = new Date(startOfToday);
-            oneMonthAgo.setMonth(startOfToday.getMonth() - 1);
-            return date >= oneMonthAgo;
-          
-          case "year":
-            // Show leads from the previous calendar year (e.g., 2024 if current year is 2025)
-            const lastYearStart = new Date(now.getFullYear() - 1, 0, 1); // Jan 1 of last year
-            const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59); // Dec 31 of last year
-            return date >= lastYearStart && date <= lastYearEnd;
+          case "jan":
+            return checkInMonth === 0;
+          case "feb":
+            return checkInMonth === 1;
+          case "mar":
+            return checkInMonth === 2;
+          case "apr":
+            return checkInMonth === 3;
+          case "may":
+            return checkInMonth === 4;
+          case "jun":
+            return checkInMonth === 5;
+          case "jul":
+            return checkInMonth === 6;
+          case "aug":
+            return checkInMonth === 7;
+          case "sep":
+            return checkInMonth === 8;
+          case "oct":
+            return checkInMonth === 9;
+          case "nov":
+            return checkInMonth === 10;
+          case "dec":
+            return checkInMonth === 11;
           
           default:
             return true;
         }
       };
 
-      // Check-In Date filter
-      const matchesCheckInDate = checkDateRange(lead.checkInDates, selectedCheckInDateRange);
+      // Helper function to check created date month (month-based)
+      const checkCreatedDateMonth = (dateStr: string | undefined, monthFilter: string) => {
+        // If filter is "all", show all leads
+        if (!monthFilter || monthFilter === "all") return true;
+        
+        // If no date exists and a specific filter is selected, exclude the lead
+        if (!dateStr) return false;
+        
+        const date = new Date(dateStr);
+        // If date is invalid and a specific filter is selected, exclude the lead
+        if (isNaN(date.getTime())) return false;
+        
+        const now = new Date();
+        const currentMonth = now.getMonth(); // 0-11
+        const currentYear = now.getFullYear();
+        const createdMonth = date.getMonth();
+        const createdYear = date.getFullYear();
+        
+        switch (monthFilter) {
+          case "thisMonth":
+            return createdMonth === currentMonth && createdYear === currentYear;
+          
+          case "lastMonth":
+            const lastMonth = (currentMonth - 1 + 12) % 12;
+            const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+            return createdMonth === lastMonth && createdYear === lastMonthYear;
+          
+          case "jan":
+            return createdMonth === 0;
+          case "feb":
+            return createdMonth === 1;
+          case "mar":
+            return createdMonth === 2;
+          case "apr":
+            return createdMonth === 3;
+          case "may":
+            return createdMonth === 4;
+          case "jun":
+            return createdMonth === 5;
+          case "jul":
+            return createdMonth === 6;
+          case "aug":
+            return createdMonth === 7;
+          case "sep":
+            return createdMonth === 8;
+          case "oct":
+            return createdMonth === 9;
+          case "nov":
+            return createdMonth === 10;
+          case "dec":
+            return createdMonth === 11;
+          
+          default:
+            return true;
+        }
+      };
 
-      // Created Date filter (prioritize leadsCreatedDate over createdAt)
+      // Check-In Date filter (month-based)
+      const matchesCheckInDate = checkCheckInMonth(lead.checkInDates, selectedCheckInDateRange);
+
+      // Created Date filter (month-based, prioritize leadsCreatedDate over createdAt)
       const createdDateStr = lead.leadsCreatedDate || lead.createdAt || lead.created;
-      const matchesCreatedDate = checkDateRange(createdDateStr, selectedCreatedDateRange);
+      const matchesCreatedDate = checkCreatedDateMonth(createdDateStr, selectedCreatedDateRange);
 
       return matchesSearch && matchesStatus && matchesTag && matchesCheckInDate && matchesCreatedDate;
     });
@@ -523,24 +595,44 @@ export default function LeadsPage() {
           <SelectTrigger className="w-52 bg-card border-border">
             <SelectValue placeholder="Filter by Check-In Date" />
           </SelectTrigger>
-          <SelectContent className="border-gray-800 bg-black text-white">
-            <SelectItem value="all">All Check-In Dates</SelectItem>
-            <SelectItem value="3days">Last 3 Days</SelectItem>
-            <SelectItem value="week">Last Week</SelectItem>
-            <SelectItem value="month">Last Month</SelectItem>
-            <SelectItem value="year">Last Year</SelectItem>
+          <SelectContent className="border-gray-800 bg-black text-white max-h-[300px]">
+            <SelectItem value="all">Filter by Check-In Month</SelectItem>
+            <SelectItem value="thisMonth">This Month</SelectItem>
+            <SelectItem value="nextMonth">Next Month</SelectItem>
+            <SelectItem value="jan" className="text-white">January</SelectItem>
+            <SelectItem value="feb" className="text-white">February</SelectItem>
+            <SelectItem value="mar" className="text-white">March</SelectItem>
+            <SelectItem value="apr" className="text-white">April</SelectItem>
+            <SelectItem value="may" className="text-white">May</SelectItem>
+            <SelectItem value="jun" className="text-white">June</SelectItem>
+            <SelectItem value="jul" className="text-white">July</SelectItem>
+            <SelectItem value="aug" className="text-white">August</SelectItem>
+            <SelectItem value="sep" className="text-white">September</SelectItem>
+            <SelectItem value="oct" className="text-white">October</SelectItem>
+            <SelectItem value="nov" className="text-white">November</SelectItem>
+            <SelectItem value="dec" className="text-white">December</SelectItem>
           </SelectContent>
         </Select>
         <Select value={selectedCreatedDateRange} onValueChange={setSelectedCreatedDateRange}>
           <SelectTrigger className="w-52 bg-card border-border">
             <SelectValue placeholder="Filter by Created Date" />
           </SelectTrigger>
-          <SelectContent className="border-gray-800 bg-black text-white">
-            <SelectItem value="all">All Created Dates</SelectItem>
-            <SelectItem value="3days">Last 3 Days</SelectItem>
-            <SelectItem value="week">Last Week</SelectItem>
-            <SelectItem value="month">Last Month</SelectItem>
-            <SelectItem value="year">Last Year</SelectItem>
+          <SelectContent className="border-gray-800 bg-black text-white max-h-[300px]">
+            <SelectItem value="all">Filter by Created Month</SelectItem>
+            <SelectItem value="thisMonth">This Month</SelectItem>
+            <SelectItem value="lastMonth">Last Month</SelectItem>
+            <SelectItem value="jan" className="text-white">January</SelectItem>
+            <SelectItem value="feb" className="text-white">February</SelectItem>
+            <SelectItem value="mar" className="text-white">March</SelectItem>
+            <SelectItem value="apr" className="text-white">April</SelectItem>
+            <SelectItem value="may" className="text-white">May</SelectItem>
+            <SelectItem value="jun" className="text-white">June</SelectItem>
+            <SelectItem value="jul" className="text-white">July</SelectItem>
+            <SelectItem value="aug" className="text-white">August</SelectItem>
+            <SelectItem value="sep" className="text-white">September</SelectItem>
+            <SelectItem value="oct" className="text-white">October</SelectItem>
+            <SelectItem value="nov" className="text-white">November</SelectItem>
+            <SelectItem value="dec" className="text-white">December</SelectItem>
           </SelectContent>
         </Select>
       </div>
