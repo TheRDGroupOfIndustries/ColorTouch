@@ -16,6 +16,8 @@ import {
   Building2,
   MessageSquare,
   Calendar as CalendarIcon,
+  Filter,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -162,6 +164,7 @@ export default function LeadsPage() {
   const [checkInToDate, setCheckInToDate] = useState<string>("");
   const [createdFromDate, setCreatedFromDate] = useState<string>("");
   const [createdToDate, setCreatedToDate] = useState<string>("");
+  const [showFilters, setShowFilters] = useState(false);
   const [popup, setPopup] = useState<null | "add" | "view" | "edit" | "delete">(
     null
   );
@@ -443,7 +446,8 @@ export default function LeadsPage() {
 
           <Button
             onClick={() => setShowAddModal(true)}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            variant="outline"
+            className="border-success text-success hover:bg-success/10"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Lead
@@ -479,9 +483,9 @@ export default function LeadsPage() {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 gap-4">
-        {/* First Row: Search Bar */}
-        <div className="w-full relative">
+      <div className="flex items-center gap-4">
+        {/* Search Bar */}
+        <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
             placeholder="Search leads by name, email, or company..."
@@ -491,88 +495,152 @@ export default function LeadsPage() {
           />
         </div>
 
-        {/* Second Row: Dropdowns */}
-        <div className="flex items-center gap-4 flex-wrap">
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="w-48 bg-card border-border h-11">
-              <SelectValue placeholder="Filter by Status" />
-            </SelectTrigger>
-            <SelectContent className="border-gray-800 bg-black text-white">
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="PENDING">Pending</SelectItem>
-              <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
-              <SelectItem value="CONVERTED">Converted</SelectItem>
-              <SelectItem value="REJECTED">Rejected</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={selectedTag} onValueChange={setSelectedTag}>
-            <SelectTrigger className="w-48 bg-card border-border h-11">
-              <SelectValue placeholder="Filter by Tag" />
-            </SelectTrigger>
-            <SelectContent className="border-gray-800 bg-black text-white">
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="hot">Hot</SelectItem>
-              <SelectItem value="warm">Warm</SelectItem>
-              <SelectItem value="qualified">Qualified</SelectItem>
-              <SelectItem value="cold">Cold</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        {/* Third Row: Date Filters with Labels */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Check-In Date Range */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4 text-primary" />
-              Check-In Date Range
-            </label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="date"
-                value={checkInFromDate}
-                onChange={(e) => setCheckInFromDate(e.target.value)}
-                placeholder="From"
-                className="flex-1 bg-card border-border h-11"
-              />
-              <span className="text-muted-foreground font-medium">to</span>
-              <Input
-                type="date"
-                value={checkInToDate}
-                onChange={(e) => setCheckInToDate(e.target.value)}
-                placeholder="To"
-                className="flex-1 bg-card border-border h-11"
-              />
-            </div>
-          </div>
-          
-          {/* Created Date Range */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4 text-primary" />
-              Created Date Range
-            </label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="date"
-                value={createdFromDate}
-                onChange={(e) => setCreatedFromDate(e.target.value)}
-                placeholder="From"
-                className="flex-1 bg-card border-border h-11"
-              />
-              <span className="text-muted-foreground font-medium">to</span>
-              <Input
-                type="date"
-                value={createdToDate}
-                onChange={(e) => setCreatedToDate(e.target.value)}
-                placeholder="To"
-                className="flex-1 bg-card border-border h-11"
-              />
-            </div>
-          </div>
-        </div>
+        {/* Filter Button */}
+        <Button
+          variant="outline"
+          className="h-11 px-4 border-border hover:bg-secondary"
+          onClick={() => setShowFilters(!showFilters)}
+        >
+          <Filter className="w-4 h-4 mr-2" />
+          Filters
+          {(selectedStatus !== "all" || selectedTag !== "all" || checkInFromDate || checkInToDate || createdFromDate || createdToDate) && (
+            <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+              {[
+                selectedStatus !== "all",
+                selectedTag !== "all",
+                checkInFromDate || checkInToDate,
+                createdFromDate || createdToDate
+              ].filter(Boolean).length}
+            </span>
+          )}
+        </Button>
       </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <Card className="p-6 bg-card border-border space-y-6">
+          <div className="flex items-center justify-between border-b border-border pb-4">
+            <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Filter className="w-5 h-5 text-primary" />
+              Filter Options
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowFilters(false)}
+              className="h-8 w-8 p-0"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Status and Tag Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Status</label>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="w-full bg-card border-border h-11">
+                  <SelectValue placeholder="Filter by Status" />
+                </SelectTrigger>
+                <SelectContent className="border-gray-800 bg-black text-white">
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
+                  <SelectItem value="CONVERTED">Converted</SelectItem>
+                  <SelectItem value="REJECTED">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Tag</label>
+              <Select value={selectedTag} onValueChange={setSelectedTag}>
+                <SelectTrigger className="w-full bg-card border-border h-11">
+                  <SelectValue placeholder="Filter by Tag" />
+                </SelectTrigger>
+                <SelectContent className="border-gray-800 bg-black text-white">
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="hot">Hot</SelectItem>
+                  <SelectItem value="warm">Warm</SelectItem>
+                  <SelectItem value="qualified">Qualified</SelectItem>
+                  <SelectItem value="cold">Cold</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {/* Date Range Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Check-In Date Range */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4 text-primary" />
+                Check-In Date Range
+              </label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={checkInFromDate}
+                  onChange={(e) => setCheckInFromDate(e.target.value)}
+                  placeholder="From"
+                  className="flex-1 bg-card border-border h-11"
+                />
+                <span className="text-muted-foreground font-medium">to</span>
+                <Input
+                  type="date"
+                  value={checkInToDate}
+                  onChange={(e) => setCheckInToDate(e.target.value)}
+                  placeholder="To"
+                  className="flex-1 bg-card border-border h-11"
+                />
+              </div>
+            </div>
+            
+            {/* Created Date Range */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4 text-primary" />
+                Created Date Range
+              </label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={createdFromDate}
+                  onChange={(e) => setCreatedFromDate(e.target.value)}
+                  placeholder="From"
+                  className="flex-1 bg-card border-border h-11"
+                />
+                <span className="text-muted-foreground font-medium">to</span>
+                <Input
+                  type="date"
+                  value={createdToDate}
+                  onChange={(e) => setCreatedToDate(e.target.value)}
+                  placeholder="To"
+                  className="flex-1 bg-card border-border h-11"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Clear Filters Button */}
+          <div className="flex justify-end pt-4 border-t border-border">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectedStatus("all");
+                setSelectedTag("all");
+                setCheckInFromDate("");
+                setCheckInToDate("");
+                setCreatedFromDate("");
+                setCreatedToDate("");
+              }}
+              className="border-border"
+            >
+              Clear All Filters
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* Table */}
       <Card className="bg-card border-border">
