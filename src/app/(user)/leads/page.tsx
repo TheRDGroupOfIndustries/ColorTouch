@@ -15,6 +15,7 @@ import {
   Clock,
   Building2,
   MessageSquare,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -157,8 +158,10 @@ export default function LeadsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedTag, setSelectedTag] = useState<string>("all");
-  const [selectedCheckInDateRange, setSelectedCheckInDateRange] = useState<string>("all");
-  const [selectedCreatedDateRange, setSelectedCreatedDateRange] = useState<string>("all");
+  const [checkInFromDate, setCheckInFromDate] = useState<string>("");
+  const [checkInToDate, setCheckInToDate] = useState<string>("");
+  const [createdFromDate, setCreatedFromDate] = useState<string>("");
+  const [createdToDate, setCreatedToDate] = useState<string>("");
   const [popup, setPopup] = useState<null | "add" | "view" | "edit" | "delete">(
     null
   );
@@ -367,130 +370,50 @@ export default function LeadsPage() {
           ? lead.tag.toLowerCase() === selectedTag.toLowerCase()
           : true;
 
-      // Helper function to check check-in month
-      const checkCheckInMonth = (dateStr: string | undefined, monthFilter: string) => {
-        // If filter is "all", show all leads
-        if (!monthFilter || monthFilter === "all") return true;
+      // Helper function to check date range
+      const checkDateRange = (dateStr: string | undefined, fromDate: string, toDate: string) => {
+        // If no date range filters, show all leads
+        if (!fromDate && !toDate) return true;
         
-        // If no date exists and a specific filter is selected, exclude the lead
+        // If no date exists but filters are set, exclude the lead
         if (!dateStr) return false;
         
         const date = new Date(dateStr);
-        // If date is invalid and a specific filter is selected, exclude the lead
+        // If date is invalid, exclude the lead
         if (isNaN(date.getTime())) return false;
         
-        const now = new Date();
-        const currentMonth = now.getMonth(); // 0-11
-        const currentYear = now.getFullYear();
-        const checkInMonth = date.getMonth();
-        const checkInYear = date.getFullYear();
+        // Normalize to start of day for comparison
+        const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
         
-        switch (monthFilter) {
-          case "thisMonth":
-            return checkInMonth === currentMonth && checkInYear === currentYear;
-          
-          case "nextMonth":
-            const nextMonth = (currentMonth + 1) % 12;
-            const nextMonthYear = currentMonth === 11 ? currentYear + 1 : currentYear;
-            return checkInMonth === nextMonth && checkInYear === nextMonthYear;
-          
-          case "jan":
-            return checkInMonth === 0;
-          case "feb":
-            return checkInMonth === 1;
-          case "mar":
-            return checkInMonth === 2;
-          case "apr":
-            return checkInMonth === 3;
-          case "may":
-            return checkInMonth === 4;
-          case "jun":
-            return checkInMonth === 5;
-          case "jul":
-            return checkInMonth === 6;
-          case "aug":
-            return checkInMonth === 7;
-          case "sep":
-            return checkInMonth === 8;
-          case "oct":
-            return checkInMonth === 9;
-          case "nov":
-            return checkInMonth === 10;
-          case "dec":
-            return checkInMonth === 11;
-          
-          default:
-            return true;
+        // Check from date
+        if (fromDate) {
+          const from = new Date(fromDate);
+          if (isNaN(from.getTime())) return false;
+          const fromOnly = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+          if (dateOnly < fromOnly) return false;
         }
+        
+        // Check to date
+        if (toDate) {
+          const to = new Date(toDate);
+          if (isNaN(to.getTime())) return false;
+          const toOnly = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+          if (dateOnly > toOnly) return false;
+        }
+        
+        return true;
       };
 
-      // Helper function to check created date month (month-based)
-      const checkCreatedDateMonth = (dateStr: string | undefined, monthFilter: string) => {
-        // If filter is "all", show all leads
-        if (!monthFilter || monthFilter === "all") return true;
-        
-        // If no date exists and a specific filter is selected, exclude the lead
-        if (!dateStr) return false;
-        
-        const date = new Date(dateStr);
-        // If date is invalid and a specific filter is selected, exclude the lead
-        if (isNaN(date.getTime())) return false;
-        
-        const now = new Date();
-        const currentMonth = now.getMonth(); // 0-11
-        const currentYear = now.getFullYear();
-        const createdMonth = date.getMonth();
-        const createdYear = date.getFullYear();
-        
-        switch (monthFilter) {
-          case "thisMonth":
-            return createdMonth === currentMonth && createdYear === currentYear;
-          
-          case "lastMonth":
-            const lastMonth = (currentMonth - 1 + 12) % 12;
-            const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-            return createdMonth === lastMonth && createdYear === lastMonthYear;
-          
-          case "jan":
-            return createdMonth === 0;
-          case "feb":
-            return createdMonth === 1;
-          case "mar":
-            return createdMonth === 2;
-          case "apr":
-            return createdMonth === 3;
-          case "may":
-            return createdMonth === 4;
-          case "jun":
-            return createdMonth === 5;
-          case "jul":
-            return createdMonth === 6;
-          case "aug":
-            return createdMonth === 7;
-          case "sep":
-            return createdMonth === 8;
-          case "oct":
-            return createdMonth === 9;
-          case "nov":
-            return createdMonth === 10;
-          case "dec":
-            return createdMonth === 11;
-          
-          default:
-            return true;
-        }
-      };
+      // Check-In Date filter (date range)
+      const matchesCheckInDate = checkDateRange(lead.checkInDates, checkInFromDate, checkInToDate);
 
-      // Check-In Date filter (month-based)
-      const matchesCheckInDate = checkCheckInMonth(lead.checkInDates, selectedCheckInDateRange);
-
-      // Created Date filter (month-based, prioritize leadsCreatedDate over createdAt)
+      // Created Date filter (date range, prioritize leadsCreatedDate over createdAt)
       const createdDateStr = lead.leadsCreatedDate || lead.createdAt || lead.created;
-      const matchesCreatedDate = checkCreatedDateMonth(createdDateStr, selectedCreatedDateRange);
+      const matchesCreatedDate = checkDateRange(createdDateStr, createdFromDate, createdToDate);
 
       return matchesSearch && matchesStatus && matchesTag && matchesCheckInDate && matchesCreatedDate;
     });
-  }, [leads, search, selectedStatus, selectedTag, selectedCheckInDateRange, selectedCreatedDateRange]);
+  }, [leads, search, selectedStatus, selectedTag, checkInFromDate, checkInToDate, createdFromDate, createdToDate]);
 
   // ✅ UI (unchanged)
   return (
@@ -556,85 +479,99 @@ export default function LeadsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="flex-1 relative">
+      <div className="grid grid-cols-1 gap-4">
+        {/* First Row: Search Bar */}
+        <div className="w-full relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
-            placeholder="Search leads..."
+            placeholder="Search leads by name, email, or company..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-card border-border"
+            className="pl-10 bg-card border-border h-11 text-base"
           />
         </div>
 
-        <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-          <SelectTrigger className="w-48 bg-card border-border">
-            <SelectValue placeholder="Filter by Status" />
-          </SelectTrigger>
-          <SelectContent className="border-gray-800 bg-black text-white">
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
-            <SelectItem value="CONVERTED">Converted</SelectItem>
-            <SelectItem value="REJECTED">Rejected</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={selectedTag} onValueChange={setSelectedTag}>
-          <SelectTrigger className="w-48 bg-card border-border">
-            <SelectValue placeholder="Filter by Tag" />
-          </SelectTrigger>
-          <SelectContent className="border-gray-800 bg-black text-white">
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="hot">Hot</SelectItem>
-            <SelectItem value="warm">Warm</SelectItem>
-            <SelectItem value="qualified">Qualified</SelectItem>
-            <SelectItem value="cold">Cold</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={selectedCheckInDateRange} onValueChange={setSelectedCheckInDateRange}>
-          <SelectTrigger className="w-52 bg-card border-border">
-            <SelectValue placeholder="Filter by Check-In Date" />
-          </SelectTrigger>
-          <SelectContent className="border-gray-800 bg-black text-white max-h-[300px]">
-            <SelectItem value="all">Filter by Check-In Month</SelectItem>
-            <SelectItem value="thisMonth">This Month</SelectItem>
-            <SelectItem value="nextMonth">Next Month</SelectItem>
-            <SelectItem value="jan" className="text-white">January</SelectItem>
-            <SelectItem value="feb" className="text-white">February</SelectItem>
-            <SelectItem value="mar" className="text-white">March</SelectItem>
-            <SelectItem value="apr" className="text-white">April</SelectItem>
-            <SelectItem value="may" className="text-white">May</SelectItem>
-            <SelectItem value="jun" className="text-white">June</SelectItem>
-            <SelectItem value="jul" className="text-white">July</SelectItem>
-            <SelectItem value="aug" className="text-white">August</SelectItem>
-            <SelectItem value="sep" className="text-white">September</SelectItem>
-            <SelectItem value="oct" className="text-white">October</SelectItem>
-            <SelectItem value="nov" className="text-white">November</SelectItem>
-            <SelectItem value="dec" className="text-white">December</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={selectedCreatedDateRange} onValueChange={setSelectedCreatedDateRange}>
-          <SelectTrigger className="w-52 bg-card border-border">
-            <SelectValue placeholder="Filter by Created Date" />
-          </SelectTrigger>
-          <SelectContent className="border-gray-800 bg-black text-white max-h-[300px]">
-            <SelectItem value="all">Filter by Created Month</SelectItem>
-            <SelectItem value="thisMonth">This Month</SelectItem>
-            <SelectItem value="lastMonth">Last Month</SelectItem>
-            <SelectItem value="jan" className="text-white">January</SelectItem>
-            <SelectItem value="feb" className="text-white">February</SelectItem>
-            <SelectItem value="mar" className="text-white">March</SelectItem>
-            <SelectItem value="apr" className="text-white">April</SelectItem>
-            <SelectItem value="may" className="text-white">May</SelectItem>
-            <SelectItem value="jun" className="text-white">June</SelectItem>
-            <SelectItem value="jul" className="text-white">July</SelectItem>
-            <SelectItem value="aug" className="text-white">August</SelectItem>
-            <SelectItem value="sep" className="text-white">September</SelectItem>
-            <SelectItem value="oct" className="text-white">October</SelectItem>
-            <SelectItem value="nov" className="text-white">November</SelectItem>
-            <SelectItem value="dec" className="text-white">December</SelectItem>
-          </SelectContent>
-        </Select>
+        {/* Second Row: Dropdowns */}
+        <div className="flex items-center gap-4 flex-wrap">
+          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <SelectTrigger className="w-48 bg-card border-border h-11">
+              <SelectValue placeholder="Filter by Status" />
+            </SelectTrigger>
+            <SelectContent className="border-gray-800 bg-black text-white">
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="PENDING">Pending</SelectItem>
+              <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
+              <SelectItem value="CONVERTED">Converted</SelectItem>
+              <SelectItem value="REJECTED">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={selectedTag} onValueChange={setSelectedTag}>
+            <SelectTrigger className="w-48 bg-card border-border h-11">
+              <SelectValue placeholder="Filter by Tag" />
+            </SelectTrigger>
+            <SelectContent className="border-gray-800 bg-black text-white">
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="hot">Hot</SelectItem>
+              <SelectItem value="warm">Warm</SelectItem>
+              <SelectItem value="qualified">Qualified</SelectItem>
+              <SelectItem value="cold">Cold</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {/* Third Row: Date Filters with Labels */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Check-In Date Range */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4 text-primary" />
+              Check-In Date Range
+            </label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={checkInFromDate}
+                onChange={(e) => setCheckInFromDate(e.target.value)}
+                placeholder="From"
+                className="flex-1 bg-card border-border h-11"
+              />
+              <span className="text-muted-foreground font-medium">to</span>
+              <Input
+                type="date"
+                value={checkInToDate}
+                onChange={(e) => setCheckInToDate(e.target.value)}
+                placeholder="To"
+                className="flex-1 bg-card border-border h-11"
+              />
+            </div>
+          </div>
+          
+          {/* Created Date Range */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4 text-primary" />
+              Created Date Range
+            </label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={createdFromDate}
+                onChange={(e) => setCreatedFromDate(e.target.value)}
+                placeholder="From"
+                className="flex-1 bg-card border-border h-11"
+              />
+              <span className="text-muted-foreground font-medium">to</span>
+              <Input
+                type="date"
+                value={createdToDate}
+                onChange={(e) => setCreatedToDate(e.target.value)}
+                placeholder="To"
+                className="flex-1 bg-card border-border h-11"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Table */}
