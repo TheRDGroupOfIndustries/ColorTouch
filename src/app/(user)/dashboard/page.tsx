@@ -715,11 +715,34 @@ export default function Dashboard() {
             <UserPlus className="w-4 h-4" />
             Add Lead
           </Button>
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className={`flex items-center gap-2 ${recentLeads.length === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
+            onClick={() => {
+              if (recentLeads.length === 0) {
+                toast('Add at least one lead before scheduling follow-ups', { icon: '⚠️' });
+                return;
+              }
+              router.push('/follow-up');
+            }}
+            disabled={recentLeads.length === 0}
+          >
             <Calendar className="w-4 h-4" />
             Schedule Follow-up
           </Button>
-          <Button variant="outline" className="flex items-center gap-2">
+
+          <Button
+            variant="outline"
+            className={`flex items-center gap-2 ${recentLeads.length === 0 ? 'opacity-60 cursor-not-allowed' : ''}`}
+            onClick={() => {
+              if (recentLeads.length === 0) {
+                toast('Add leads before sending campaigns', { icon: '⚠️' });
+                return;
+              }
+              router.push('/whatsapp');
+            }}
+            disabled={recentLeads.length === 0}
+          >
             <MessageSquare className="w-4 h-4" />
             Send Campaign
           </Button>

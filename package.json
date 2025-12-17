@@ -2,6 +2,7 @@
   "name": "colortouch",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev --turbo",
     "dev:clean": "npm run clean && next dev --turbo",
@@ -13,7 +14,12 @@
     "db:push": "npx prisma db push",
     "db:seed": "npx prisma db seed",
     "clean": "rimraf .next && npx prisma generate",
-    "db:test": "node scripts/test-db-connection.js"
+    "db:test": "node scripts/test-db-connection.js",
+    "electron:dev": "cross-env NODE_ENV=development node electron/dev-runner.js",
+    "electron:build": "cross-env ELECTRON_BUILD=true npm run build && electron-builder",
+    "electron:build:win": "cross-env ELECTRON_BUILD=true npm run build && electron-builder --win",
+    "electron:build:mac": "cross-env ELECTRON_BUILD=true npm run build && electron-builder --mac",
+    "electron:build:linux": "cross-env ELECTRON_BUILD=true npm run build && electron-builder --linux"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -99,6 +105,11 @@
     "@types/react-dom": "^18.2.18",
     "autoprefixer": "^10.4.21",
     "baseline-browser-mapping": "^2.8.32",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12",
+    "electron-icon-maker": "^0.0.5",
     "eslint": "^9.38.0",
     "eslint-config-next": "16.0.7",
     "globals": "^16.4.0",
@@ -106,6 +117,7 @@
     "prisma": "^6.18.0",
     "tailwindcss": "^4.1.16",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.46.2"
+    "typescript-eslint": "^8.46.2",
+    "wait-on": "^9.0.3"
   }
 }

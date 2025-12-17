@@ -292,13 +292,6 @@ export default function Layout({ children }: LayoutProps) {
             );
           })}
 
-          {/* Settings Section Divider */}
-          {!isCollapsed && (
-            <div className="px-3 py-4">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Settings</span>
-            </div>
-          )}
-
           {/* Settings Navigation */}
           {settingsNav.map((item) => {
             const isActive = pathname === item.href;

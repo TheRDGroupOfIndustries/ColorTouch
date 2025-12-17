@@ -68,11 +68,11 @@ export async function GET(req: NextRequest) {
         }
       })),
       stats: {
-        totalUsers,
-        premiumUsers,
-        freeUsers,
-        adminUsers,
-        conversionRate,
+        total: totalUsers,
+        admins: adminUsers,
+        employees: totalUsers - adminUsers,
+        premium: premiumUsers,
+        free: freeUsers,
         recentlyActive,
         activePercentage: totalUsers > 0 ? 
           (recentlyActive / totalUsers * 100).toFixed(1) : "0"
@@ -89,11 +89,11 @@ export async function GET(req: NextRequest) {
         success: true,
         employees: [],
         stats: {
-          totalUsers: 0,
-          premiumUsers: 0,
-          freeUsers: 0,
-          adminUsers: 0,
-          conversionRate: "0",
+          total: 0,
+          admins: 0,
+          employees: 0,
+          premium: 0,
+          free: 0,
           recentlyActive: 0,
           activePercentage: "0"
         },

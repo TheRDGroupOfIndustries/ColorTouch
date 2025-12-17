@@ -327,6 +327,10 @@ export default function LeadsPage() {
       (lead) => lead.tag.toLowerCase() === "hot"
     ).length;
 
+    const convertedLeads = leads.filter(
+      (lead) => lead.status === "CONVERTED"
+    ).length;
+
     return [
       {
         title: "Total Leads",
@@ -342,7 +346,7 @@ export default function LeadsPage() {
       },
       {
         title: "Converted",
-        value: "—",
+        value: convertedLeads.toString(),
         icon: CheckCircle,
         color: "bg-success",
       },
