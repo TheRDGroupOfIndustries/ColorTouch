@@ -60,10 +60,16 @@ const LeadsAddModal: React.FC<LeadsAddModalProps> = ({ onClose, onLeadAdded }) =
 
     setLoading(true);
     try {
+      // Convert amount to string for database
+      const dataToSend = {
+        ...formData,
+        amount: formData.amount != null ? String(formData.amount) : null,
+      };
+
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       });
 
       const data = await res.json();

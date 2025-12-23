@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Users } from "lucide-react";
+import LeadSelectorModal from "@/components/LeadSelectorModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ export interface Campaign {
   createdAt: string;
   updatedAt: string;
   status: "ACTIVE" | "PAUSED";
+  selectedLeadIds?: string[];
 }
 
 export interface CampaignActionModalProps {
@@ -59,10 +61,12 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
     createdAt: "",
     updatedAt: "",
     status: "PAUSED",
+    selectedLeadIds: [],
   });
 
   const [loading, setLoading] = useState(false);
   const [prefilling, setPrefilling] = useState(false);
+  const [leadSelectorOpen, setLeadSelectorOpen] = useState(false);
 
   // ✅ Prefetch when modal opens for editing
   useEffect(() => {
@@ -93,6 +97,7 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
           createdAt: data.createdAt,
           updatedAt: data.updatedAt,
           status: data.status?.toUpperCase?.() || "PAUSED",
+          selectedLeadIds: data.selectedLeadIds || [],
         });
       } catch (err) {
         console.error("❌ Error fetching campaign:", err);
@@ -130,6 +135,7 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
           mediaURL: form.mediaURL,
           templateID: form.templateID,
           status: form.status.toUpperCase(),
+          selectedLeadIds: form.selectedLeadIds || [],
         }),
       });
 
@@ -223,6 +229,19 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
                   <p className="bg-secondary p-3 rounded-md text-foreground/80">
                     {campaign.description}
                   </p>
+                </div>
+              )}
+
+              {/* Selected Leads Count */}
+              {campaign.selectedLeadIds && campaign.selectedLeadIds.length > 0 && (
+                <div className="pt-2">
+                  <p className="font-semibold text-muted-foreground mb-1">
+                    Target Leads:
+                  </p>
+                  <Badge variant="secondary" className="text-sm">
+                    <Users className="w-3 h-3 mr-1" />
+                    {campaign.selectedLeadIds.length} leads selected
+                  </Badge>
                 </div>
               )}
 
@@ -339,6 +358,24 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
                     placeholder="Template ID (optional)"
                   />
 
+                  {/* Lead Selection */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Target Leads
+                    </label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => setLeadSelectorOpen(true)}
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      {form.selectedLeadIds && form.selectedLeadIds.length > 0
+                        ? `${form.selectedLeadIds.length} leads selected`
+                        : "Select leads for this campaign"}
+                    </Button>
+                  </div>
+
                   {/* Status */}
                   <Select
                     value={form.status}
@@ -355,6 +392,8 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
                     </SelectContent>
                   </Select>
 
+                  {/* Save Button */}
+
                   <Button
                     onClick={handleSave}
                     disabled={loading}
@@ -368,6 +407,16 @@ const CampaignActionModal: React.FC<CampaignActionModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Lead Selector Modal */}
+      <LeadSelectorModal
+        isOpen={leadSelectorOpen}
+        onClose={() => setLeadSelectorOpen(false)}
+        onConfirm={(selectedIds) => {
+          handleChange("selectedLeadIds", selectedIds);
+        }}
+        preSelectedLeadIds={form.selectedLeadIds || []}
+      />
     </div>
   );
 };

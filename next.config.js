@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Pure Turbopack configuration
-  turbopack: {},
-  
   // Headers for API caching
   async headers() {
     return [

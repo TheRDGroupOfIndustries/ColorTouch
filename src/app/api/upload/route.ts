@@ -443,8 +443,8 @@ export async function POST(req: NextRequest) {
         await prisma.$queryRaw`SELECT 1`;
         
         created = await prisma.lead.createMany({
-          data: finalLeadsToInsert,
-          skipDuplicates: false // We handle duplicates manually above
+          data: finalLeadsToInsert
+          // Note: skipDuplicates not supported in SQLite, we handle duplicates manually above
         });
         
         // If successful, break out of retry loop

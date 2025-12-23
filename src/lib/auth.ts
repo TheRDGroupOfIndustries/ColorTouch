@@ -138,9 +138,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   pages: {
     signIn: "/login",
+    error: "/login",
   },
 
   callbacks: {
+    // Redirect after sign-in
+    async redirect({ url, baseUrl }) {
+      // After successful sign-in, redirect to dashboard
+      if (url.startsWith(baseUrl)) {
+        return `${baseUrl}/dashboard`;
+      }
+      return baseUrl + "/dashboard";
+    },
     // ✅ Runs once on sign-in
     async signIn({ user, account }) {
       if (!user.email) return false;
@@ -184,28 +193,32 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             token.name = dbUser.name;
             token.email = dbUser.email || "";
             token.subscription = dbUser.subscription;
-          } else {
-            // If no DB user found, use the user data from the authorize function
+          } else if (user.id) {
+            // If no DB user found but we have user.id from credentials provider
             token.userId = user.id;
-            token.role = user.role;
+            token.role = user.role || "EMPLOYEE";
             token.name = user.name || "";
             token.email = user.email || "";
+            token.subscription = "FREE";
           }
         } catch (dbErr: any) {
-          console.error('Database unreachable in JWT callback, using user data from auth:', dbErr?.message || dbErr);
+          console.error('Database unreachable in JWT callback:', dbErr?.message || dbErr);
           // Fallback to user data from the authorize function
-          token.userId = user.id;
-          token.role = user.role;
-          token.name = user.name || "";
-          token.email = user.email || "";
+          if (user.id) {
+            token.userId = user.id;
+            token.role = user.role || "EMPLOYEE";
+            token.name = user.name || "";
+            token.email = user.email || "";
+            token.subscription = "FREE";
+          }
         }
       }
 
       // On profile update, refresh data
-      if (trigger === "update") {
+      if (trigger === "update" && token.email) {
         try {
           const dbUser = await prisma.user.findUnique({
-            where: { email: token.email! },
+            where: { email: token.email as string },
             select: { id: true, role: true, name: true, subscription: true },
           });
 
@@ -226,11 +239,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
     // ✅ Add custom data to session object (runs frequently but no DB query)
     async session({ session, token }) {
-      if (session.user) {
+      if (session.user && token.userId) {
         session.user.id = token.userId as string;
         session.user.role = token.role as string;
-        session.user.name = token.name as string; // ✅ Add this
-        session.user.email = token.email as string; // ✅ Add this
+        session.user.name = token.name as string;
+        session.user.email = token.email as string;
         (session.user as any).subscription = token.subscription as string;
       }
       return session;

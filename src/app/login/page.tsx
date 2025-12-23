@@ -41,7 +41,12 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = () => {
-    signIn("google", { callbackUrl: "/" });
+    // Open Google OAuth in a popup for better UX
+    // Users can close the popup to return to login page
+    signIn("google", { 
+      callbackUrl: "/dashboard",
+      redirect: true 
+    });
   };
 
   return (
@@ -63,7 +68,7 @@ export default function LoginPage() {
           {/* Google Sign In */}
           <button
             onClick={handleGoogleSignIn}
-            className="w-full bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl mb-6"
+            className="w-full bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition-all duration-200 shadow-lg hover:shadow-xl mb-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -85,6 +90,9 @@ export default function LoginPage() {
             </svg>
             Sign in with Google
           </button>
+          <p className="text-xs text-slate-500 text-center mb-6">
+            You can use your browser's back button to return
+          </p>
 
           {/* Divider */}
           <div className="relative mb-6">

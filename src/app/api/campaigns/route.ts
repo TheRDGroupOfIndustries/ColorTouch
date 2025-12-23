@@ -12,6 +12,7 @@ interface CampaignCreate {
   messageContent: string;
   mediaURL?: string;
   templateID?: string;
+  selectedLeadIds?: string[];
 }
 
 export async function POST(req: NextRequest) {
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
         ...body,
         userId: userId,
         status: "PAUSED", // ✅ ensure default
+        selectedLeadIds: body.selectedLeadIds ? JSON.stringify(body.selectedLeadIds) : null,
       },
     });
 
@@ -62,6 +64,12 @@ export async function GET(req: NextRequest) {
         where: { userId: userId },
         orderBy: { createdAt: "desc" },
       });
+
+      // Parse selectedLeadIds from JSON string
+      campaigns = campaigns.map(campaign => ({
+        ...campaign,
+        selectedLeadIds: campaign.selectedLeadIds ? JSON.parse(campaign.selectedLeadIds as string) : [],
+      }));
     } catch (dbErr) {
       console.error("Database unavailable for campaigns — returning empty list:", dbErr);
       // Return empty array when DB is unavailable instead of crashing

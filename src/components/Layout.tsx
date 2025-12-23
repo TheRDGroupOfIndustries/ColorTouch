@@ -27,6 +27,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import NetworkStatus from "@/components/NetworkStatus";
+import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -352,7 +354,8 @@ export default function Layout({ children }: LayoutProps) {
         <header className="h-16 border-b border-border bg-background flex items-center justify-between px-6">
           <GlobalSearch />
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <SyncStatusIndicator />
             <UserDropdown session={session} />
           </div>
         </header>
@@ -360,6 +363,9 @@ export default function Layout({ children }: LayoutProps) {
         {/* Page Content */}
           <main className="flex-1 overflow-hidden">{children}</main>
       </div>
+
+      {/* Network Status Indicator */}
+      <NetworkStatus />
     </div>
   );
 }

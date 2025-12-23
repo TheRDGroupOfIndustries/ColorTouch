@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import prisma from "@/lib/prisma";
+import { createTwilioService } from "@/lib/twilio-whatsapp";
 
 export async function POST(req: Request) {
   try {
@@ -14,7 +15,7 @@ export async function POST(req: Request) {
     if (!session?.userId)
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
-    // ✅ Directly fetch campaign from DB (no nested API fetch)
+    // ✅ Directly fetch campaign from DB
     const campaign = await prisma.whatsappCampaign.findUnique({
       where: { id: campaignId },
     });
@@ -22,7 +23,12 @@ export async function POST(req: Request) {
     if (!campaign)
       return NextResponse.json({ success: false, error: "Campaign not found" }, { status: 404 });
 
-    // ✅ Normalize status check (real enum from DB)
+    // Parse selectedLeadIds from campaign
+    const selectedLeadIds = campaign.selectedLeadIds 
+      ? JSON.parse(campaign.selectedLeadIds as string) 
+      : [];
+
+    // ✅ Normalize status check
     const campaignStatus = campaign.status?.toString().trim().toUpperCase();
     if (campaignStatus !== "ACTIVE") {
       console.log("⏸️ Campaign paused. Skipping send.");
@@ -32,7 +38,7 @@ export async function POST(req: Request) {
       });
     }
 
-    // ✅ Fetch leads & token via API routes
+    // ✅ Fetch leads & token
     const host = (await headers()).get("host");
     const baseURL = `${process.env.NODE_ENV === "development" ? "http" : "https"}://${host}`;
 
@@ -42,7 +48,22 @@ export async function POST(req: Request) {
     ]);
 
     const [leads, tokens] = await Promise.all([leadRes.json(), tokenRes.json()]);
-    const items = Array.isArray(leads) ? leads : [];
+    const allLeads = Array.isArray(leads) ? leads : [];
+    
+    // Filter leads based on selectedLeadIds
+    const items = selectedLeadIds.length > 0 
+      ? allLeads.filter(lead => selectedLeadIds.includes(lead.id))
+      : allLeads;
+
+    console.log(`📊 Total leads: ${allLeads.length}, Selected leads: ${items.length}`);
+
+    if (items.length === 0) {
+      return NextResponse.json({ 
+        success: false, 
+        error: "No leads selected for this campaign. Please select leads first." 
+      }, { status: 400 });
+    }
+
     const tokenData = Array.isArray(tokens) && tokens.length > 0 ? tokens[0].token : null;
 
     if (!tokenData)
@@ -51,91 +72,84 @@ export async function POST(req: Request) {
     // Parse token data to detect provider
     const istwilio = tokenData.includes(':twilio');
     const isWhatsAppBusinessAPI = tokenData.includes(':whatsapp-business-api');
-    let accountSid = '', authToken = '', phoneNumber = '', apiToken = '', accessToken = '', phoneNumberId = '';
     
-    console.log(`🔍 Debug: tokenData="${tokenData.substring(0, 50)}..." istwilio=${istwilio} isWhatsAppBusinessAPI=${isWhatsAppBusinessAPI}`);
+    console.log(`🔍 Provider detected: ${istwilio ? 'Twilio' : isWhatsAppBusinessAPI ? 'WhatsApp Business API' : 'Whapi.cloud'}`);
     
-    if (istwilio) {
-      const parts = tokenData.split(':');
-      accountSid = parts[0];
-      authToken = parts[1];
-      phoneNumber = parts[2] || '';
-      console.log(`🔍 Debug: parsed phoneNumber="${phoneNumber}"`);
-    } else if (isWhatsAppBusinessAPI) {
-      const parts = tokenData.split(':');
-      accessToken = parts[0];
-      phoneNumberId = parts[1];
-      console.log(`🔍 Debug: parsed accessToken="${accessToken.substring(0, 20)}..." phoneNumberId="${phoneNumberId}"`);
-    } else {
-      apiToken = tokenData;
-    }
-
-    const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
     let sentCount = 0;
     let errorCount = 0;
+    const errors: string[] = [];
 
-    for (let i = 0; i < items.length; i++) {
-      const lead = items[i];
-      const phone = lead.phone?.toString().replace(/\D/g, "");
-      if (!phone) {
-        console.log(`⚠️ Skipping ${lead.name || 'Unknown'} - no valid phone number`);
-        continue;
+    // Use Twilio service if available
+    if (istwilio) {
+      const twilioService = createTwilioService(tokenData);
+      if (!twilioService) {
+        return NextResponse.json({ success: false, error: "Invalid Twilio configuration" }, { status: 400 });
       }
 
-      const messageText = `Hello ${lead.name || ''}, ${campaign.campaignName}: ${campaign.messageContent || ''} ${campaign.description || ''} ${campaign.mediaURL || ''}`;
-      
-      console.log(`📤 Sending to ${phone} (${i + 1}/${items.length})`);
+      for (let i = 0; i < items.length; i++) {
+        const lead = items[i];
+        const phone = lead.phone?.toString().replace(/\D/g, "");
+        if (!phone) {
+          console.log(`⚠️ Skipping ${lead.name || 'Unknown'} - no valid phone number`);
+          continue;
+        }
 
-      let response;
-      
-      try {
-        if (istwilio) {
-          // Twilio WhatsApp API - aggressive sanitization for Unicode chars
-          const rawPhone = phoneNumber || '+14155238886';
-          console.log(`🔍 Debug: raw phoneNumber="${JSON.stringify(rawPhone)}"`);
-          
-          // Strip all Unicode control chars, spaces, and normalize
-          const cleanPhone = rawPhone
-            .replace(/[\u200B-\u200D\u202A-\u202E\u2060-\u206F]/g, '') // Remove Unicode formatting
-            .replace(/\s+/g, '') // Remove all whitespace
-            .replace(/^whatsapp:/i, '') // Remove whatsapp: prefix
-            .replace(/[^\d+]/g, ''); // Keep only digits and +
-          
-          const fromNumber = cleanPhone.startsWith('+') ? cleanPhone : `+${cleanPhone}`;
-          
-          console.log(`🔍 Debug: cleaned fromNumber="${fromNumber}"`);
-          console.log(`🔍 Debug: accountSid="${accountSid.substring(0, 10)}..."`);
+        const messageText = `Hello ${lead.name || ''}, ${campaign.campaignName}: ${campaign.messageContent || ''} ${campaign.description || ''} ${campaign.mediaURL || ''}`;
+        
+        // Add country code if not present (check if starts with country code)
+        const fullPhone = phone.startsWith('91') || phone.length > 10 
+          ? `+${phone}` 
+          : `+91${phone}`;
+        
+        console.log(`📤 Sending to ${phone} (formatted: ${fullPhone}) (${i + 1}/${items.length}) via Twilio`);
 
-          const twilioBody = new URLSearchParams({
-            From: `whatsapp:${fromNumber}`,
-            To: `whatsapp:+91${phone}`,
-            Body: messageText
-          });
+        const result = await twilioService.sendMessage({
+          to: fullPhone,
+          body: messageText,
+          mediaUrl: campaign.mediaURL || undefined,
+        });
 
-          response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-              Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
-            },
-            body: twilioBody,
-          });
-        } else if (isWhatsAppBusinessAPI) {
-          // WhatsApp Business API
-          const toPhone = phone.startsWith('91') ? phone : `91${phone}`;
-          
-          console.log(`🔍 WhatsApp Business API: phoneNumberId="${phoneNumberId}" to="${toPhone}"`);
-          
+        if (result.success) {
+          sentCount++;
+          console.log(`✅ Successfully sent to ${phone} (Message ID: ${result.messageId})`);
+        } else {
+          errorCount++;
+          errors.push(`${phone}: ${result.error}`);
+          console.error(`❌ Failed for ${phone}: ${result.error}`);
+        }
+
+        // Rate limiting delay
+        if (i < items.length - 1) {
+          await new Promise(res => setTimeout(res, 1000)); // 1 second delay
+        }
+      }
+    } else if (isWhatsAppBusinessAPI) {
+      const parts = tokenData.split(':');
+      const accessToken = parts[0];
+      const phoneNumberId = parts[1];
+
+      for (let i = 0; i < items.length; i++) {
+        const lead = items[i];
+        const phone = lead.phone?.toString().replace(/\D/g, "");
+        if (!phone) {
+          console.log(`⚠️ Skipping ${lead.name || 'Unknown'} - no valid phone number`);
+          continue;
+        }
+
+        const messageText = `Hello ${lead.name || ''}, ${campaign.campaignName}: ${campaign.messageContent || ''} ${campaign.description || ''} ${campaign.mediaURL || ''}`;
+        const toPhone = `+91${phone}`;
+        
+        console.log(`📤 Sending to ${toPhone} (${i + 1}/${items.length}) via WhatsApp Business API`);
+
+        try {
           const messageBody = {
             messaging_product: "whatsapp",
             to: toPhone,
             type: "text",
-            text: {
-              body: messageText
-            }
+            text: { body: messageText }
           };
 
-          response = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+          const response = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -143,14 +157,50 @@ export async function POST(req: Request) {
             },
             body: JSON.stringify(messageBody),
           });
-        } else {
-          // Original Whapi.cloud API
+
+          if (response.ok) {
+            sentCount++;
+            console.log(`✅ Successfully sent to ${toPhone}`);
+          } else {
+            errorCount++;
+            const error = await response.text();
+            errors.push(`${phone}: ${error}`);
+            console.error(`❌ Failed for ${toPhone}:`, error);
+          }
+        } catch (error: any) {
+          errorCount++;
+          errors.push(`${phone}: ${error.message}`);
+          console.error(`❌ Error sending to ${toPhone}:`, error);
+        }
+
+        // Rate limiting
+        if (i < items.length - 1) {
+          await new Promise(res => setTimeout(res, 1000));
+        }
+      }
+    } else {
+      // Whapi.cloud API
+      const apiToken = tokenData;
+
+      for (let i = 0; i < items.length; i++) {
+        const lead = items[i];
+        const phone = lead.phone?.toString().replace(/\D/g, "");
+        if (!phone) {
+          console.log(`⚠️ Skipping ${lead.name || 'Unknown'} - no valid phone number`);
+          continue;
+        }
+
+        const messageText = `Hello ${lead.name || ''}, ${campaign.campaignName}: ${campaign.messageContent || ''} ${campaign.description || ''} ${campaign.mediaURL || ''}`;
+        
+        console.log(`📤 Sending to ${phone} (${i + 1}/${items.length}) via Whapi.cloud`);
+
+        try {
           const messageBody = {
             to: `91${phone}`,
             body: messageText,
           };
 
-          response = await fetch("https://gate.whapi.cloud/messages/text", {
+          const response = await fetch("https://gate.whapi.cloud/messages/text", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -158,25 +208,26 @@ export async function POST(req: Request) {
             },
             body: JSON.stringify(messageBody),
           });
-        }
 
-        const text = await response.text();
-        console.log("Response Status:", response.status);
-        console.log("Response Body:", text);
-
-        if (!response.ok) {
-          console.error(`❌ Failed for ${phone}`);
+          if (response.ok) {
+            sentCount++;
+            console.log(`✅ Successfully sent to ${phone}`);
+          } else {
+            errorCount++;
+            const error = await response.text();
+            errors.push(`${phone}: ${error}`);
+            console.error(`❌ Failed for ${phone}:`, error);
+          }
+        } catch (error: any) {
           errorCount++;
-          continue;
+          errors.push(`${phone}: ${error.message}`);
+          console.error(`❌ Error sending to ${phone}:`, error);
         }
 
-        sentCount++;
-        console.log(`✅ Successfully sent to ${phone}`);
-
-        await delay(12000);
-      } catch (error) {
-        console.error(`❌ Error sending to ${phone}:`, error);
-        errorCount++;
+        // Rate limiting
+        if (i < items.length - 1) {
+          await new Promise(res => setTimeout(res, 12000)); // 12 seconds for Whapi
+        }
       }
     }
 
@@ -185,7 +236,8 @@ export async function POST(req: Request) {
       message: `✅ Campaign sent successfully!`, 
       sentCount,
       errorCount,
-      totalLeads: items.length
+      totalLeads: items.length,
+      errors: errors.length > 0 ? errors : undefined
     });
   } catch (error: any) {
     console.error("❌ send-message error:", error);

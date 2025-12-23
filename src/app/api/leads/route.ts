@@ -252,22 +252,52 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(serializedLead);
     } catch (dbErr: any) {
       console.error("Database error for lead creation:", dbErr);
+      console.error("Error code:", dbErr.code);
+      console.error("Error message:", dbErr.message);
       
       // Handle unique constraint violation (duplicate email)
-      if (dbErr.code === 'P2002' && dbErr.meta?.target?.includes('email')) {
+      if (dbErr.code === 'P2002') {
+        const target = dbErr.meta?.target;
+        if (target?.includes('email')) {
+          return NextResponse.json({
+            success: false,
+            error: "A lead with this email address already exists. Please use a different email or update the existing lead.",
+            code: "DUPLICATE_EMAIL"
+          }, { status: 409 });
+        }
         return NextResponse.json({
           success: false,
-          error: "A lead with this email address already exists. Please use a different email or update the existing lead.",
-          code: "DUPLICATE_EMAIL"
+          error: `A lead with this ${target || 'data'} already exists.`,
+          code: "DUPLICATE_ENTRY"
         }, { status: 409 });
       }
       
-      // Handle other database errors
+      // Handle foreign key constraint (user not found)
+      if (dbErr.code === 'P2003') {
+        return NextResponse.json({
+          success: false,
+          error: "Your user account was not found. Please log out and log back in.",
+          code: "USER_NOT_FOUND"
+        }, { status: 400 });
+      }
+      
+      // Handle record not found
+      if (dbErr.code === 'P2025') {
+        return NextResponse.json({
+          success: false,
+          error: "Required record not found.",
+          code: "NOT_FOUND"
+        }, { status: 404 });
+      }
+      
+      // For development, return the actual error message
+      const isDev = process.env.NODE_ENV === 'development';
       return NextResponse.json({
         success: false,
-        error: "Database is currently unavailable. Please try creating the lead later when the database connection is restored.",
-        details: "The database server appears to be unreachable. This may be a temporary connectivity issue."
-      }, { status: 503 });
+        error: isDev ? `Database error: ${dbErr.message}` : "Failed to create lead. Please try again.",
+        code: dbErr.code || "DATABASE_ERROR",
+        details: isDev ? dbErr.message : undefined
+      }, { status: 500 });
     }
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

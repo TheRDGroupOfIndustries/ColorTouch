@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import Layout from "@/components/Layout";
 import { SessionProvider, useSession } from "next-auth/react";
+import { SyncWorker } from "@/components/SyncWorker";
 import dynamic from "next/dynamic";
 
 // Dynamically import LoginPage to avoid SSR issues
@@ -90,6 +91,7 @@ export default function ClientProviders({
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <SyncWorker />
           <AuthWrapper>{children}</AuthWrapper>
         </TooltipProvider>
       </SessionProvider>

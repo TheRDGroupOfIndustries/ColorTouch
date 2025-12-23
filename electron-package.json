@@ -1,0 +1,43 @@
+{
+  "name": "colortouch-electron",
+  "version": "0.1.0",
+  "private": true,
+  "main": "electron/main.js",
+  "description": "ColorTouch CRM - Desktop Application",
+  "author": "ColorTouch Team",
+  "build": {
+    "appId": "com.colortouch.crm",
+    "productName": "ColorTouch CRM",
+    "files": [
+      "electron/**/*",
+      ".next/standalone/**/*",
+      ".next/static/**/*",
+      "public/**/*",
+      "node_modules/.prisma/**/*",
+      "prisma/colortouch.db"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/.prisma",
+        "to": "app/node_modules/.prisma"
+      },
+      {
+        "from": "prisma/colortouch.db",
+        "to": "prisma/colortouch.db"
+      }
+    ],
+    "asar": false,
+    "win": {
+      "target": ["portable"],
+      "icon": "build/icons/icon.ico"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "build/icons/icon.icns"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "icon": "build/icons/icon.png"
+    }
+  }
+}

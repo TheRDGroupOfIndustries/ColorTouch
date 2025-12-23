@@ -15,6 +15,13 @@ const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 // Build connection URL with Neon-optimized settings for scale
 const getDatabaseUrl = () => {
   const baseUrl = process.env.DATABASE_URL || '';
+  
+  // Check if using SQLite (file: protocol)
+  if (baseUrl.startsWith('file:')) {
+    // SQLite doesn't support connection pooling parameters
+    return baseUrl;
+  }
+  
   // Add connection parameters optimized for Neon serverless at scale
   // connection_limit: max connections per instance (Neon handles pooling)
   // pool_timeout: time to wait for connection from pool

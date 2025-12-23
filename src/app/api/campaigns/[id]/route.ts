@@ -18,18 +18,24 @@ export async function GET(
     }
 
     const { id } = await context.params;
-    const leads = await prisma.whatsappCampaign.findUnique({
+    const campaign = await prisma.whatsappCampaign.findUnique({
       where: { id: id },
     });
 
-     if (!leads) {
+     if (!campaign) {
           return NextResponse.json(
-            { success: false, error: "lead not found" },
+            { success: false, error: "campaign not found" },
             { status: 404 }
           );
         }
 
-    return NextResponse.json(leads);
+    // Parse selectedLeadIds from JSON string
+    const parsedCampaign = {
+      ...campaign,
+      selectedLeadIds: campaign.selectedLeadIds ? JSON.parse(campaign.selectedLeadIds as string) : [],
+    };
+
+    return NextResponse.json(parsedCampaign);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -44,6 +50,7 @@ interface Campaignupdate {
   messageContent: string;
   mediaURL?: string;
   templateID?: string;
+  selectedLeadIds?: string[];
 }
 
 export async function PUT(
@@ -75,7 +82,10 @@ export async function PUT(
     const body = (await req.json()) as Campaignupdate;
     const updated = await prisma.whatsappCampaign.update({
       where: { id },
-      data: body,
+      data: {
+        ...body,
+        selectedLeadIds: body.selectedLeadIds ? JSON.stringify(body.selectedLeadIds) : null,
+      },
     });
 
     return NextResponse.json(updated);
