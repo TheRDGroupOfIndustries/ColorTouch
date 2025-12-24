@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { auth } from '@/lib/auth';
 import { enhancedSyncService } from '@/lib/enhanced-sync';
 
 /**
@@ -8,8 +8,8 @@ import { enhancedSyncService } from '@/lib/enhanced-sync';
  */
 export async function GET(req: Request) {
   try {
-    const session = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (!session?.userId) {
+    const session = await auth();
+    if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -31,8 +31,8 @@ export async function GET(req: Request) {
  */
 export async function POST(req: Request) {
   try {
-    const session = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (!session?.userId) {
+    const session = await auth();
+    if (!session || !session.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

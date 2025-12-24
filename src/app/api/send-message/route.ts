@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { createTwilioService } from "@/lib/twilio-whatsapp";
 
@@ -11,8 +11,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "campaignId required" }, { status: 400 });
 
     // ✅ Auth check
-    const session = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (!session?.userId)
+    const session = await auth();
+    if (!session || !session.user?.id)
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     // ✅ Directly fetch campaign from DB

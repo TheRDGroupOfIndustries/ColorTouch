@@ -1,19 +1,19 @@
 import prisma from "@/lib/prisma";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PUT(req: NextRequest) {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const session = await auth();
     
-    if (!token || !token.userId) {
+    if (!session || !session.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
     
-    const userId = token.userId as string;
+    const userId = session.user.id;
     const body = await req.json();
     const { leadIds, updates } = body;
     

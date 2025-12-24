@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { CampaignType, MessageType, Priority } from "@prisma/client";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -9,8 +9,8 @@ export async function GET(
 ) {
   try {
     // Authentication check
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (!token || !token.userId) {
+    const session = await auth();
+    if (!session || !session.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -59,8 +59,8 @@ export async function PUT(
 ) {
   try {
     // Authentication check
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (!token || !token.userId) {
+    const session = await auth();
+    if (!session || !session.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
@@ -100,8 +100,8 @@ export async function DELETE(
 ) {
   try {
     // Authentication check
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-    if (!token || !token.userId) {
+    const session = await auth();
+    if (!session || !session.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }

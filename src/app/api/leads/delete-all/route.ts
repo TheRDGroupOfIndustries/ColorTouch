@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { getToken } from "next-auth/jwt";
+import { auth } from "@/lib/auth";
 
 const prisma = new PrismaClient();
 
 export async function POST(req: NextRequest) {
   try {
     // Verify user is authenticated
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const session = await auth();
 
-    if (!token || !token.userId) {
+    if (!session || !session.user?.id) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    const userId = token.userId as string;
+    const userId = session.user.id;
 
     // Delete all leads for this user
     const deleted = await prisma.lead.deleteMany({
