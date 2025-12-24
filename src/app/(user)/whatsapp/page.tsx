@@ -110,14 +110,17 @@ export default function WhatsAppPage() {
         body: JSON.stringify({ campaignId, status }),
       });
 
-      if (!res.ok) throw new Error("Failed to update status");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || `Server error: ${res.status}`);
+      }
       
       const data = await res.json();
       toast.success(`Campaign ${status.toLowerCase()} successfully!`);
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating status:", error);
-      toast.error("Failed to update campaign status");
+      toast.error(error.message || "Failed to update campaign status");
       return null;
     }
   };
@@ -133,20 +136,23 @@ export default function WhatsAppPage() {
         body: JSON.stringify({ campaignId }),
       });
 
-      if (!res.ok) throw new Error("Failed to send campaign");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(errorData.error || errorData.message || `Server error: ${res.status}`);
+      }
       
       const data = await res.json();
       if (data.sentCount === 0) {
-        toast.error("No messages were sent. Please check your leads have valid phone numbers.");
+        toast.error(data.message || "No messages were sent. Please check your leads have valid phone numbers.");
       } else {
         toast.success(`Campaign sent to ${data.sentCount} of ${data.totalLeads} leads successfully!`);
         if (data.errorCount > 0) {
           toast.error(`Failed to send to ${data.errorCount} leads. Check logs for details.`);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending campaign:", error);
-      toast.error("Failed to send campaign");
+      toast.error(error.message || "Failed to send campaign");
     } finally {
       setLoading(false);
     }
@@ -161,7 +167,10 @@ export default function WhatsAppPage() {
           method: "DELETE",
         });
         
-        if (!res.ok) throw new Error("Failed to delete campaign");
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
+          throw new Error(errorData.error || `Server error: ${res.status}`);
+        }
         
         toast.success("Campaign deleted successfully!");
         fetchCampaigns(); // Refresh list
@@ -171,9 +180,9 @@ export default function WhatsAppPage() {
           fetchCampaigns(); // Refresh list
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error handling action:", error);
-      toast.error(`Failed to ${action.toLowerCase()} campaign`);
+      toast.error(error.message || `Failed to ${action.toLowerCase()} campaign`);
     }
   };
 

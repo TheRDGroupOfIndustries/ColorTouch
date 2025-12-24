@@ -60,8 +60,9 @@ export async function POST(req: NextRequest) {
     }
     
     // Create Razorpay order
+    const amountPaise = Math.round(Number(amount) * 100); // Razorpay expects amount in paise (integer)
     const options = {
-      amount: Math.round(amount * 100), // Convert to paise
+      amount: amountPaise, // Convert to paise
       currency,
       receipt: `receipt_${Date.now()}`,
       notes: {
@@ -78,7 +79,8 @@ export async function POST(req: NextRequest) {
       data: {
         orderId: order.id,
         userId: user.id, // Use the verified user ID
-        amount: Math.round(amount * 100), // Store in paise to match Razorpay's format
+        // Prisma schema expects `amount` as String; store paise value as string
+        amount: String(amountPaise),
         currency: currency,
         status: "PENDING",
         razorpayOrderId: order.id,

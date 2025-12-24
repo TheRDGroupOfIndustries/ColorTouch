@@ -64,18 +64,23 @@ export default function LeadsUploader() {
           successMessage += ` ⚠️ ${data.emailsFailed} email${data.emailsFailed > 1 ? 's' : ''} failed.`;
         }
         
-        toast.success(successMessage, { id: 'upload', duration: 6000 });
+        // Dismiss loading toast and show success
+        toast.dismiss('upload');
+        toast.success(successMessage, { duration: 6000 });
         setFile(null);
+        setIsUploading(false);
         // reset input so same file can be re-uploaded
         const input = document.getElementById('leadFile') as HTMLInputElement;
         if (input) input.value = '';
       } else {
-        toast.error(data.error || '❌ Upload failed. Please try again.', { id: 'upload' });
+        toast.dismiss('upload');
+        toast.error(data.error || '❌ Upload failed. Please try again.');
+        setIsUploading(false);
       }
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('⚠️ Network or server error. Please try again.', { id: 'upload' });
-    } finally {
+      toast.dismiss('upload');
+      toast.error('⚠️ Network or server error. Please try again.');
       setIsUploading(false);
     }
   };
