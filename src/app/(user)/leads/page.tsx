@@ -59,6 +59,7 @@ interface Lead {
   enquiryDate?: string;
   bookingDate?: string;
   checkInDates?: string;
+  checkoutDate?: string;
   avatar?: string;
   notes?: string;
   duration?: number;
@@ -162,6 +163,8 @@ export default function LeadsPage() {
   const [selectedTag, setSelectedTag] = useState<string>("all");
   const [checkInFromDate, setCheckInFromDate] = useState<string>("");
   const [checkInToDate, setCheckInToDate] = useState<string>("");
+  const [checkoutFromDate, setCheckoutFromDate] = useState<string>("");
+  const [checkoutToDate, setCheckoutToDate] = useState<string>("");
   const [createdFromDate, setCreatedFromDate] = useState<string>("");
   const [createdToDate, setCreatedToDate] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
@@ -180,7 +183,7 @@ export default function LeadsPage() {
     }
 
     // Create CSV content
-    const headers = ["name", "email", "phone", "company", "notes", "source", "tag", "duration", "amount", "leadsCreatedDate", "leadsUpdatedDates", "enquiryDate", "bookingDate", "checkInDates"];
+    const headers = ["name", "email", "phone", "company", "notes", "source", "tag", "duration", "amount", "leadsCreatedDate", "leadsUpdatedDates", "enquiryDate", "bookingDate", "checkInDates", "checkoutDate"];
     const rows = filteredLeads.map(lead => {
       const createdVal = lead.leadsCreatedDate || lead.createdAt || '';
       const updatedVal = lead.leadsUpdatedDates || lead.updatedAt || '';
@@ -420,7 +423,7 @@ export default function LeadsPage() {
 
       return matchesSearch && matchesStatus && matchesTag && matchesCheckInDate && matchesCreatedDate;
     });
-  }, [leads, search, selectedStatus, selectedTag, checkInFromDate, checkInToDate, createdFromDate, createdToDate]);
+  }, [leads, search, selectedStatus, selectedTag, checkInFromDate, checkInToDate, checkoutFromDate, checkoutToDate, createdFromDate, createdToDate]);
 
   // ✅ UI (unchanged)
   return (
@@ -507,12 +510,13 @@ export default function LeadsPage() {
         >
           <Filter className="w-4 h-4 mr-2" />
           Filters
-          {(selectedStatus !== "all" || selectedTag !== "all" || checkInFromDate || checkInToDate || createdFromDate || createdToDate) && (
+          {(selectedStatus !== "all" || selectedTag !== "all" || checkInFromDate || checkInToDate || checkoutFromDate || checkoutToDate || createdFromDate || createdToDate) && (
             <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
               {[
                 selectedStatus !== "all",
                 selectedTag !== "all",
                 checkInFromDate || checkInToDate,
+                checkoutFromDate || checkoutToDate,
                 createdFromDate || createdToDate
               ].filter(Boolean).length}
             </span>
@@ -600,6 +604,31 @@ export default function LeadsPage() {
               </div>
             </div>
             
+            {/* Check-Out Date Range */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4 text-primary" />
+                Check-Out Date Range
+              </label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={checkoutFromDate}
+                  onChange={(e) => setCheckoutFromDate(e.target.value)}
+                  placeholder="From"
+                  className="flex-1 bg-card border-border h-11"
+                />
+                <span className="text-muted-foreground font-medium">to</span>
+                <Input
+                  type="date"
+                  value={checkoutToDate}
+                  onChange={(e) => setCheckoutToDate(e.target.value)}
+                  placeholder="To"
+                  className="flex-1 bg-card border-border h-11"
+                />
+              </div>
+            </div>
+            
             {/* Created Date Range */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -626,6 +655,34 @@ export default function LeadsPage() {
             </div>
           </div>
 
+          {/* Additional Date Range Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Check-Out Date Range */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4 text-primary" />
+                Check-Out Date Range
+              </label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={checkoutFromDate}
+                  onChange={(e) => setCheckoutFromDate(e.target.value)}
+                  placeholder="From"
+                  className="flex-1 bg-card border-border h-11"
+                />
+                <span className="text-muted-foreground font-medium">to</span>
+                <Input
+                  type="date"
+                  value={checkoutToDate}
+                  onChange={(e) => setCheckoutToDate(e.target.value)}
+                  placeholder="To"
+                  className="flex-1 bg-card border-border h-11"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Clear Filters Button */}
           <div className="flex justify-end pt-4 border-t border-border">
             <Button
@@ -635,6 +692,8 @@ export default function LeadsPage() {
                 setSelectedTag("all");
                 setCheckInFromDate("");
                 setCheckInToDate("");
+                setCheckoutFromDate("");
+                setCheckoutToDate("");
                 setCreatedFromDate("");
                 setCreatedToDate("");
               }}
@@ -700,6 +759,7 @@ export default function LeadsPage() {
                     "Enquiry",
                     "Booking",
                     "Check-in",
+                    "Check-out",
                   ].map((h) => (
                     <th
                       key={h}
@@ -870,6 +930,24 @@ export default function LeadsPage() {
                           if (lead.checkInDates) {
                             try {
                               const d = new Date(lead.checkInDates);
+                              return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}/${d.getFullYear()}`;
+                            } catch {
+                              return '-';
+                            }
+                          }
+                          return '-';
+                        })()}
+                      </span>
+                    </td>
+                    
+                    {/* Check-out Date Column */}
+                    <td className="p-4">
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-600 bg-transparent text-sm text-white">
+                        <Clock className="w-4 h-4" />
+                        {(() => {
+                          if (lead.checkoutDate) {
+                            try {
+                              const d = new Date(lead.checkoutDate);
                               return `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}/${d.getFullYear()}`;
                             } catch {
                               return '-';

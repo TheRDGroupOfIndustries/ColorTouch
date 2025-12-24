@@ -20,6 +20,7 @@ interface LeadFormData {
   enquiryDate?: string;
   bookingDate?: string;
   checkInDates?: string;
+  checkoutDate?: string;
 }
 
 interface LeadsAddModalProps {
@@ -42,6 +43,7 @@ const LeadsAddModal: React.FC<LeadsAddModalProps> = ({ onClose, onLeadAdded }) =
     enquiryDate: "",
     bookingDate: "",
     checkInDates: "",
+    checkoutDate: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -295,6 +297,17 @@ const LeadsAddModal: React.FC<LeadsAddModalProps> = ({ onClose, onLeadAdded }) =
                 type="date"
                 value={formData.checkInDates}
                 onChange={(e) => handleChange("checkInDates", e.target.value)}
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              />
+            </div>
+
+            {/* Check-Out Date */}
+            <div>
+              <label className="text-sm text-zinc-400">Check-Out Date</label>
+              <Input
+                type="date"
+                value={formData.checkoutDate}
+                onChange={(e) => handleChange("checkoutDate", e.target.value)}
                 className="bg-zinc-900 border-zinc-700 text-zinc-100 focus:ring-2 focus:ring-blue-500 cursor-pointer"
               />
             </div>

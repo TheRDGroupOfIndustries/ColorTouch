@@ -29,6 +29,7 @@ type LeadRow = {
   enquiryDate?: string;
   bookingDate?: string;
   checkInDates?: string;
+  checkoutDate?: string;
 };
 
 // Map incoming (possibly non-enum) tag values to valid Tag enum values.
@@ -207,6 +208,7 @@ export async function POST(req: NextRequest) {
             else if (header.includes('enquiry')) rowData['enquiryDate'] = value;
             else if (header.includes('booking')) rowData['bookingDate'] = value;
             else if (header.includes('check in') || header.includes('check-in')) rowData['checkInDates'] = value;
+            else if (header.includes('checkout') || header.includes('check-out') || header.includes('check out')) rowData['checkoutDate'] = value;
             else if (header.includes('amount') || header.includes('value') || header.includes('price') || header.includes('revenue')) {
               rowData.amount = value;
             }
@@ -277,6 +279,7 @@ export async function POST(req: NextRequest) {
             else if (header.includes('enquiry')) rowData['enquiryDate'] = value;
             else if (header.includes('booking')) rowData['bookingDate'] = value;
             else if (header.includes('check in') || header.includes('check-in')) rowData['checkInDates'] = value;
+            else if (header.includes('checkout') || header.includes('check-out') || header.includes('check out')) rowData['checkoutDate'] = value;
             else if (header.includes('amount') || header.includes('value') || header.includes('price') || header.includes('revenue')) {
               rowData.amount = value;
             }
@@ -320,6 +323,13 @@ export async function POST(req: NextRequest) {
         const enquiryDate = row['enquiryDate'] ? String(row['enquiryDate']).trim() : undefined;
         const bookingDate = row['bookingDate'] ? String(row['bookingDate']).trim() : undefined;
         const checkInDates = row['checkInDates'] ? String(row['checkInDates']).trim() : undefined;
+        const checkoutDate = row['checkoutDate'] ? String(row['checkoutDate']).trim() : undefined;
+
+        // Make checkout date mandatory
+        if (!checkoutDate) {
+          console.warn(`⚠️ Skipping lead "${name}" - checkout date is required`);
+          return null;
+        }
 
         const notesField = row.notes ? String(row.notes).trim().substring(0, 1000) : null;
 
@@ -340,7 +350,7 @@ export async function POST(req: NextRequest) {
         if (createdAt && !isNaN(createdAt.getTime())) insertObj.leadsCreatedDate = createdAt;
         if (updatedAt && !isNaN(updatedAt.getTime())) insertObj.leadsUpdatedDates = updatedAt;
 
-        // Parse enquiry/booking/checkin date strings into Date objects where possible
+        // Parse enquiry/booking/checkin/checkout date strings into Date objects where possible
         if (enquiryDate) {
           const d = new Date(enquiryDate);
           if (!isNaN(d.getTime())) insertObj.enquiryDate = d;
@@ -352,6 +362,10 @@ export async function POST(req: NextRequest) {
         if (checkInDates) {
           const d = new Date(checkInDates);
           if (!isNaN(d.getTime())) insertObj.checkInDates = d;
+        }
+        if (checkoutDate) {
+          const d = new Date(checkoutDate);
+          if (!isNaN(d.getTime())) insertObj.checkoutDate = d;
         }
 
         return insertObj;

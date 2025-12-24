@@ -17,6 +17,7 @@ interface leaduupdate {
   enquiryDate?: string;
   bookingDate?: string;
   checkInDates?: string;
+  checkoutDate?: string;
   leadsCreatedDate?: string;
   leadsUpdatedDates?: string;
 }
@@ -77,6 +78,7 @@ export async function PUT(
         enquiryDate: convertDateToDateTime(body.enquiryDate),
         bookingDate: convertDateToDateTime(body.bookingDate),
         checkInDates: convertDateToDateTime(body.checkInDates),
+        checkoutDate: convertDateToDateTime(body.checkoutDate),
         leadsCreatedDate: convertDateToDateTime((body as any).leadsCreatedDate),
         leadsUpdatedDates: convertDateToDateTime((body as any).leadsUpdatedDates),
       };

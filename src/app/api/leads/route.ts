@@ -44,6 +44,7 @@ export async function GET(req: NextRequest) {
         enquiryDate: true,
         bookingDate: true,
         checkInDates: true,
+        checkoutDate: true,
       };
 
       if (userRole === "ADMIN") {
@@ -89,6 +90,7 @@ export async function GET(req: NextRequest) {
       serializedLead.enquiryDate = leadAny.enquiryDate && leadAny.enquiryDate instanceof Date ? leadAny.enquiryDate.toISOString() : null;
       serializedLead.bookingDate = leadAny.bookingDate && leadAny.bookingDate instanceof Date ? leadAny.bookingDate.toISOString() : null;
       serializedLead.checkInDates = leadAny.checkInDates && leadAny.checkInDates instanceof Date ? leadAny.checkInDates.toISOString() : null;
+      serializedLead.checkoutDate = leadAny.checkoutDate && leadAny.checkoutDate instanceof Date ? leadAny.checkoutDate.toISOString() : null;
       
       return serializedLead;
     });
@@ -113,6 +115,7 @@ interface leaducreate {
   enquiryDate?: string;
   bookingDate?: string;
   checkInDates?: string;
+  checkoutDate?: string;
 }
 
 export async function POST(req: NextRequest) {
@@ -203,6 +206,7 @@ export async function POST(req: NextRequest) {
         enquiryDate: convertDateToDateTime(body.enquiryDate),
         bookingDate: convertDateToDateTime(body.bookingDate),
         checkInDates: convertDateToDateTime(body.checkInDates),
+        checkoutDate: convertDateToDateTime(body.checkoutDate),
       };
 
       const created = await withRetry(() => prisma.lead.create({

@@ -41,6 +41,7 @@ model Lead {
   amount            String?
   bookingDate       DateTime?
   checkInDates      DateTime?
+  checkoutDate      DateTime?
   enquiryDate       DateTime?
   leadsCreatedDate  DateTime?
   leadsUpdatedDates DateTime?
