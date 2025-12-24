@@ -16,7 +16,11 @@ const LoginPage = dynamic(() => import("@/app/login/page"), { ssr: false });
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 10 * 60 * 1000, // 10 minutes - less frequent refetching
+      gcTime: 15 * 60 * 1000, // 15 minutes cache time
+      refetchOnWindowFocus: false, // Don't refetch when window gains focus
+      refetchOnReconnect: false, // Don't refetch when reconnecting
+      retry: 1, // Only retry once on failure
     },
   },
 });
@@ -87,7 +91,17 @@ export default function ClientProviders({
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SessionProvider>
+      {/* 
+        IMPORTANT: Disable aggressive session polling to prevent page refresh loops
+        - refetchInterval: 0 = no automatic polling
+        - refetchOnWindowFocus: false = no refetch when window gains focus
+        - refetchWhenOffline: false = no refetch when offline
+      */}
+      <SessionProvider 
+        refetchInterval={0} 
+        refetchOnWindowFocus={false}
+        refetchWhenOffline={false}
+      >
         <TooltipProvider>
           <Toaster />
           <Sonner />

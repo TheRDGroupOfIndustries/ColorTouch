@@ -1,16 +1,21 @@
 import type { Metadata } from "next";
-import { Inter, Roboto_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import ClientProviders from "@/providers/ClientProviders";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+// Use Geist fonts with fallback to system fonts for offline builds
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
+  fallback: ["system-ui", "arial", "sans-serif"],
 });
 
-const robotoMono = Roboto_Mono({
-  variable: "--font-roboto-mono",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
+  fallback: ["ui-monospace", "monospace"],
 });
 
 export const metadata: Metadata = {
@@ -23,7 +28,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${robotoMono.variable}`}>
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>

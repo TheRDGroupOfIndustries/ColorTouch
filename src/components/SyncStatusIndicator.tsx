@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { syncService } from '@/lib/syncService';
 import { Wifi, WifiOff, Cloud, CloudOff, RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from './ui/button';
@@ -17,47 +17,33 @@ export function SyncStatusIndicator() {
   const [queueCount, setQueueCount] = useState(0);
   const [pendingCounts, setPendingCounts] = useState({ leads: 0, payments: 0, reminders: 0 });
   const [lastSyncResult, setLastSyncResult] = useState<any>(null);
-
+  const [mounted, setMounted] = useState(false);
+  
+  // Use refs to track current state without re-running effects
+  const isOnlineRef = useRef(isOnline);
+  const syncingRef = useRef(syncing);
+  
   useEffect(() => {
-    // Initial status check
-    checkStatus();
+    isOnlineRef.current = isOnline;
+  }, [isOnline]);
+  
+  useEffect(() => {
+    syncingRef.current = syncing;
+  }, [syncing]);
 
-    // Listen to online/offline events
-    const handleOnline = () => {
-      setIsOnline(true);
-      triggerSync();
-    };
+  const checkStatus = useCallback(async () => {
+    try {
+      const count = await syncService.getQueueCount();
+      const pending = await syncService.getPendingCount();
+      setQueueCount(count);
+      setPendingCounts(pending);
+    } catch (error) {
+      console.error('Error checking sync status:', error);
+    }
+  }, []);
 
-    const handleOffline = () => {
-      setIsOnline(false);
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    // Periodic sync check (every 30 seconds)
-    const interval = setInterval(() => {
-      if (isOnline && !syncing) {
-        checkStatus();
-      }
-    }, 30000);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      clearInterval(interval);
-    };
-  }, [isOnline, syncing]);
-
-  const checkStatus = async () => {
-    const count = await syncService.getQueueCount();
-    const pending = await syncService.getPendingCount();
-    setQueueCount(count);
-    setPendingCounts(pending);
-  };
-
-  const triggerSync = async () => {
-    if (!isOnline || syncing) return;
+  const triggerSync = useCallback(async () => {
+    if (!isOnlineRef.current || syncingRef.current) return;
 
     setSyncing(true);
     try {
@@ -69,7 +55,41 @@ export function SyncStatusIndicator() {
     } finally {
       setSyncing(false);
     }
-  };
+  }, [checkStatus]);
+
+  useEffect(() => {
+    setMounted(true);
+    
+    // Initial status check (only once)
+    checkStatus();
+
+    // Listen to online/offline events
+    const handleOnline = () => {
+      setIsOnline(true);
+      // Don't auto-sync on online event - user can manually trigger
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Periodic status check (every 60 seconds - not sync, just status)
+    const interval = setInterval(() => {
+      checkStatus();
+    }, 60000);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      clearInterval(interval);
+    };
+  }, []); // Empty dependency array - only run once
+
+  // Don't render on server
+  if (!mounted) return null;
 
   const totalPending = pendingCounts.leads + pendingCounts.payments + pendingCounts.reminders;
 

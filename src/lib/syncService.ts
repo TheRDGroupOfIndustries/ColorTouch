@@ -17,16 +17,21 @@ class SyncService {
   private isOnline: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
   private syncInProgress: boolean = false;
   private syncQueue: SyncQueueItem[] = [];
+  private listenersAdded: boolean = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
-      window.addEventListener('online', () => {
-        this.isOnline = true;
-        this.triggerSync();
-      });
-      window.addEventListener('offline', () => {
-        this.isOnline = false;
-      });
+      // Only add listeners once to prevent duplicate registrations
+      if (!this.listenersAdded) {
+        window.addEventListener('online', () => {
+          this.isOnline = true;
+          // Don't auto-trigger sync on online event - let SyncWorker handle it
+        });
+        window.addEventListener('offline', () => {
+          this.isOnline = false;
+        });
+        this.listenersAdded = true;
+      }
       
       // Load queue from localStorage
       this.loadQueue();

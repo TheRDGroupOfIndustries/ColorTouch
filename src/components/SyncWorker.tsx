@@ -1,46 +1,36 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { syncService } from '@/lib/syncService';
 
 /**
  * Background sync worker component
- * Auto-syncs when online and periodically checks for changes
+ * DISABLED aggressive sync to prevent page refresh loops
+ * Sync is now only triggered manually by user
  */
 export function SyncWorker() {
   const { data: session, status } = useSession();
+  const syncedRef = useRef(false);
 
   useEffect(() => {
-    // Only sync if user is authenticated
-    if (status !== 'authenticated' || !session) {
+    // Only sync once per session, when user is authenticated
+    if (status !== 'authenticated' || !session || syncedRef.current) {
       return;
     }
 
-    // Trigger initial sync on mount if online
-    if (typeof window !== 'undefined' && navigator.onLine) {
-      syncService.triggerSync();
-    }
+    // Mark as synced to prevent multiple syncs
+    syncedRef.current = true;
 
-    // Set up periodic sync every 5 minutes
-    const syncInterval = setInterval(() => {
+    // Single initial sync after 5 seconds (one-time only)
+    const initialSyncTimeout = setTimeout(() => {
       if (typeof window !== 'undefined' && navigator.onLine) {
-        syncService.triggerSync();
+        syncService.triggerSync().catch(console.error);
       }
-    }, 5 * 60 * 1000); // 5 minutes
-
-    // Listen for visibility change (when user comes back to tab)
-    const handleVisibilityChange = () => {
-      if (!document.hidden && navigator.onLine) {
-        syncService.triggerSync();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    }, 5000);
 
     return () => {
-      clearInterval(syncInterval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearTimeout(initialSyncTimeout);
     };
   }, [session, status]);
 

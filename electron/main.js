@@ -110,8 +110,9 @@ function createWindow() {
           const req = http.request(options, (res) => {
             console.log('Server is responding, loading app...');
             mainWindow.loadURL(localUrl);
-            // Enable dev tools in production to see errors
-            mainWindow.webContents.openDevTools();
+            // Dev tools disabled in production for better performance
+            // Uncomment below line if you need to debug production issues:
+            // mainWindow.webContents.openDevTools();
           });
           
           req.on('error', (err) => {
