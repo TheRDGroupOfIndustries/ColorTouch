@@ -88,11 +88,14 @@
     "tailwind-variants": "^3.1.1",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
-    "zod": "^4.1.12"
+    "zod": "^4.1.12",
+    "@tailwindcss/postcss": "^4",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
-    "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
     "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^2.4.6",
@@ -101,7 +104,6 @@
     "@types/nodemailer": "^7.0.3",
     "@types/react": "^18.2.46",
     "@types/react-dom": "^18.2.18",
-    "autoprefixer": "^10.4.21",
     "baseline-browser-mapping": "^2.8.32",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
@@ -110,9 +112,7 @@
     "eslint": "^9.38.0",
     "eslint-config-next": "16.0.7",
     "globals": "^16.4.0",
-    "postcss": "^8.5.6",
     "prisma": "^6.18.0",
-    "tailwindcss": "^4.1.16",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2",
     "wait-on": "^9.0.3"
