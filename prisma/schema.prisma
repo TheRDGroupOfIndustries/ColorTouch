@@ -279,3 +279,31 @@ enum SyncStatus {
   CONFLICT     // Conflict detected
   ERROR        // Sync failed
 }
+
+// WhatsApp Business API Configuration
+model WhatsAppConfig {
+  id              String    @id @default(cuid())
+  phoneNumberId   String    @unique
+  accessToken     String
+  displayName     String?
+  isRegistered    Boolean   @default(false)
+  registeredAt    DateTime?
+  expiresAt       DateTime?  // Certificate expires after 14 days
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([phoneNumberId])
+}
+
+// Twilio Configuration
+model TwilioConfig {
+  id              String    @id @default(cuid())
+  accountSid      String    @unique
+  authToken       String
+  phoneNumber     String
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([accountSid])
+}

@@ -136,19 +136,27 @@ export default function WhatsAppPage() {
         body: JSON.stringify({ campaignId }),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(errorData.error || errorData.message || `Server error: ${res.status}`);
+      const data = await res.json().catch(() => null);
+
+      // Treat HTTP errors and explicit success=false as failures
+      if (!res.ok || !data?.success) {
+        const message = data?.error || data?.message || `Server error: ${res.status}`;
+        if (Array.isArray(data?.errors) && data.errors.length > 0) {
+          console.error("WhatsApp send errors:", data.errors);
+        }
+        throw new Error(message);
       }
-      
-      const data = await res.json();
-      if (data.sentCount === 0) {
-        toast.error(data.message || "No messages were sent. Please check your leads have valid phone numbers.");
+
+      if (data.partial) {
+        toast.success(`Campaign sent to ${data.sentCount} of ${data.totalLeads} leads (partial)`);
+        if (data.errorCount > 0) {
+          toast.error(`Failed to send to ${data.errorCount} leads. Open console for details.`);
+          if (Array.isArray(data.errors) && data.errors.length > 0) {
+            console.error("WhatsApp send errors:", data.errors);
+          }
+        }
       } else {
         toast.success(`Campaign sent to ${data.sentCount} of ${data.totalLeads} leads successfully!`);
-        if (data.errorCount > 0) {
-          toast.error(`Failed to send to ${data.errorCount} leads. Check logs for details.`);
-        }
       }
     } catch (error: any) {
       console.error("Error sending campaign:", error);

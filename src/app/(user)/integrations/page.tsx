@@ -112,7 +112,12 @@ useEffect(() => {
                   <form
                     onSubmit={handleSubmit}
                     className="grid grid-cols-1 gap-4 overflow-hidden"
+                    autoComplete="off"
                   >
+                    {/* Hidden honeypot fields to trick browser autofill */}
+                    <input type="text" name="username" style={{ display: 'none' }} tabIndex={-1} autoComplete="username" />
+                    <input type="password" name="password" style={{ display: 'none' }} tabIndex={-1} autoComplete="current-password" />
+                    
                     {/* API Key */}
                     <div className="grid gap-2">
                       <label className="flex flex-row gap-1 text-sm font-medium leading-none">
@@ -132,12 +137,15 @@ useEffect(() => {
                       </label>
                       <input
                         type="text"
-                        name="apiKey"
+                        name="wa_access_token"
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
                         placeholder={provider === 'whatsapp-business-api' ? 'Enter your WhatsApp Business API Access Token' : provider === 'twilio' ? 'Enter your Twilio Account SID' : 'Enter your WhatsApp API Key'}
                         className="border-input  placeholder:text-muted-foreground flex h-10 w-full rounded-md border px-3 py-2 text-base md:text-sm"
                         required
+                        autoComplete="off"
+                        data-form-type="other"
+                        data-lpignore="true"
                       />
                     </div>
 
@@ -148,13 +156,16 @@ useEffect(() => {
                       </label>
                       <div className="relative">
                         <input
-                          type={showSecret ? "text" : "password"}
-                          name="apiSecret"
+                          type={showSecret ? "text" : "text"}
+                          name="wa_phone_number_id"
                           value={apiSecret}
                           onChange={(e) => setApiSecret(e.target.value)}
                           placeholder={provider === 'whatsapp-business-api' ? 'Enter Phone Number ID (e.g., 530642463471604)' : provider === 'twilio' ? 'Enter your Twilio Auth Token' : 'Enter your WhatsApp API Secret'}
                           className="border-input  placeholder:text-muted-foreground flex h-10 w-full rounded-md border px-3 py-2 text-base md:text-sm"
                           required={provider === 'twilio' || provider === 'whatsapp-business-api'}
+                          autoComplete="new-password"
+                          data-form-type="other"
+                          data-lpignore="true"
                         />
                         <button
                           type="button"

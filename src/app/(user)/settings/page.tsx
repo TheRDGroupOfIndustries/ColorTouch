@@ -10,13 +10,15 @@ import {
   Eye, 
   EyeOff,
   Trash2,
-  Check
+  Check,
+  Users
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import toast, { Toaster } from "react-hot-toast";
+import AdminUserManagement from "@/components/AdminUserManagement";
 
 interface UserProfile {
   id: string;
@@ -47,6 +49,10 @@ export default function SettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+
+  // Admin user management state
+  const [showUserManagement, setShowUserManagement] = useState(false);
+  const isAdmin = profile?.role === "ADMIN";
 
   // Fetch user profile
   useEffect(() => {
@@ -114,12 +120,13 @@ export default function SettingsPage() {
 
     setChangingPassword(true);
     try {
-      const res = await fetch("/api/auth/change-password", {
+      const res = await fetch("/api/user/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          oldPassword,
-          newPassword
+          currentPassword: oldPassword,
+          newPassword,
+          confirmPassword
         })
       });
 
@@ -181,6 +188,12 @@ export default function SettingsPage() {
     <div className="p-6 md:p-8 space-y-8 w-full">
       <Toaster position="top-right" />
 
+      {/* Admin User Management Modal */}
+      <AdminUserManagement 
+        isOpen={showUserManagement} 
+        onClose={() => setShowUserManagement(false)} 
+      />
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">Settings</h1>
@@ -188,6 +201,46 @@ export default function SettingsPage() {
           Manage your experience across theme, language, and accessibility.
         </p>
       </div>
+
+      {/* Admin Section - Only visible to admins */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Administration</h2>
+            <p className="text-sm text-muted-foreground">Admin settings</p>
+          </div>
+
+          <Card className="bg-card border-border p-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <Users className="w-5 h-5 text-amber-400" />
+                    User Management
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Create and manage user accounts for your team
+                  </p>
+                </div>
+                <Button
+                  onClick={() => setShowUserManagement(true)}
+                  className="bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Manage Users
+                </Button>
+              </div>
+
+              <div className="pt-4 border-t border-border">
+                <p className="text-xs text-muted-foreground">
+                  <strong>Tip:</strong> Create user accounts for your team members. 
+                  Each user will receive login credentials that work in both the web app and desktop app.
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Profile Section */}
       <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-8">
@@ -376,7 +429,7 @@ export default function SettingsPage() {
             {/* Warning Box */}
             <div className="border border-red-500/50 bg-red-500/10 rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-semibold text-red-400">Delete Account</h4>
                   <p className="text-sm text-red-300">

@@ -47,12 +47,16 @@ export async function POST(req: NextRequest) {
     // For Twilio: "accountSid:authToken:phoneNumber:twilio" format
     // For WhatsApp Business API: "accessToken:phoneNumberId:whatsapp-business-api" format
     // For others: just the token
-    let tokenToStore = body.token;
+    const tokenTrimmed = (body.token || "").trim();
+    const secretTrimmed = (body.secret || "").trim();
+    const phoneTrimmed = (body.phoneNumber || "").trim();
+
+    let tokenToStore = tokenTrimmed;
     
-    if (body.provider === 'twilio' && body.secret) {
-      tokenToStore = `${body.token}:${body.secret}:${body.phoneNumber || ''}:twilio`;
-    } else if (body.provider === 'whatsapp-business-api' && body.secret) {
-      tokenToStore = `${body.token}:${body.secret}:whatsapp-business-api`;
+    if (body.provider === 'twilio' && secretTrimmed) {
+      tokenToStore = `${tokenTrimmed}:${secretTrimmed}:${phoneTrimmed}:twilio`;
+    } else if (body.provider === 'whatsapp-business-api' && secretTrimmed) {
+      tokenToStore = `${tokenTrimmed}:${secretTrimmed}:whatsapp-business-api`;
     }
 
     const savedToken = await prisma.whatsappToken.upsert({
@@ -64,5 +68,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(savedToken);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE() {
+  try {
+    const session = await auth();
+    const user = session?.user;
+
+    if (!user || !user.id) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const userId = user.id as string;
+
+    await prisma.whatsappToken.deleteMany({ where: { userId } });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

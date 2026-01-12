@@ -1,270 +1,346 @@
-const { app, BrowserWindow, Menu } = require('electron');
+/**
+ * ColorTouch CRM - Electron Main Process
+ * Creates a native desktop window (NOT browser!)
+ */
+
+const { app, BrowserWindow, shell, Menu, Tray, nativeImage } = require('electron');
+const { spawn } = require('child_process');
 const path = require('path');
-const { startServer, stopServer } = require('./server');
-const isDev = process.env.NODE_ENV === 'development';
+const http = require('http');
+const fs = require('fs');
 
-const LOCAL_URL = 'http://localhost:3000';
+// Configuration
+const SERVER_PORT = 3000;
+const SERVER_URL = `http://localhost:${SERVER_PORT}`;
+const APP_NAME = 'ColorTouch CRM';
 
-let mainWindow;
-let serverStarted = false;
+let mainWindow = null;
+let serverProcess = null;
+let tray = null;
+let isQuitting = false;
 
-function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    minWidth: 1024,
-    minHeight: 768,
-    icon: path.join(__dirname, '../build/icons/icons/png/256x256.png'),
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      enableRemoteModule: false,
-      preload: path.join(__dirname, 'preload.js'),
-    },
-    backgroundColor: '#1a1a2e',
-    show: false,
-    autoHideMenuBar: !isDev,
-    title: 'ColorTouch CRM',
-  });
-
-  // Show window when ready to prevent visual flash
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-  });
-
-  // Show loading screen first
-  const loadingHTML = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <style>
-        body {
-          margin: 0;
-          padding: 0;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 100vh;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-        .loader {
-          text-align: center;
-          color: white;
-        }
-        .spinner {
-          border: 4px solid rgba(255, 255, 255, 0.3);
-          border-top: 4px solid white;
-          border-radius: 50%;
-          width: 50px;
-          height: 50px;
-          animation: spin 1s linear infinite;
-          margin: 0 auto 20px;
-        }
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        h1 { font-size: 28px; margin: 0 0 10px; }
-        p { font-size: 16px; opacity: 0.9; margin: 5px 0; }
-      </style>
-    </head>
-    <body>
-      <div class="loader">
-        <div class="spinner"></div>
-        <h1>ColorTouch CRM</h1>
-        <p>Starting local server...</p>
-        <p style="font-size: 14px; opacity: 0.7;">This may take a few seconds</p>
-      </div>
-    </body>
-    </html>
-  `;
-
-  mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(loadingHTML)}`);
-
-  // Load the app
-  if (isDev) {
-    // Development: connect to Next.js dev server
-    mainWindow.loadURL(LOCAL_URL);
-    mainWindow.webContents.openDevTools();
-  } else {
-    // Production: start local Next.js server
-    console.log('Starting Next.js server...');
-    startServer()
-      .then((port) => {
-        console.log(`Server ready on port ${port}, loading app...`);
-        serverStarted = true;
-        const localUrl = `http://localhost:${port}`;
-        
-        // Wait for server to be fully ready
-        const checkServer = () => {
-          const http = require('http');
-          const options = {
-            hostname: 'localhost',
-            port: port,
-            path: '/',
-            method: 'GET',
-            timeout: 5000
-          };
-          
-          const req = http.request(options, (res) => {
-            console.log('Server is responding, loading app...');
-            mainWindow.loadURL(localUrl);
-            // Dev tools disabled in production for better performance
-            // Uncomment below line if you need to debug production issues:
-            // mainWindow.webContents.openDevTools();
-          });
-          
-          req.on('error', (err) => {
-            console.log('Server not ready yet, retrying...');
-            setTimeout(checkServer, 1000);
-          });
-          
-          req.on('timeout', () => {
-            req.destroy();
-            console.log('Request timeout, retrying...');
-            setTimeout(checkServer, 1000);
-          });
-          
-          req.end();
-        };
-        
-        // Start checking after 2 seconds
-        setTimeout(checkServer, 2000);
-      })
-      .catch((err) => {
-        console.error('Server start failed:', err);
-        const errorHTML = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <style>
-              body { background: #1a1a2e; color: white; font-family: sans-serif; padding: 50px; }
-              h1 { color: #ff6b6b; }
-              pre { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 5px; overflow: auto; }
-              .info { background: rgba(100,100,255,0.2); padding: 10px; margin: 20px 0; border-radius: 5px; }
-            </style>
-          </head>
-          <body>
-            <h1>Failed to Start Server</h1>
-            <p>Error: ${err.message}</p>
-            <div class="info">
-              <strong>Tip:</strong> Check the server-log.txt file in the app directory for details.
-            </div>
-            <pre>${err.stack || err.toString()}</pre>
-          </body>
-          </html>
-        `;
-        mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(errorHTML)}`);
-      });
-  }
-
-  // Handle window closed
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
-
-  // Create custom menu
-  createMenu();
-}
-
-function createMenu() {
-  const template = [
-    {
-      label: 'File',
-      submenu: [
-        {
-          label: 'Reload',
-          accelerator: 'CmdOrCtrl+R',
-          click: () => {
-            if (mainWindow) mainWindow.reload();
-          },
-        },
-        { type: 'separator' },
-        {
-          label: 'Exit',
-          accelerator: 'CmdOrCtrl+Q',
-          click: () => {
-            app.quit();
-          },
-        },
-      ],
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { role: 'selectAll' },
-      ],
-    },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
-        { type: 'separator' },
-        { role: 'togglefullscreen' },
-      ],
-    },
-    {
-      label: 'Window',
-      submenu: [
-        { role: 'minimize' },
-        { role: 'close' },
-      ],
-    },
-  ];
-
-  if (isDev) {
-    template.push({
-      label: 'Developer',
-      submenu: [
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        {
-          label: 'Reload',
-          accelerator: 'F5',
-          click: () => {
-            if (mainWindow) mainWindow.reload();
-          },
-        },
-      ],
-    });
-  }
-
-  const menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
-}
-
-// App lifecycle events
-app.whenReady().then(() => {
-  createWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+// Get resource paths
+function getResourcePath(...paths) {
+    // In production (packaged), resources are in resources folder
+    if (app.isPackaged) {
+        return path.join(process.resourcesPath, ...paths);
     }
-  });
+    // In development
+    return path.join(__dirname, '..', ...paths);
+}
+
+// Find Node.js executable
+function getNodePath() {
+    const arch = process.arch === 'x64' ? 'x64' : 'x86';
+    
+    // Try architecture-specific first
+    let nodePath = getResourcePath('server', 'node', arch, 'node.exe');
+    if (fs.existsSync(nodePath)) return nodePath;
+    
+    // Fallback to x86
+    nodePath = getResourcePath('server', 'node', 'x86', 'node.exe');
+    if (fs.existsSync(nodePath)) return nodePath;
+    
+    // Fallback to bundled node (if using electron's node)
+    return process.execPath;
+}
+
+// Check if server is running
+function checkServer() {
+    return new Promise((resolve) => {
+        const req = http.get(SERVER_URL, (res) => {
+            resolve(res.statusCode === 200 || res.statusCode === 302);
+        });
+        req.on('error', () => resolve(false));
+        req.setTimeout(2000, () => {
+            req.destroy();
+            resolve(false);
+        });
+    });
+}
+
+// Start the Next.js server
+async function startServer() {
+    const isRunning = await checkServer();
+    if (isRunning) {
+        console.log('Server already running');
+        return true;
+    }
+
+    console.log('Starting Next.js server...');
+    
+    const serverPath = getResourcePath('server', 'app', 'server.js');
+    const serverDir = path.dirname(serverPath);
+    const nodePath = getNodePath();
+    
+    console.log('Node path:', nodePath);
+    console.log('Server path:', serverPath);
+    
+    if (!fs.existsSync(serverPath)) {
+        console.error('Server file not found:', serverPath);
+        return false;
+    }
+
+    return new Promise((resolve) => {
+        serverProcess = spawn(nodePath, ['server.js'], {
+            cwd: serverDir,
+            env: {
+                ...process.env,
+                NODE_ENV: 'production',
+                PORT: SERVER_PORT.toString(),
+            },
+            stdio: ['ignore', 'pipe', 'pipe'],
+            windowsHide: true
+        });
+
+        serverProcess.stdout.on('data', (data) => {
+            console.log(`Server: ${data}`);
+        });
+
+        serverProcess.stderr.on('data', (data) => {
+            console.error(`Server Error: ${data}`);
+        });
+
+        serverProcess.on('error', (err) => {
+            console.error('Failed to start server:', err);
+            resolve(false);
+        });
+
+        // Wait for server to be ready
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        const checkInterval = setInterval(async () => {
+            attempts++;
+            const running = await checkServer();
+            
+            if (running) {
+                clearInterval(checkInterval);
+                console.log('Server started successfully');
+                resolve(true);
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkInterval);
+                console.error('Server failed to start within timeout');
+                resolve(false);
+            }
+        }, 1000);
+    });
+}
+
+// Stop the server
+function stopServer() {
+    if (serverProcess) {
+        console.log('Stopping server...');
+        serverProcess.kill('SIGTERM');
+        serverProcess = null;
+    }
+}
+
+// Create the main window
+function createWindow() {
+    // Get icon path
+    let iconPath = getResourcePath('resources', 'icons', 'icon.png');
+    if (!fs.existsSync(iconPath)) {
+        iconPath = getResourcePath('icon.ico');
+    }
+
+    mainWindow = new BrowserWindow({
+        width: 1280,
+        height: 850,
+        minWidth: 900,
+        minHeight: 600,
+        title: APP_NAME,
+        icon: iconPath,
+        backgroundColor: '#0f172a', // Dark background matching app theme
+        show: false, // Don't show until ready
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            webSecurity: true,
+        },
+        autoHideMenuBar: true, // Hide menu bar for cleaner look
+    });
+
+    // Show window when ready
+    mainWindow.once('ready-to-show', () => {
+        mainWindow.show();
+        mainWindow.focus();
+    });
+
+    // Load the app
+    mainWindow.loadURL(SERVER_URL);
+
+    // Handle external links - open in default browser
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        if (url.startsWith('http') && !url.includes('localhost')) {
+            shell.openExternal(url);
+            return { action: 'deny' };
+        }
+        return { action: 'allow' };
+    });
+
+    // Handle window close - minimize to tray instead
+    mainWindow.on('close', (event) => {
+        if (!isQuitting) {
+            event.preventDefault();
+            mainWindow.hide();
+        }
+    });
+
+    mainWindow.on('closed', () => {
+        mainWindow = null;
+    });
+
+    // Remove default menu
+    Menu.setApplicationMenu(null);
+}
+
+// Create system tray
+function createTray() {
+    let iconPath = getResourcePath('resources', 'icons', 'icon.png');
+    if (!fs.existsSync(iconPath)) {
+        iconPath = getResourcePath('icon.ico');
+    }
+    
+    const icon = nativeImage.createFromPath(iconPath);
+    tray = new Tray(icon.resize({ width: 16, height: 16 }));
+    
+    const contextMenu = Menu.buildFromTemplate([
+        {
+            label: 'Open ColorTouch CRM',
+            click: () => {
+                if (mainWindow) {
+                    mainWindow.show();
+                    mainWindow.focus();
+                }
+            }
+        },
+        { type: 'separator' },
+        {
+            label: 'Quit',
+            click: () => {
+                isQuitting = true;
+                app.quit();
+            }
+        }
+    ]);
+    
+    tray.setToolTip(APP_NAME);
+    tray.setContextMenu(contextMenu);
+    
+    tray.on('click', () => {
+        if (mainWindow) {
+            if (mainWindow.isVisible()) {
+                mainWindow.focus();
+            } else {
+                mainWindow.show();
+            }
+        }
+    });
+}
+
+// Show loading window while server starts
+function createLoadingWindow() {
+    const loadingWindow = new BrowserWindow({
+        width: 400,
+        height: 300,
+        frame: false,
+        transparent: false,
+        backgroundColor: '#667eea',
+        resizable: false,
+        center: true,
+        webPreferences: {
+            nodeIntegration: false,
+        }
+    });
+    
+    loadingWindow.loadURL(`data:text/html;charset=utf-8,
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    height: 100vh;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    -webkit-app-region: drag;
+                }
+                .container { text-align: center; }
+                h1 { font-size: 24px; margin-bottom: 8px; }
+                p { opacity: 0.9; font-size: 14px; margin-bottom: 30px; }
+                .spinner {
+                    width: 40px; height: 40px;
+                    border: 3px solid rgba(255,255,255,0.3);
+                    border-top-color: white;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto;
+                }
+                @keyframes spin { to { transform: rotate(360deg); } }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>ColorTouch CRM</h1>
+                <p>Starting application...</p>
+                <div class="spinner"></div>
+            </div>
+        </body>
+        </html>
+    `);
+    
+    return loadingWindow;
+}
+
+// App ready
+app.whenReady().then(async () => {
+    // Show loading screen
+    const loadingWindow = createLoadingWindow();
+    
+    // Start server
+    const serverStarted = await startServer();
+    
+    // Close loading window
+    loadingWindow.close();
+    
+    if (!serverStarted) {
+        const { dialog } = require('electron');
+        dialog.showErrorBox('Error', 'Failed to start the application server. Please try again.');
+        app.quit();
+        return;
+    }
+    
+    // Create main window and tray
+    createWindow();
+    createTray();
 });
 
+// Quit when all windows are closed
 app.on('window-all-closed', () => {
-  // Stop the local server
-  if (serverStarted) {
-    console.log('Stopping local server...');
-    stopServer();
-  }
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+    if (process.platform !== 'darwin') {
+        isQuitting = true;
+        app.quit();
+    }
 });
 
-// Handle any uncaught exceptions
+// Cleanup on quit
+app.on('before-quit', () => {
+    isQuitting = true;
+    stopServer();
+});
+
+app.on('activate', () => {
+    if (mainWindow === null) {
+        createWindow();
+    }
+});
+
+// Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+    console.error('Uncaught exception:', error);
 });

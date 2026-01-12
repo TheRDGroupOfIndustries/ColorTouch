@@ -4,6 +4,28 @@ import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { createTwilioService } from "@/lib/twilio-whatsapp";
 
+function normalizeWhatsappToNumber(rawPhone: unknown, defaultCountryCode: string) {
+  const digits = String(rawPhone ?? "").replace(/\D/g, "");
+  if (!digits) return null;
+
+  // Common user inputs: +91XXXXXXXXXX, 91XXXXXXXXXX, 0XXXXXXXXXX, XXXXXXXXXX
+  let normalized = digits;
+  if (normalized.startsWith("00")) normalized = normalized.slice(2);
+  if (normalized.startsWith("0") && normalized.length >= 11) normalized = normalized.slice(1);
+
+  // If it looks like a national number (10 digits), apply default CC (India = 91)
+  if (normalized.length === 10) {
+    return `${defaultCountryCode}${normalized}`;
+  }
+
+  // Otherwise assume user already provided full international number (no +)
+  if (normalized.length >= 11 && normalized.length <= 15) {
+    return normalized;
+  }
+
+  return null;
+}
+
 export async function POST(req: Request) {
   try {
     const { campaignId } = await req.json();
@@ -64,7 +86,12 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    const tokenData = Array.isArray(tokens) && tokens.length > 0 ? tokens[0].token : null;
+    let tokenData = Array.isArray(tokens) && tokens.length > 0 ? tokens[0].token : null;
+
+    // Fallback to server env if user hasn't saved token yet
+    if (!tokenData && process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID) {
+      tokenData = `${process.env.WHATSAPP_ACCESS_TOKEN}:${process.env.WHATSAPP_PHONE_NUMBER_ID}:whatsapp-business-api`;
+    }
 
     if (!tokenData)
       return NextResponse.json({ success: false, error: "No WhatsApp token found." }, { status: 404 });
@@ -78,6 +105,7 @@ export async function POST(req: Request) {
     let sentCount = 0;
     let errorCount = 0;
     const errors: string[] = [];
+    const acceptedMessageIds: string[] = [];
 
     // Use Twilio service if available
     if (istwilio) {
@@ -125,31 +153,48 @@ export async function POST(req: Request) {
       }
     } else if (isWhatsAppBusinessAPI) {
       const parts = tokenData.split(':');
-      const accessToken = parts[0];
-      const phoneNumberId = parts[1];
+      const accessToken = (parts[0] || "").trim();
+      const phoneNumberId = (parts[1] || "").trim();
+
+      if (!accessToken || !phoneNumberId) {
+        return NextResponse.json(
+          { success: false, error: "Invalid WhatsApp Business API credentials (missing token or phoneNumberId)" },
+          { status: 400 }
+        );
+      }
+
+      const defaultCountryCode = (process.env.WHATSAPP_DEFAULT_COUNTRY_CODE || "91").replace(/\D/g, "") || "91";
+      const templateName = process.env.WHATSAPP_TEMPLATE_NAME || "hello_world";
+      const templateLanguage = process.env.WHATSAPP_TEMPLATE_LANGUAGE || "en_US";
+      const graphVersion = (process.env.WHATSAPP_GRAPH_VERSION || "v22.0").trim();
 
       for (let i = 0; i < items.length; i++) {
         const lead = items[i];
-        const phone = lead.phone?.toString().replace(/\D/g, "");
-        if (!phone) {
+
+        const toPhone = normalizeWhatsappToNumber(lead.phone, defaultCountryCode);
+        if (!toPhone) {
           console.log(`⚠️ Skipping ${lead.name || 'Unknown'} - no valid phone number`);
           continue;
         }
 
-        const messageText = `Hello ${lead.name || ''}, ${campaign.campaignName}: ${campaign.messageContent || ''} ${campaign.description || ''} ${campaign.mediaURL || ''}`;
-        const toPhone = `+91${phone}`;
-        
         console.log(`📤 Sending to ${toPhone} (${i + 1}/${items.length}) via WhatsApp Business API`);
 
         try {
+          // WhatsApp Cloud API: template required for first contact (outside 24-hour window)
+          // Free-form text messages only work if user has messaged you in last 24 hours
           const messageBody = {
             messaging_product: "whatsapp",
             to: toPhone,
-            type: "text",
-            text: { body: messageText }
+            type: "template",
+            template: {
+              name: templateName,
+              language: { code: templateLanguage }
+            }
           };
 
-          const response = await fetch(`https://graph.facebook.com/v18.0/${phoneNumberId}/messages`, {
+          console.log(`📝 Using template message (${templateName}) - WhatsApp requires templates for first contact`);
+
+          const response = await fetch(`https://graph.facebook.com/${graphVersion}/${phoneNumberId}/messages`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -158,18 +203,24 @@ export async function POST(req: Request) {
             body: JSON.stringify(messageBody),
           });
 
+          const responseData = await response.json();
+          
           if (response.ok) {
             sentCount++;
-            console.log(`✅ Successfully sent to ${toPhone}`);
+            const messageId = responseData?.messages?.[0]?.id;
+            if (typeof messageId === "string" && messageId.length > 0) {
+              acceptedMessageIds.push(messageId);
+            }
+            console.log(`✅ Accepted by WhatsApp for ${toPhone}`, responseData);
           } else {
             errorCount++;
-            const error = await response.text();
-            errors.push(`${phone}: ${error}`);
-            console.error(`❌ Failed for ${toPhone}:`, error);
+            const errorMsg = responseData.error?.message || JSON.stringify(responseData);
+            errors.push(`${toPhone}: ${errorMsg}`);
+            console.error(`❌ Failed for ${toPhone}:`, responseData);
           }
         } catch (error: any) {
           errorCount++;
-          errors.push(`${phone}: ${error.message}`);
+          errors.push(`${toPhone}: ${error.message}`);
           console.error(`❌ Error sending to ${toPhone}:`, error);
         }
 
@@ -231,14 +282,33 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `✅ Campaign sent successfully!`, 
+    const totalLeads = items.length;
+    const partial = sentCount > 0 && errorCount > 0;
+    const success = sentCount > 0 && errorCount === 0;
+
+    const message = success
+      ? `✅ Campaign sent successfully!`
+      : partial
+        ? `⚠️ Campaign partially sent: ${sentCount}/${totalLeads} accepted, ${errorCount} failed.`
+        : `❌ Campaign failed: 0/${totalLeads} accepted.`;
+
+    const payload = {
+      success,
+      partial,
+      message,
       sentCount,
       errorCount,
-      totalLeads: items.length,
-      errors: errors.length > 0 ? errors : undefined
-    });
+      totalLeads,
+      errors: errors.length > 0 ? errors : undefined,
+      acceptedMessageIds: acceptedMessageIds.length > 0 ? acceptedMessageIds : undefined,
+    };
+
+    // If nothing was accepted, return a non-2xx so UI can treat it as failure
+    if (!success && !partial) {
+      return NextResponse.json(payload, { status: 400 });
+    }
+
+    return NextResponse.json(payload);
   } catch (error: any) {
     console.error("❌ send-message error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

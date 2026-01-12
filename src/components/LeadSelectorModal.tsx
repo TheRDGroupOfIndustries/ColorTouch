@@ -24,6 +24,8 @@ interface Lead {
   status?: string;
   source?: string;
   tag?: string;
+  checkInDates?: string | null;
+  checkoutDate?: string | null;
 }
 
 interface LeadSelectorModalProps {
@@ -50,6 +52,8 @@ const LeadSelectorModal: React.FC<LeadSelectorModalProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [sourceFilter, setSourceFilter] = useState<string>("ALL");
   const [tagFilter, setTagFilter] = useState<string>("ALL");
+  const [checkinFrom, setCheckinFrom] = useState<string>("");
+  const [checkoutTo, setCheckoutTo] = useState<string>("");
 
   // Fetch leads from API
   useEffect(() => {
@@ -106,9 +110,30 @@ const LeadSelectorModal: React.FC<LeadSelectorModalProps> = ({
         tagFilter === "ALL" ||
         lead.tag?.toUpperCase() === tagFilter.toUpperCase();
 
-      return matchesSearch && matchesStatus && matchesSource && matchesTag;
+      // Check-in date filter
+      const leadCheckIn = lead.checkInDates
+        ? new Date(lead.checkInDates)
+        : null;
+      const matchesCheckin =
+        !checkinFrom || (leadCheckIn && leadCheckIn >= new Date(checkinFrom));
+
+      // Check-out date filter
+      const leadCheckOut = lead.checkoutDate
+        ? new Date(lead.checkoutDate)
+        : null;
+      const matchesCheckout =
+        !checkoutTo || (leadCheckOut && leadCheckOut <= new Date(checkoutTo));
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesSource &&
+        matchesTag &&
+        matchesCheckin &&
+        matchesCheckout
+      );
     });
-  }, [leads, searchQuery, statusFilter, sourceFilter, tagFilter]);
+  }, [leads, searchQuery, statusFilter, sourceFilter, tagFilter, checkinFrom, checkoutTo]);
 
   // Get unique values for filters
   const uniqueStatuses = useMemo(
@@ -170,6 +195,8 @@ const LeadSelectorModal: React.FC<LeadSelectorModalProps> = ({
     setStatusFilter("ALL");
     setSourceFilter("ALL");
     setTagFilter("ALL");
+    setCheckinFrom("");
+    setCheckoutTo("");
   };
 
   if (!isOpen) return null;
@@ -258,6 +285,28 @@ const LeadSelectorModal: React.FC<LeadSelectorModalProps> = ({
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Check-in Date Filter */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-muted-foreground">Check-in</label>
+              <input
+                type="date"
+                value={checkinFrom}
+                onChange={(e) => setCheckinFrom(e.target.value)}
+                className="h-9 px-2 rounded border border-input bg-background text-sm"
+              />
+            </div>
+
+            {/* Check-out Date Filter */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-muted-foreground">Check-out</label>
+              <input
+                type="date"
+                value={checkoutTo}
+                onChange={(e) => setCheckoutTo(e.target.value)}
+                className="h-9 px-2 rounded border border-input bg-background text-sm"
+              />
+            </div>
 
             <Button
               variant="outline"
